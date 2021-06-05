@@ -1,5 +1,11 @@
 ![](https://github.com/sumatrapdfreader/sumatrapdf/workflows/Build/badge.svg)
 
+## Added Note
+
+This is a fork of SumatraPDF with an additional 'Close All Files' button managed in 'close-all-feature' branch of this repo.
+
+![image](https://github.com/itsrdb/sumatrapdf/blob/close-all-feature/extra/Screenshot(1006)Copy.png)
+
 ## SumatraPDF Reader
 
 SumatraPDF is a multi-format (PDF, EPUB, MOBI, FB2, CHM, XPS, DjVu) reader
