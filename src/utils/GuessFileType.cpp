@@ -12,7 +12,6 @@
 
 Kind kindFilePDF = "filePDF";
 Kind kindFilePS = "filePS";
-Kind kindFileVbkm = "fileVbkm";
 Kind kindFileXps = "fileXPS";
 Kind kindFileDjVu = "fileDjVu";
 Kind kindFileChm = "fileChm";
@@ -36,13 +35,14 @@ Kind kindFileRar = "fileRar";
 Kind kindFile7Z = "file7Z";
 Kind kindFileTar = "fileTar";
 Kind kindFileFb2 = "fileFb2";
-Kind kindFileDir = "fileDir";
+Kind kindDirectory = "directory";
 Kind kindFileEpub = "fileEpub";
 // TODO: introduce kindFileTealDoc?
 Kind kindFileMobi = "fileMobi";
 Kind kindFilePalmDoc = "filePalmDoc";
 Kind kindFileHTML = "fileHTML";
 Kind kindFileTxt = "fileTxt";
+Kind kindFileSvg = "fileSvg";
 
 // http://en.wikipedia.org/wiki/.nfo
 // http://en.wikipedia.org/wiki/FILE_ID.DIZ
@@ -64,7 +64,6 @@ Kind kindFileTxt = "fileTxt";
     V(".ps\0", kindFilePS)          \
     V(".ps.gz\0", kindFilePS)       \
     V(".eps\0", kindFilePS)         \
-    V(".vbkm\0", kindFileVbkm)      \
     V(".fb2\0", kindFileFb2)        \
     V(".fb2z\0", kindFileFb2)       \
     V(".zfb2\0", kindFileFb2)       \
@@ -99,6 +98,7 @@ Kind kindFileTxt = "fileTxt";
     V(".html\0", kindFileHTML)      \
     V(".htm\0", kindFileHTML)       \
     V(".xhtml\0", kindFileHTML)     \
+    V(".svg\0", kindFileSvg)        \
     V(".djvu\0", kindFileDjVu)      \
     V(".jp2\0", kindFileJp2)        \
     V(".zip\0", kindFileZip)        \
@@ -117,7 +117,7 @@ static Kind gExtsKind[] = {DEF_EXT_KIND(KIND)};
 #undef KIND
 
 static Kind GetKindByFileExt(const WCHAR* path) {
-    AutoFree pathA = strconv::WstrToUtf8(path);
+    auto pathA = ToUtf8Temp(path);
     int idx = 0;
     const char* curr = gFileExts;
     while (curr && *curr) {
@@ -192,7 +192,7 @@ static FileSig gFileSigs[] = {FILE_SIGS(MK_SIG)};
 #undef MK_SIG
 
 // PDF files have %PDF-${ver} somewhere in the beginning of the file
-static bool IsPdfFileContent(std::span<u8> d) {
+static bool IsPdfFileContent(ByteSlice d) {
     if (d.size() < 8) {
         return false;
     }
@@ -213,7 +213,7 @@ static bool IsPdfFileContent(std::span<u8> d) {
     return false;
 }
 
-static bool IsPSFileContent(std::span<u8> d) {
+static bool IsPSFileContent(ByteSlice d) {
     char* header = (char*)d.data();
     size_t n = d.size();
     if (n < 64) {
@@ -241,8 +241,7 @@ static bool IsPSFileContent(std::span<u8> d) {
 }
 
 // detect file type based on file content
-// we don't support sniffing kindFileVbkm
-Kind GuessFileTypeFromContent(std::span<u8> d) {
+Kind GuessFileTypeFromContent(ByteSlice d) {
     // TODO: sniff .fb2 content
     u8* data = d.data();
     size_t len = d.size();
@@ -390,7 +389,7 @@ Kind GuessFileTypeFromName(const WCHAR* path) {
         return nullptr;
     }
     if (path::IsDirectory(path)) {
-        return kindFileDir;
+        return kindDirectory;
     }
     Kind res = GetKindByFileExt(path);
     if (res != nullptr) {

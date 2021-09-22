@@ -1,3 +1,25 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #include "mupdf/fitz.h"
 #include "mupdf/pdf.h"
 
@@ -86,7 +108,7 @@ pdf_add_font_file(fz_context *ctx, pdf_document *doc, fz_font *font)
 			if (FT_Get_Sfnt_Table(font->ft_face, FT_SFNT_HEAD))
 				pdf_dict_put(ctx, obj, PDF_NAME(Subtype), PDF_NAME(OpenType));
 			else
-				pdf_dict_put(ctx, obj, PDF_NAME(Subtype), PDF_NAME(Type1C));
+				pdf_dict_put(ctx, obj, PDF_NAME(Subtype), PDF_NAME(CIDFontType0C));
 			break;
 		}
 		ref = pdf_add_object(ctx, doc, obj);
@@ -777,4 +799,11 @@ pdf_add_cjk_font(fz_context *ctx, pdf_document *doc, fz_font *fzfont, int script
 		fz_rethrow(ctx);
 
 	return fref;
+}
+
+pdf_obj *
+pdf_add_substitute_font(fz_context *ctx, pdf_document *doc, fz_font *font)
+{
+	fz_throw(ctx, FZ_ERROR_GENERIC, "substitute font creation is not implemented yet");
+	return NULL;
 }

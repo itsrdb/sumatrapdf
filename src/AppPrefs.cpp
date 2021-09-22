@@ -6,17 +6,16 @@
 #include "utils/FileWatcher.h"
 #include "utils/UITask.h"
 #include "utils/ScopedWin.h"
+#include "utils/WinUtil.h"
+#include "utils/Timer.h"
 
 #include "wingui/TreeModel.h"
-
-#include "Annotation.h"
-#include "EngineBase.h"
-#include "EngineEbook.h"
-
-#include "SumatraConfig.h"
 #include "DisplayMode.h"
-#include "SettingsStructs.h"
 #include "Controller.h"
+#include "EngineBase.h"
+#include "EngineAll.h"
+#include "SumatraConfig.h"
+#include "SettingsStructs.h"
 #include "DisplayModel.h"
 #include "FileHistory.h"
 #include "GlobalPrefs.h"
@@ -31,6 +30,8 @@
 #include "Favorites.h"
 #include "Toolbar.h"
 #include "Translations.h"
+
+#include "utils/Log.h"
 
 // SumatraPDF.cpp
 extern void RememberDefaultWindowPosition(WindowInfo* win);
@@ -57,20 +58,23 @@ static int cmpFloat(const void* a, const void* b) {
 
 namespace prefs {
 
-const WCHAR* GetSettingsFileNameNoFree() {
-    if (gIsRaMicroBuild) {
-        return L"RAMicroPDF-settings.txt";
-    }
+const WCHAR* GetSettingsFileNameTemp() {
     return L"SumatraPDF-settings.txt";
 }
 
 WCHAR* GetSettingsPath() {
-    return AppGenDataFilename(GetSettingsFileNameNoFree());
+    return AppGenDataFilename(GetSettingsFileNameTemp());
 }
 
 /* Caller needs to prefs::CleanUp() */
 bool Load() {
     CrashIf(gGlobalPrefs);
+
+    auto timeStart = TimeGet();
+    defer {
+        auto dur = TimeSinceInMs(timeStart);
+        logf("prefs::Load() took %.2f ms\n", dur);
+    };
 
     AutoFreeWstr path = GetSettingsPath();
     AutoFree prefsData = file::ReadFile(path.Get());
@@ -88,20 +92,9 @@ bool Load() {
     }
 #endif
 
-#ifdef DISABLE_EBOOK_UI
-    if (!prefsData || !str::Find(prefsData, "UseFixedPageUI =")) {
-        gprefs->ebookUI.useFixedPageUI = gprefs->chmUI.useFixedPageUI = true;
-    }
-#endif
-#ifdef DISABLE_TABS
-    if (!prefsData || !str::Find(prefsData, "UseTabs =")) {
-        gprefs->useTabs = false;
-    }
-#endif
-
     if (!gprefs->uiLanguage || !trans::ValidateLangCode(gprefs->uiLanguage)) {
         // guess the ui language on first start
-        str::ReplacePtr(&gprefs->uiLanguage, trans::DetectUserLang());
+        str::ReplaceWithCopy(&gprefs->uiLanguage, trans::DetectUserLang());
     }
     gprefs->lastPrefUpdate = file::GetModificationTime(path.Get());
     gprefs->defaultDisplayModeEnum = DisplayModeFromString(gprefs->defaultDisplayMode, DisplayMode::Automatic);
@@ -112,8 +105,8 @@ bool Load() {
     gprefs->openCountWeek = GetWeekCount();
     if (weekDiff > 0) {
         // "age" openCount statistics (cut in in half after every week)
-        for (DisplayState* ds : *gprefs->fileStates) {
-            ds->openCount >>= weekDiff;
+        for (FileState* fs : *gprefs->fileStates) {
+            fs->openCount >>= weekDiff;
         }
     }
 
@@ -128,7 +121,8 @@ bool Load() {
 
     // TODO: verify that all states have a non-nullptr file path?
     gFileHistory.UpdateStatesSource(gprefs->fileStates);
-    SetDefaultEbookFont(gprefs->ebookUI.fontName, gprefs->ebookUI.fontSize);
+    auto fontName = ToWstrTemp(gprefs->fixedPageUI.ebookFontName);
+    SetDefaultEbookFont(fontName.Get(), gprefs->fixedPageUI.ebookFontSize);
 
     if (!file::Exists(path.Get())) {
         Save();
@@ -160,18 +154,15 @@ static void RememberSessionState() {
         }
         SessionData* data = NewSessionData();
         for (TabInfo* tab : win->tabs) {
-            DisplayState* ds = NewDisplayState(tab->filePath);
+            char* fp = ToUtf8Temp(tab->filePath);
+            FileState* fs = NewDisplayState(fp);
             if (tab->ctrl) {
-                tab->ctrl->GetDisplayState(ds);
+                tab->ctrl->GetDisplayState(fs);
             }
-            // TODO: pageNo should be good enough, as canvas size is restored as well
-            if (tab->AsEbook() && tab->ctrl) {
-                ds->pageNo = tab->ctrl->CurrentPageNo();
-            }
-            ds->showToc = tab->showToc;
-            *ds->tocState = tab->tocState;
-            data->tabStates->Append(NewTabState(ds));
-            DeleteDisplayState(ds);
+            fs->showToc = tab->showToc;
+            *fs->tocState = tab->tocState;
+            data->tabStates->Append(NewTabState(fs));
+            DeleteDisplayState(fs);
         }
         data->tabIndex = win->tabs.Find(win->currentTab) + 1;
         // TODO: allow recording this state without changing gGlobalPrefs
@@ -188,7 +179,7 @@ static void RememberSessionState() {
 // the list of recently opened documents in sync)
 bool Save() {
     // don't save preferences without the proper permission
-    if (!HasPermission(Perm_SavePreferences)) {
+    if (!HasPermission(Perm::SavePreferences)) {
         return false;
     }
 
@@ -203,17 +194,17 @@ bool Save() {
     // remove entries which should (no longer) be remembered
     gFileHistory.Purge(!gGlobalPrefs->rememberStatePerDocument);
     // update display mode and zoom fields from internal values
-    str::ReplacePtr(&gGlobalPrefs->defaultDisplayMode, DisplayModeToString(gGlobalPrefs->defaultDisplayModeEnum));
-    ZoomToString(&gGlobalPrefs->defaultZoom, gGlobalPrefs->defaultZoomFloat);
+    str::ReplaceWithCopy(&gGlobalPrefs->defaultDisplayMode, DisplayModeToString(gGlobalPrefs->defaultDisplayModeEnum));
+    ZoomToString(&gGlobalPrefs->defaultZoom, gGlobalPrefs->defaultZoomFloat, nullptr);
 
     AutoFreeWstr path = GetSettingsPath();
-    DebugCrashIf(!path.data);
+    ReportIf(!path.data);
     if (!path.data) {
         return false;
     }
-    std::span<u8> prevPrefs = file::ReadFile(path.data);
+    ByteSlice prevPrefs = file::ReadFile(path.data);
     const char* prevPrefsData = (char*)prevPrefs.data();
-    std::span<u8> prefs = SerializeGlobalPrefs(gGlobalPrefs, prevPrefsData);
+    ByteSlice prefs = SerializeGlobalPrefs(gGlobalPrefs, prevPrefsData);
     defer {
         str::Free(prevPrefs.data());
         str::Free(prefs.data());
@@ -264,7 +255,7 @@ bool Reload() {
         return true;
     }
 
-    AutoFree uiLanguage = str::Dup(gGlobalPrefs->uiLanguage);
+    const char* uiLanguage = str::DupTemp(gGlobalPrefs->uiLanguage);
     bool showToolbar = gGlobalPrefs->showToolbar;
     bool invertColors = gGlobalPrefs->fixedPageUI.invertColors;
 
@@ -278,12 +269,13 @@ bool Reload() {
 
     // TODO: about window doesn't have to be at position 0
     if (gWindows.size() > 0 && gWindows.at(0)->IsAboutWindow()) {
-        gWindows.at(0)->HideToolTip();
-        gWindows.at(0)->staticLinks.Reset();
-        gWindows.at(0)->RedrawAll(true);
+        WindowInfo* win = gWindows.at(0);
+        win->HideToolTip();
+        DeleteVecMembers(win->staticLinks);
+        win->RedrawAll(true);
     }
 
-    if (!str::Eq(uiLanguage.Get(), gGlobalPrefs->uiLanguage)) {
+    if (!str::Eq(uiLanguage, gGlobalPrefs->uiLanguage)) {
         SetCurrentLanguageAndRefreshUI(gGlobalPrefs->uiLanguage);
     }
 
@@ -310,7 +302,7 @@ void schedulePrefsReload() {
 }
 
 void RegisterForFileChanges() {
-    if (!HasPermission(Perm_SavePreferences)) {
+    if (!HasPermission(Perm::SavePreferences)) {
         return;
     }
 

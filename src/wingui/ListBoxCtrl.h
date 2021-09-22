@@ -2,7 +2,8 @@
    License: Simplified BSD (see COPYING.BSD) */
 
 struct ListBoxModel {
-    virtual ~ListBoxModel(){};
+    virtual ~ListBoxModel() = default;
+    ;
     virtual int ItemsCount() = 0;
     virtual Size Draw(bool measure) = 0;
     virtual std::string_view Item(int) = 0;
@@ -25,7 +26,7 @@ struct ListBoxSelectionChangedEvent : WndEvent {
     std::string_view item;
 };
 
-typedef std::function<void(ListBoxSelectionChangedEvent*)> ListBoxSelectionChangedHandler;
+using ListBoxSelectionChangedHandler = std::function<void(ListBoxSelectionChangedEvent*)>;
 
 struct ListBoxCtrl : WindowBase {
     ListBoxModel* model = nullptr;
@@ -34,7 +35,7 @@ struct ListBoxCtrl : WindowBase {
     Size idealSize{};
     int idealSizeLines = 0;
 
-    ListBoxCtrl(HWND parent);
+    explicit ListBoxCtrl(HWND parent);
     ~ListBoxCtrl() override;
     bool Create() override;
 

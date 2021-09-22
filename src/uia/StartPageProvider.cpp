@@ -14,14 +14,13 @@ SumatraUIAutomationStartPageProvider::SumatraUIAutomationStartPageProvider(HWND 
     // root->AddRef(); Don't add refs to our parent & owner.
 }
 
-SumatraUIAutomationStartPageProvider::~SumatraUIAutomationStartPageProvider() {
-}
+SumatraUIAutomationStartPageProvider::~SumatraUIAutomationStartPageProvider() = default;
 
 // IUnknown
 HRESULT STDMETHODCALLTYPE SumatraUIAutomationStartPageProvider::QueryInterface(REFIID riid, void** ppv) {
     static const QITAB qit[] = {QITABENT(SumatraUIAutomationStartPageProvider, IRawElementProviderSimple),
                                 QITABENT(SumatraUIAutomationStartPageProvider, IRawElementProviderFragment),
-                                {0}};
+                                {nullptr}};
     return QISearch(this, qit, riid, ppv);
 }
 
@@ -109,7 +108,7 @@ SumatraUIAutomationStartPageProvider::get_FragmentRoot(IRawElementProviderFragme
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE SumatraUIAutomationStartPageProvider::GetPatternProvider([[maybe_unused]] PATTERNID patternId,
+HRESULT STDMETHODCALLTYPE SumatraUIAutomationStartPageProvider::GetPatternProvider(__unused PATTERNID patternId,
                                                                                    IUnknown** pRetVal) {
     *pRetVal = nullptr;
     return S_OK;

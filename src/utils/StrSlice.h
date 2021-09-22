@@ -1,9 +1,54 @@
 /* Copyright 2021 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
+// note: include BaseUtil.h instead of including directly
+
+struct ByteSlice {
+    u8* d{nullptr};
+    size_t s{0};
+
+    ByteSlice() = default;
+    ~ByteSlice() = default;
+    ByteSlice(u8* data, size_t size) {
+        d = data;
+        s = size;
+    }
+    ByteSlice(const ByteSlice& data) {
+        d = data.data();
+        s = data.size();
+    }
+    ByteSlice& operator=(const ByteSlice& other) {
+        d = other.d;
+        s = other.s;
+        return *this;
+    }
+    ByteSlice(const std::string_view& data) {
+        d = (u8*)data.data();
+        s = data.size();
+    }
+    u8* data() const {
+        return d;
+    }
+    size_t size() const {
+        return s;
+    }
+    bool empty() const {
+        return !d || s == 0;
+    }
+    ByteSlice Clone() const {
+        if (empty()) {
+            return {};
+        }
+        u8* res = (u8*)memdup(d, s, 1);
+        return {res, size()};
+    }
+};
+
+// TODO: rename StrSlice and add WStrSlice
+
 namespace str {
 
-// a class to help scanning through text. doesn't own the edata
+// a class to help scanning through text. doesn't own the data
 struct Slice {
     char* begin = nullptr;
     char* end = nullptr;
@@ -17,17 +62,17 @@ struct Slice {
 
     void Set(char* s, size_t len);
 
-    size_t Left() const;
-    bool Finished() const;
+    [[nodiscard]] size_t Left() const;
+    [[nodiscard]] bool Finished() const;
 
-    char PrevChar() const;
-    char CurrChar() const;
+    [[nodiscard]] char PrevChar() const;
+    [[nodiscard]] char CurrChar() const;
     size_t AdvanceCurrTo(char* s);
     size_t SkipWsUntilNewline();
     size_t SkipUntil(char toFind);
     size_t SkipNonWs();
     size_t Skip(int n);
-    void ZeroCurr();
+    void ZeroCurr() const;
 };
 
 } // namespace str

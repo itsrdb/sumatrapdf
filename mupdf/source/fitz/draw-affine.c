@@ -1,3 +1,25 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #include "mupdf/fitz.h"
 #include "draw-imp.h"
 
@@ -16,17 +38,17 @@ typedef unsigned char byte;
 
 typedef void (paintfn_t)(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, int dn, int sn, int alpha, const byte * FZ_RESTRICT color, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp, const fz_overprint * FZ_RESTRICT eop);
 
-static inline int lerp(int a, int b, int t)
+static fz_forceinline int lerp(int a, int b, int t)
 {
 	return a + (((b - a) * t) >> PREC);
 }
 
-static inline int bilerp(int a, int b, int c, int d, int u, int v)
+static fz_forceinline int bilerp(int a, int b, int c, int d, int u, int v)
 {
 	return lerp(lerp(a, b, u), lerp(c, d, u), v);
 }
 
-static inline const byte *sample_nearest(const byte *s, int w, int h, int str, int n, int u, int v)
+static fz_forceinline const byte *sample_nearest(const byte *s, int w, int h, int str, int n, int u, int v)
 {
 	if (u < 0) u = 0;
 	if (v < 0) v = 0;
@@ -37,7 +59,7 @@ static inline const byte *sample_nearest(const byte *s, int w, int h, int str, i
 
 /* Blend premultiplied source image in constant alpha over destination */
 
-static inline void
+static fz_forceinline void
 template_affine_alpha_N_lerp(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, int dn1, int sn1, int alpha, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	int k;
@@ -85,7 +107,7 @@ template_affine_alpha_N_lerp(byte * FZ_RESTRICT dp, int da, const byte * FZ_REST
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_alpha_N_lerp_op(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, int dn1, int sn1, int alpha, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp, const fz_overprint * FZ_RESTRICT eop)
 {
 	int k;
@@ -138,7 +160,7 @@ template_affine_alpha_N_lerp_op(byte * FZ_RESTRICT dp, int da, const byte * FZ_R
 }
 
 /* Special case code for gray -> rgb */
-static inline void
+static fz_forceinline void
 template_affine_alpha_g2rgb_lerp(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, int alpha, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	do
@@ -182,7 +204,7 @@ template_affine_alpha_g2rgb_lerp(byte * FZ_RESTRICT dp, int da, const byte * FZ_
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_alpha_N_near_fa0(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, int dn1, int sn1, int alpha, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	int k;
@@ -224,7 +246,7 @@ template_affine_alpha_N_near_fa0(byte * FZ_RESTRICT dp, int da, const byte * FZ_
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_alpha_N_near_fb0(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, int dn1, int sn1, int alpha, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	int k;
@@ -265,7 +287,7 @@ template_affine_alpha_N_near_fb0(byte * FZ_RESTRICT dp, int da, const byte * FZ_
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_alpha_N_near(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, int dn1, int sn1, int alpha, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	int k;
@@ -305,7 +327,7 @@ template_affine_alpha_N_near(byte * FZ_RESTRICT dp, int da, const byte * FZ_REST
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_alpha_N_near_op(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, int dn1, int sn1, int alpha, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp, const fz_overprint * FZ_RESTRICT eop)
 {
 	int k;
@@ -347,7 +369,7 @@ template_affine_alpha_N_near_op(byte * FZ_RESTRICT dp, int da, const byte * FZ_R
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_alpha_g2rgb_near_fa0(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, int alpha, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	int ui = u >> PREC;
@@ -387,7 +409,7 @@ template_affine_alpha_g2rgb_near_fa0(byte * FZ_RESTRICT dp, int da, const byte *
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_alpha_g2rgb_near_fb0(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, int alpha, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	int vi = v >> PREC;
@@ -427,7 +449,7 @@ template_affine_alpha_g2rgb_near_fb0(byte * FZ_RESTRICT dp, int da, const byte *
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_alpha_g2rgb_near(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, int alpha, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	do
@@ -466,7 +488,7 @@ template_affine_alpha_g2rgb_near(byte * FZ_RESTRICT dp, int da, const byte * FZ_
 }
 
 /* Blend premultiplied source image over destination */
-static inline void
+static fz_forceinline void
 template_affine_N_lerp(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, int dn1, int sn1, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	int k;
@@ -513,7 +535,7 @@ template_affine_N_lerp(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT s
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_N_lerp_op(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, int dn1, int sn1, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp, const fz_overprint * FZ_RESTRICT eop)
 {
 	int k;
@@ -562,7 +584,7 @@ template_affine_N_lerp_op(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRIC
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_solid_g2rgb_lerp(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	do
@@ -604,7 +626,7 @@ template_affine_solid_g2rgb_lerp(byte * FZ_RESTRICT dp, int da, const byte * FZ_
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_N_near_fa0(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, int dn1, int sn1, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	int k;
@@ -673,7 +695,7 @@ template_affine_N_near_fa0(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRI
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_N_near_fb0(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, int dn1, int sn1, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	int k;
@@ -742,7 +764,7 @@ template_affine_N_near_fb0(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRI
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_N_near(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, int dn1, int sn1, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	int k;
@@ -810,7 +832,7 @@ template_affine_N_near(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT s
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_N_near_op(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, int dn1, int sn1, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp, const fz_overprint * FZ_RESTRICT eop)
 {
 	int k;
@@ -878,7 +900,7 @@ template_affine_N_near_op(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRIC
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_solid_g2rgb_near_fa0(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	int ui = u >> PREC;
@@ -932,7 +954,7 @@ template_affine_solid_g2rgb_near_fa0(byte * FZ_RESTRICT dp, int da, const byte *
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_solid_g2rgb_near_fb0(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	int vi = v >> PREC;
@@ -986,7 +1008,7 @@ template_affine_solid_g2rgb_near_fb0(byte * FZ_RESTRICT dp, int da, const byte *
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_solid_g2rgb_near(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int sa, int u, int v, int fa, int fb, int w, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	do
@@ -1040,7 +1062,7 @@ template_affine_solid_g2rgb_near(byte * FZ_RESTRICT dp, int da, const byte * FZ_
 
 /* Blend non-premultiplied color in source image mask over destination */
 
-static inline void
+static fz_forceinline void
 template_affine_color_N_lerp(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int u, int v, int fa, int fb, int w, int dn1, int sn1, const byte * FZ_RESTRICT color, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	int sa = color[dn1];
@@ -1083,7 +1105,7 @@ template_affine_color_N_lerp(byte * FZ_RESTRICT dp, int da, const byte * FZ_REST
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_color_N_lerp_op(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int u, int v, int fa, int fb, int w, int dn1, int sn1, const byte * FZ_RESTRICT color, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp, const fz_overprint * FZ_RESTRICT eop)
 {
 	int sa = color[dn1];
@@ -1127,7 +1149,7 @@ template_affine_color_N_lerp_op(byte * FZ_RESTRICT dp, int da, const byte * FZ_R
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_color_N_near(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int u, int v, int fa, int fb, int w, int dn1, int sn1, const byte * FZ_RESTRICT color, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp)
 {
 	int sa = color[dn1];
@@ -1164,7 +1186,7 @@ template_affine_color_N_near(byte * FZ_RESTRICT dp, int da, const byte * FZ_REST
 	while (--w);
 }
 
-static inline void
+static fz_forceinline void
 template_affine_color_N_near_op(byte * FZ_RESTRICT dp, int da, const byte * FZ_RESTRICT sp, int sw, int sh, int ss, int u, int v, int fa, int fb, int w, int dn1, int sn1, const byte * FZ_RESTRICT color, byte * FZ_RESTRICT hp, byte * FZ_RESTRICT gp, const fz_overprint * FZ_RESTRICT eop)
 {
 	int sa = color[dn1];
@@ -3885,7 +3907,6 @@ fz_paint_image_imp(fz_context *ctx,
 	const byte *color,
 	int alpha,
 	int lerp_allowed,
-	int as_tiled,
 	const fz_overprint *eop)
 {
 	byte *dp, *sp, *hp, *gp;
@@ -3899,9 +3920,6 @@ fz_paint_image_imp(fz_context *ctx,
 
 	if (alpha == 0)
 		return;
-
-	/* grid fit the image */
-	ctm = fz_gridfit_matrix(as_tiled, ctm);
 
 	/* turn on interpolation for upscaled and non-rectilinear transforms */
 	dolerp = 0;
@@ -4089,14 +4107,14 @@ fz_paint_image_imp(fz_context *ctx,
 }
 
 void
-fz_paint_image_with_color(fz_context *ctx, fz_pixmap * FZ_RESTRICT dst, const fz_irect * FZ_RESTRICT scissor, fz_pixmap * FZ_RESTRICT shape, fz_pixmap * FZ_RESTRICT group_alpha, fz_pixmap * FZ_RESTRICT img, fz_matrix ctm, const byte * FZ_RESTRICT color, int lerp_allowed, int as_tiled, const fz_overprint * FZ_RESTRICT eop)
+fz_paint_image_with_color(fz_context *ctx, fz_pixmap * FZ_RESTRICT dst, const fz_irect * FZ_RESTRICT scissor, fz_pixmap * FZ_RESTRICT shape, fz_pixmap * FZ_RESTRICT group_alpha, fz_pixmap * FZ_RESTRICT img, fz_matrix ctm, const byte * FZ_RESTRICT color, int lerp_allowed, const fz_overprint * FZ_RESTRICT eop)
 {
 	assert(img->n == 1);
-	fz_paint_image_imp(ctx, dst, scissor, shape, group_alpha, img, ctm, color, 255, lerp_allowed, as_tiled, eop);
+	fz_paint_image_imp(ctx, dst, scissor, shape, group_alpha, img, ctm, color, 255, lerp_allowed, eop);
 }
 
 void
-fz_paint_image(fz_context *ctx, fz_pixmap * FZ_RESTRICT dst, const fz_irect * FZ_RESTRICT scissor, fz_pixmap * FZ_RESTRICT shape, fz_pixmap * FZ_RESTRICT group_alpha, fz_pixmap * FZ_RESTRICT img, fz_matrix ctm, int alpha, int lerp_allowed, int as_tiled, const fz_overprint * FZ_RESTRICT eop)
+fz_paint_image(fz_context *ctx, fz_pixmap * FZ_RESTRICT dst, const fz_irect * FZ_RESTRICT scissor, fz_pixmap * FZ_RESTRICT shape, fz_pixmap * FZ_RESTRICT group_alpha, fz_pixmap * FZ_RESTRICT img, fz_matrix ctm, int alpha, int lerp_allowed, const fz_overprint * FZ_RESTRICT eop)
 {
-	fz_paint_image_imp(ctx, dst, scissor, shape, group_alpha, img, ctm, NULL, alpha, lerp_allowed, as_tiled, eop);
+	fz_paint_image_imp(ctx, dst, scissor, shape, group_alpha, img, ctm, NULL, alpha, lerp_allowed, eop);
 }

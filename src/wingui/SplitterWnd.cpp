@@ -3,8 +3,8 @@
 
 #include "utils/BaseUtil.h"
 #include "utils/BitManip.h"
-#include "utils/WinUtil.h"
 #include "utils/ScopedWin.h"
+#include "utils/WinUtil.h"
 
 #include "wingui/WinGui.h"
 #include "wingui/Layout.h"
@@ -26,7 +26,7 @@ static void OnSplitterCtrlPaint(HWND hwnd, COLORREF bgCol) {
 }
 
 static void DrawXorBar(HDC hdc, HBRUSH br, int x1, int y1, int width, int height) {
-    SetBrushOrgEx(hdc, x1, y1, 0);
+    SetBrushOrgEx(hdc, x1, y1, nullptr);
     HBRUSH hbrushOld = (HBRUSH)SelectObject(hdc, br);
     PatBlt(hdc, x1, y1, width, height, PATINVERT);
     SelectObject(hdc, hbrushOld);

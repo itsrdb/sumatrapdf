@@ -126,7 +126,7 @@ $(OUT)/source/%.o : source/%.c
 	$(CC_CMD) $(WARNING_CFLAGS) -Wdeclaration-after-statement $(LIB_CFLAGS) $(THIRD_CFLAGS)
 
 $(OUT)/source/%.o : source/%.cpp
-	$(CXX_CMD) $(WARNING_CFLAGS) $(LIB_CFLAGS) $(THIRD_CFLAGS)
+	$(CXX_CMD) $(WARNING_CFLAGS) $(LIB_CFLAGS) $(THIRD_CFLAGS) $(TESSERACT_BUILD_CFLAGS)
 
 $(OUT)/platform/%.o : platform/%.c
 	$(CC_CMD) $(WARNING_CFLAGS)
@@ -151,6 +151,7 @@ MUPDF_SRC += $(sort $(wildcard source/pdf/*.c))
 MUPDF_SRC += $(sort $(wildcard source/xps/*.c))
 MUPDF_SRC += $(sort $(wildcard source/svg/*.c))
 MUPDF_SRC += $(sort $(wildcard source/html/*.c))
+MUPDF_SRC += $(sort $(wildcard source/reflow/*.c))
 MUPDF_SRC += $(sort $(wildcard source/cbz/*.c))
 
 MUPDF_OBJ := $(MUPDF_SRC:%.c=$(OUT)/%.o)
@@ -159,7 +160,6 @@ MUPDF_OBJ := $(MUPDF_OBJ:%.cpp=$(OUT)/%.o)
 THREAD_SRC := source/helpers/mu-threads/mu-threads.c
 THREAD_OBJ := $(THREAD_SRC:%.c=$(OUT)/%.o)
 
-PKCS7_SRC := source/helpers/pkcs7/pkcs7-check.c
 PKCS7_SRC += source/helpers/pkcs7/pkcs7-openssl.c
 PKCS7_OBJ := $(PKCS7_SRC:%.c=$(OUT)/%.o)
 
@@ -196,7 +196,10 @@ generate: $(FONT_GEN)
 # --- Generated ICC profiles ---
 
 source/fitz/icc/%.icc.h: resources/icc/%.icc
-	$(QUIET_GEN) xxd -i $< | sed 's/unsigned/static const unsigned/' > $@
+	$(QUIET_GEN) xxd -i $< | \
+		sed 's/unsigned/static const unsigned/' | \
+		sed '1i// This is an automatically generated file. Do not edit.' \
+		> $@
 
 generate: source/fitz/icc/gray.icc.h
 generate: source/fitz/icc/rgb.icc.h
@@ -280,13 +283,13 @@ MUTOOL_SRC += source/tools/mutrace.c
 MUTOOL_SRC += source/tools/cmapdump.c
 MUTOOL_SRC += $(sort $(wildcard source/tools/pdf*.c))
 MUTOOL_OBJ := $(MUTOOL_SRC:%.c=$(OUT)/%.o)
-MUTOOL_EXE := $(OUT)/mutool
+MUTOOL_EXE := $(OUT)/mutool$(EXE)
 $(MUTOOL_EXE) : $(MUTOOL_OBJ) $(MUPDF_LIB) $(THIRD_LIB) $(PKCS7_LIB) $(THREAD_LIB)
 	$(LINK_CMD) $(THIRD_LIBS) $(THREADING_LIBS) $(LIBCRYPTO_LIBS)
 TOOL_APPS += $(MUTOOL_EXE)
 
 MURASTER_OBJ := $(OUT)/source/tools/muraster.o
-MURASTER_EXE := $(OUT)/muraster
+MURASTER_EXE := $(OUT)/muraster$(EXE)
 $(MURASTER_EXE) : $(MURASTER_OBJ) $(MUPDF_LIB) $(THIRD_LIB) $(PKCS7_LIB) $(THREAD_LIB)
 	$(LINK_CMD) $(THIRD_LIBS) $(THREADING_LIBS) $(LIBCRYPTO_LIBS)
 TOOL_APPS += $(MURASTER_EXE)
@@ -294,14 +297,14 @@ TOOL_APPS += $(MURASTER_EXE)
 ifeq ($(HAVE_GLUT),yes)
   MUVIEW_GLUT_SRC += $(sort $(wildcard platform/gl/*.c))
   MUVIEW_GLUT_OBJ := $(MUVIEW_GLUT_SRC:%.c=$(OUT)/%.o)
-  MUVIEW_GLUT_EXE := $(OUT)/mupdf-gl
+  MUVIEW_GLUT_EXE := $(OUT)/mupdf-gl$(EXE)
   $(MUVIEW_GLUT_EXE) : $(MUVIEW_GLUT_OBJ) $(MUPDF_LIB) $(THIRD_LIB) $(THIRD_GLUT_LIB) $(PKCS7_LIB)
 	$(LINK_CMD) $(THIRD_LIBS) $(LIBCRYPTO_LIBS) $(WIN32_LDFLAGS) $(THIRD_GLUT_LIBS)
   VIEW_APPS += $(MUVIEW_GLUT_EXE)
 endif
 
 ifeq ($(HAVE_X11),yes)
-  MUVIEW_X11_EXE := $(OUT)/mupdf-x11
+  MUVIEW_X11_EXE := $(OUT)/mupdf-x11$(EXE)
   MUVIEW_X11_OBJ += $(OUT)/platform/x11/pdfapp.o
   MUVIEW_X11_OBJ += $(OUT)/platform/x11/x11_main.o
   MUVIEW_X11_OBJ += $(OUT)/platform/x11/x11_image.o
@@ -311,7 +314,7 @@ ifeq ($(HAVE_X11),yes)
 endif
 
 ifeq ($(HAVE_WIN32),yes)
-  MUVIEW_WIN32_EXE := $(OUT)/mupdf-w32
+  MUVIEW_WIN32_EXE := $(OUT)/mupdf-w32$(EXE)
   MUVIEW_WIN32_OBJ += $(OUT)/platform/x11/pdfapp.o
   MUVIEW_WIN32_OBJ += $(OUT)/platform/x11/win_main.o
   MUVIEW_WIN32_OBJ += $(OUT)/platform/x11/win_res.o
@@ -323,7 +326,7 @@ endif
 ifeq ($(HAVE_X11),yes)
 ifeq ($(HAVE_CURL),yes)
 ifeq ($(HAVE_PTHREAD),yes)
-  MUVIEW_X11_CURL_EXE := $(OUT)/mupdf-x11-curl
+  MUVIEW_X11_CURL_EXE := $(OUT)/mupdf-x11-curl$(EXE)
   MUVIEW_X11_CURL_OBJ += $(OUT)/platform/x11/curl/pdfapp.o
   MUVIEW_X11_CURL_OBJ += $(OUT)/platform/x11/curl/x11_main.o
   MUVIEW_X11_CURL_OBJ += $(OUT)/platform/x11/curl/x11_image.o
@@ -440,8 +443,8 @@ wasm:
 	$(MAKE) -C platform/wasm
 
 extract-test:
-	$(MAKE) extract=yes debug
-	$(MAKE) -C thirdparty/extract mutool=../../build/debug-extract/mutool test-mutool
+	$(MAKE) debug
+	$(MAKE) -C thirdparty/extract mutool=../../build/debug/mutool test-mutool
 
 tags:
 	$(TAGS_CMD)

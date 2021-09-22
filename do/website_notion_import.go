@@ -1,149 +1,25 @@
 package main
 
 import (
-	"crypto/sha1"
-	"fmt"
 	"html"
-	"io/ioutil"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
-	"github.com/kjk/fmthtml"
 	"github.com/kjk/notionapi"
-	"github.com/kjk/notionapi/caching_downloader"
 	"github.com/kjk/notionapi/tohtml"
-	"github.com/kjk/u"
 )
+
+type NotionID = notionapi.NotionID
 
 var (
-	cacheDir        = "notion_cache"
-	cacheImgDir     = filepath.Join("docs", "img")
-	startPageID     = "fed36a5624d443fe9f7be0e410ecd715"
-	nDownloadedPage int
+	newNotionID = notionapi.NewNotionID
+
+	cacheDir       = "notion_cache"
+	imagesCacheDIr = filepath.Join("docs", "img")
+	startPageID    = "fed36a5624d443fe9f7be0e410ecd715"
 )
-
-func sha1OfLink(link string) string {
-	link = strings.ToLower(link)
-	h := sha1.New()
-	h.Write([]byte(link))
-	return fmt.Sprintf("%x", h.Sum(nil))
-}
-
-var imgFiles []os.FileInfo
-
-func findImageInDir(imgDir string, sha1 string) string {
-	if len(imgFiles) == 0 {
-		imgFiles, _ = ioutil.ReadDir(imgDir)
-	}
-	for _, fi := range imgFiles {
-		if strings.HasPrefix(fi.Name(), sha1) {
-			return filepath.Join(imgDir, fi.Name())
-		}
-	}
-	return ""
-}
-
-func guessExt(fileName string, contentType string) string {
-	ext := strings.ToLower(filepath.Ext(fileName))
-	// TODO: maybe allow every non-empty extension. This
-	// white-listing might not be a good idea
-	switch ext {
-	case ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tiff", ".svg":
-		return ext
-	}
-
-	contentType = strings.ToLower(contentType)
-	switch contentType {
-	case "image/png":
-		return ".png"
-	case "image/jpeg":
-		return ".jpg"
-	case "image/svg+xml":
-		return ".svg"
-	}
-	panic(fmt.Errorf("didn't find ext for file '%s', content type '%s'", fileName, contentType))
-}
-
-func downloadImage(c *notionapi.Client, uri string) ([]byte, string, error) {
-	img, err := c.DownloadFile(uri)
-	if err != nil {
-		// TODO: getSignedURLs stopped working so we need this workaround
-		// should move this logic down to c.DownloadFile()
-		uri = "https://www.notion.so/image/" + url.PathEscape(uri)
-		img, err = c.DownloadFile(uri)
-	}
-	if err != nil {
-		logf("\n  failed with %s\n", err)
-		return nil, "", err
-	}
-	ext := guessExt(uri, img.Header.Get("Content-Type"))
-	return img.Data, ext, nil
-}
-
-// return path of cached image on disk
-func downloadAndCacheImage(c *notionapi.Client, uri string) (string, error) {
-	sha := sha1OfLink(uri)
-
-	//ext := strings.ToLower(filepath.Ext(uri))
-
-	u.CreateDirMust(cacheImgDir)
-
-	cachedPath := findImageInDir(cacheImgDir, sha)
-	if cachedPath != "" {
-		logf("Image %s already downloaded as %s\n", uri, cachedPath)
-		return cachedPath, nil
-	}
-
-	timeStart := time.Now()
-	logf("Downloading %s ... ", uri)
-
-	imgData, ext, err := downloadImage(c, uri)
-	must(err)
-
-	cachedPath = filepath.Join(cacheImgDir, sha+ext)
-
-	err = ioutil.WriteFile(cachedPath, imgData, 0644)
-	if err != nil {
-		return "", err
-	}
-	logf("finished in %s. Wrote as '%s'\n", time.Since(timeStart), cachedPath)
-
-	return cachedPath, nil
-}
-
-func eventObserver(ev interface{}) {
-	switch v := ev.(type) {
-	case *caching_downloader.EventError:
-		logf(v.Error)
-	case *caching_downloader.EventDidDownload:
-		nDownloadedPage++
-		logf("%03d '%s' : downloaded in %s\n", nDownloadedPage, v.PageID, v.Duration)
-	case *caching_downloader.EventDidReadFromCache:
-		// TODO: only verbose
-		nDownloadedPage++
-		logf("%03d '%s' : read from cache in %s\n", nDownloadedPage, v.PageID, v.Duration)
-	case *caching_downloader.EventGotVersions:
-		logf("downloaded info about %d versions in %s\n", v.Count, v.Duration)
-	}
-}
-
-func newNotionClient() *notionapi.Client {
-	token := os.Getenv("NOTION_TOKEN")
-	panicIf(token == "", "NOTION_TOKEN env variable not set, needed for downloading images\n")
-	// TODO: verify token still valid, somehow
-	client := &notionapi.Client{
-		AuthToken: token,
-	}
-	// if true, shows http requests sent to notion
-	if false {
-		client.Logger = os.Stdout
-	}
-	return client
-}
 
 func fileNameFromTitle(title string) string {
 	return urlify(title) + ".html"
@@ -154,29 +30,28 @@ func fileNameForPage(page *notionapi.Page) string {
 	return fileNameFromTitle(title)
 }
 
-func afterPageDownload(page *notionapi.Page) error {
-	logf("Downloaded page %sn\n", page.ID)
+func afterPageDownload(di *notionapi.DownloadInfo) error {
+	//logf("Downloaded page %sn\n", page.ID)
 	return nil
 }
 
 // HTMLConverter renders article as html
 type HTMLConverter struct {
-	client   *notionapi.Client
+	client   *notionapi.CachingClient
 	page     *notionapi.Page
 	idToPage map[string]*notionapi.Page
 	conv     *tohtml.Converter
 }
 
 // PageByID returns a page given its id
-func (c *HTMLConverter) PageByID(id string) *notionapi.Page {
-	page := c.idToPage[id]
+func (c *HTMLConverter) PageByID(nid *NotionID) *notionapi.Page {
+	page := c.idToPage[nid.NoDashID]
 	if page != nil {
 		return page
 	}
-	id2 := notionapi.ToNoDashID(id)
-	page = c.idToPage[id2]
+	page = c.idToPage[nid.DashID]
 	if page == nil {
-		logf("Didn't find page for id %s' ('%s') in %d pages\n", id, id2, len(c.idToPage))
+		logf("Didn't find page for id %s' ('%s') in %d pages\n", nid.NoDashID, nid.DashID, len(c.idToPage))
 		for id := range c.idToPage {
 			logf("%s\n", id)
 		}
@@ -185,11 +60,11 @@ func (c *HTMLConverter) PageByID(id string) *notionapi.Page {
 }
 
 func (c *HTMLConverter) getURLAndTitleForBlock(block *notionapi.Block) (string, string) {
-	id := block.ID
+	id := newNotionID(block.ID)
 	page := c.PageByID(id)
 	if page == nil {
 		title := block.Title
-		logf("No page for id %s %s\n", id, title)
+		logf("No page for id %s %s\n", id.NoDashID, title)
 		pageURL := "https://notion.so/" + notionapi.ToNoDashID(c.page.ID)
 		logf("Link from page: %s\n", pageURL)
 		url := fileNameFromTitle(title)
@@ -232,11 +107,12 @@ func normalizeID(id string) string {
 // RenderImage downloads and renders an image
 func (c *HTMLConverter) RenderImage(block *notionapi.Block) bool {
 	link := block.Source
-	path, err := downloadAndCacheImage(c.client, link)
+	rsp, err := c.client.DownloadFile(link, block)
 	if err != nil {
 		logf("genImage: downloadAndCacheImage('%s') from page https://notion.so/%s failed with '%s'\n", link, normalizeID(c.page.ID), err)
 		must(err)
 	}
+	path := rsp.CacheFilePath
 	relURL := "img/" + filepath.Base(path)
 	// TODO: add explicit width / height
 	c.conv.Printf(`<img src="%s">`, relURL)
@@ -262,7 +138,8 @@ func (c *HTMLConverter) rewriteURL(uri string) string {
 	if id == "" {
 		return uri
 	}
-	page := c.PageByID(id)
+	nid := newNotionID(id)
+	page := c.PageByID(nid)
 	// this might happen when I link to some-one else's public notion pages
 	// but we don't do that for Sumatra docs
 	if page == nil {
@@ -274,7 +151,13 @@ func (c *HTMLConverter) rewriteURL(uri string) string {
 }
 
 // NewHTMLConverter returns new HTMLGenerator
-func NewHTMLConverter(page *notionapi.Page, pages []*notionapi.Page, idToPage map[string]*notionapi.Page) *HTMLConverter {
+func NewHTMLConverter(page *notionapi.Page, pages []*notionapi.Page) *HTMLConverter {
+	idToPage := map[string]*notionapi.Page{}
+	for _, p := range pages {
+		nid := notionapi.NewNotionID(p.ID)
+		idToPage[nid.NoDashID] = p
+	}
+
 	res := &HTMLConverter{
 		page:     page,
 		idToPage: idToPage,
@@ -342,48 +225,99 @@ func (c *HTMLConverter) GenerateHTML() []byte {
 	title := page.Title
 	s = strings.Replace(tmpl, "{{InnerHTML}}", s, 1)
 	s = strings.Replace(s, "{{Title}}", title, 1)
+	s = strings.Replace(s, `<details open="">`, `<details>`, -1)
 	d := []byte(s)
-	if false {
-		d = fmthtml.Format(d)
-	}
 	return d
 }
 
-func notionToHTML(client *notionapi.Client, page *notionapi.Page, pages []*notionapi.Page, idToPage map[string]*notionapi.Page) {
-	conv := NewHTMLConverter(page, pages, idToPage)
+func notionToHTML(client *notionapi.CachingClient, page *notionapi.Page, pages []*notionapi.Page) {
+	conv := NewHTMLConverter(page, pages)
 	conv.client = client
 	html := conv.GenerateHTML()
 	name := fileNameForPage(page)
 	path := filepath.Join("docs", name)
 	logf("Writing '%s' for title '%s'\n", path, page.Root().Title)
-	u.WriteFileMust(path, html)
+	writeFileMust(path, html)
+}
+
+func checkPrettierExist() {
+	cmd := exec.Command("prettier", "-v")
+	err := cmd.Run()
+	if err != nil {
+		logf("prettier doesn't seem to be installed. Install with:\n")
+		logf("npm i -g prettier\n")
+		os.Exit(1)
+	}
+}
+
+func newNotionClient() *notionapi.CachingClient {
+	//token := os.Geenv("NOTION_TOKEN")
+	//panicIf(token == "", "NOTION_TOKEN env variable not set, needed for downloading images\n")
+	// Note: public page, no need for a token
+	token := ""
+	client := &notionapi.Client{
+		AuthToken: token,
+		DebugLog:  true,
+	}
+	// if true, shows http requests sent to notion
+	if false {
+		client.Logger = os.Stdout
+	}
+	d, err := notionapi.NewCachingClient(cacheDir, client)
+	must(err)
+	d.CacheDirFiles = imagesCacheDIr
+	if flgNoCache {
+		d.Policy = notionapi.PolicyDownloadAlways
+	}
+	return d
 }
 
 func websiteImportNotion() {
 	logf("websiteImportNotion() started\n")
+	checkPrettierExist()
 	must(os.Chdir("website"))
-	client := newNotionClient()
-	cache, err := caching_downloader.NewDirectoryCache(cacheDir)
-	must(err)
-	d := caching_downloader.New(cache, client)
-	d.EventObserver = eventObserver
-	d.RedownloadNewerVersions = true
-	//d.NoReadCache = flgNoCache
+	d := newNotionClient()
 	pages, err := d.DownloadPagesRecursively(startPageID, afterPageDownload)
 	must(err)
+	{
+		// delete .html files as they might be stale
+		// we are in a
+		files, err := filepath.Glob(filepath.Join("docs", "*.html"))
+		if err == nil {
+			for _, f := range files {
+				err = os.Remove(f)
+				if err != nil {
+					logf("Failed to remove file '%s'\n", f)
+				} else {
+					logf("Removed file '%s'\n", f)
+				}
+			}
+		} else {
+			logf("filepath.Glob() failed with '%s'\n", err)
+		}
+	}
 	for _, page := range pages {
-		notionToHTML(client, page, pages, d.IdToPage)
+		notionToHTML(d, page, pages)
 	}
 
 	if false {
-		// using https://github.com/netlify/cli
-		cmd := exec.Command("netlify", "dev", "--dir", "website")
-		u.RunCmdLoggedMust(cmd)
+		// run formatting in background to get to preview sooner
+		go func() {
+			// to install prettier: npm i -g prettier
+			// TODO: automatically install if not installed
+			cmd := exec.Command("prettier", "--html-whitespace-sensitivity", "strict", "--write", `*.html`)
+			cmd.Dir = "docs" // only imported pages from notion
+			runCmdLoggedMust(cmd)
+		}()
+	}
+
+	if true {
+		websiteRunLocally(".")
 	}
 
 	if false {
-		err = os.Chdir("website")
-		must(err)
-		u.OpenBrowser("free-pdf-reader.html")
+		//err = os.Chdir("website")
+		//must(err)
+		openBrowser("free-pdf-reader.html")
 	}
 }

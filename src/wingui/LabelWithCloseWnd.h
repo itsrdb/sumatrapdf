@@ -6,15 +6,15 @@ struct LabelWithCloseWnd {
     ~LabelWithCloseWnd() = default;
 
     bool Create(HWND parent, int cmd);
-    void SetLabel(const WCHAR*);
+    void SetLabel(const WCHAR*) const;
     void SetFont(HFONT);
     void SetBgCol(COLORREF);
     void SetTextCol(COLORREF);
     void SetPaddingXY(int x, int y);
-    Size GetIdealSize();
+    Size GetIdealSize() const;
 
-    HWND hwnd = 0;
-    HFONT font = 0;
+    HWND hwnd = nullptr;
+    HFONT font = nullptr;
     int cmd = 0;
 
     Rect closeBtnPos = {};
@@ -27,7 +27,7 @@ struct LabelWithCloseWnd {
 };
 
 struct LabelWithCloseCtrl : public Window {
-    LabelWithCloseCtrl(HWND);
+    explicit LabelWithCloseCtrl(HWND);
     ~LabelWithCloseCtrl() override;
 
     bool Create(const WCHAR*);

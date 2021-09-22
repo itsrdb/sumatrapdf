@@ -2,7 +2,6 @@
    License: Simplified BSD (see COPYING.BSD) */
 
 #include "BaseUtil.h"
-#include "StrSlice.h"
 #include "TxtParser.h"
 #include <new> // for placement new
 
@@ -96,14 +95,14 @@ char* TxtNode::KeyDup() const {
     if (!keyStart) {
         return nullptr;
     }
-    return str::DupN(keyStart, KeyLen());
+    return str::Dup(keyStart, KeyLen());
 }
 
 char* TxtNode::ValDup() const {
     if (!valStart) {
         return nullptr;
     }
-    return str::DupN(valStart, ValLen());
+    return str::Dup(valStart, ValLen());
 }
 
 TxtNode* TxtParser::AllocTxtNode(TxtNode::Type nodeType) {
@@ -125,7 +124,7 @@ TxtNode* TxtParser::AllocTxtNodeFromToken(const Token& tok, TxtNode::Type nodeTy
 }
 
 void TxtParser::SetToParse(const std::string_view& str) {
-    data = strconv::UnknownToUtf8(str);
+    data = strconv::UnknownToUtf8V(str);
     char* d = (char*)data.Get();
     size_t dLen = data.size();
     size_t n = str::NormalizeNewlinesInPlace(d, d + dLen);
@@ -339,7 +338,6 @@ Again:
     slice.curr = origEnd;
     slice.ZeroCurr();
     slice.Skip(1);
-    return;
 }
 
 static void ParseNodes(TxtParser& parser) {
@@ -384,10 +382,7 @@ Failed:
 
 bool ParseTxt(TxtParser& parser) {
     ParseNodes(parser);
-    if (parser.failed) {
-        return false;
-    }
-    return true;
+    return !parser.failed;
 }
 
 static void AppendNest(str::Str& s, int nest) {

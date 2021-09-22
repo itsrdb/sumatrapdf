@@ -1,3 +1,25 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #ifndef MUPDF_PDF_CRYPT_H
 #define MUPDF_PDF_CRYPT_H
 
@@ -72,20 +94,6 @@ int pdf_signature_incremental_change_since_signing(fz_context *ctx, pdf_document
 	block that must be freed by the caller.
 */
 size_t pdf_signature_contents(fz_context *ctx, pdf_document *doc, pdf_obj *signature, char **contents);
-
-/*
-	Sign a signature field, while assigning it a default appearance, consisting of a central logo,
-	the signer's name on the left and the full designated-name information on the left
-*/
-void pdf_sign_signature(fz_context *ctx, pdf_widget *widget, pdf_pkcs7_signer *signer, fz_image *image);
-
-/*
-	Sign a signature field, while assigning it an arbitrary apparance determined by a display list.
-	The function pdf_signature_appearance can generate a variety of common signature appearances.
-*/
-void pdf_sign_signature_with_appearance(fz_context *ctx, pdf_widget *widget, pdf_pkcs7_signer *signer, int64_t t, fz_display_list *disp_list);
-
-void pdf_clear_signature(fz_context *ctx, pdf_widget *widget);
 
 void pdf_encrypt_data(fz_context *ctx, pdf_crypt *crypt, int num, int gen, void (*fmt_str_out)(fz_context *, void *, const unsigned char *, size_t), void *arg, const unsigned char *s, size_t n);
 

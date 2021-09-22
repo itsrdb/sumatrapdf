@@ -71,7 +71,9 @@ static_assert(sizeof(TgaFooter) == 26, "wrong size of TgaFooter structure");
 static_assert(sizeof(TgaExtArea) == 495, "wrong size of TgaExtArea structure");
 
 static u16 readLE16(u8* data) {
-    return data[0] | (data[1] << 8);
+    u16 v0 = *data++;
+    u16 v1 = (u16)*data << 8;
+    return v0 | v1;
 }
 
 static u16 convLE(u16 x) {
@@ -80,7 +82,11 @@ static u16 convLE(u16 x) {
 }
 
 static u32 readLE32(u8* data) {
-    return data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24);
+    u32 v0 = *data++;
+    u32 v1 = (u32)*data++ << 8;
+    u32 v2 = (u32)*data++ << 16;
+    u32 v3 = (u32)*data << 24;
+    return v0 | v1 | v2 | v3;
 }
 
 static u32 convLE(u32 x) {
@@ -175,7 +181,7 @@ static ImageAlpha GetAlphaType(const u8* data, size_t len) {
 }
 
 // checks whether this could be data for a TGA image
-bool HasSignature(std::span<u8> d) {
+bool HasSignature(ByteSlice d) {
     size_t len = d.size();
     const u8* data = (const u8*)d.data();
     if (HasVersion2Footer(data, len)) {
@@ -322,7 +328,7 @@ static void ReadPixel(ReadState& s, u8* dst) {
     }
 }
 
-Gdiplus::Bitmap* ImageFromData(std::span<u8> d) {
+Gdiplus::Bitmap* ImageFromData(ByteSlice d) {
     size_t len = d.size();
     const u8* data = (const u8*)d.data();
 
@@ -330,7 +336,7 @@ Gdiplus::Bitmap* ImageFromData(std::span<u8> d) {
         return nullptr;
     }
 
-    ReadState s = {0};
+    ReadState s = {nullptr};
     const TgaHeader* headerLE = (const TgaHeader*)d.data();
     s.data = data + sizeof(TgaHeader) + headerLE->idLength;
     s.end = data + len;
@@ -382,7 +388,7 @@ inline bool memeq3(const char* pix1, const char* pix2) {
     return *(WORD*)pix1 == *(WORD*)pix2 && pix1[2] == pix2[2];
 }
 
-std::span<u8> SerializeBitmap(HBITMAP hbmp) {
+ByteSlice SerializeBitmap(HBITMAP hbmp) {
     BITMAP bmpInfo;
     GetObject(hbmp, sizeof(BITMAP), &bmpInfo);
     if ((ULONG)bmpInfo.bmWidth > USHRT_MAX || (ULONG)bmpInfo.bmHeight > USHRT_MAX) {

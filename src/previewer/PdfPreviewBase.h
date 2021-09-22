@@ -9,17 +9,11 @@ class PreviewBase : public IThumbnailProvider,
                     public IInitializeWithStream,
                     public IObjectWithSite,
                     public IPreviewHandler,
-                    public IOleWindow,
-                    // for Windows XP
-                    public IPersistFile,
-                    public IExtractImage2 {
+                    public IOleWindow {
   public:
     PreviewBase(long* plRefCount, const WCHAR* clsid) {
         m_plModuleRef = plRefCount;
-        m_clsid = clsid;
         InterlockedIncrement(m_plModuleRef);
-        m_dateStamp.dwLowDateTime = 0;
-        m_dateStamp.dwHighDateTime = 0;
     }
 
     virtual ~PreviewBase() {
@@ -35,10 +29,6 @@ class PreviewBase : public IThumbnailProvider,
                                     QITABENT(PreviewBase, IObjectWithSite),
                                     QITABENT(PreviewBase, IPreviewHandler),
                                     QITABENT(PreviewBase, IOleWindow),
-                                    QITABENT(PreviewBase, IExtractImage2),
-                                    QITABENT(PreviewBase, IExtractImage),
-                                    QITABENT(PreviewBase, IPersistFile),
-                                    QITABENT(PreviewBase, IPersist),
                                     {0}};
         return QISearch(this, qit, riid, ppv);
     }
@@ -57,7 +47,7 @@ class PreviewBase : public IThumbnailProvider,
     IFACEMETHODIMP GetThumbnail(uint cx, HBITMAP* phbmp, WTS_ALPHATYPE* pdwAlpha);
 
     // IInitializeWithStream
-    IFACEMETHODIMP Initialize(IStream* pStm, [[maybe_unused]] DWORD grfMode) {
+    IFACEMETHODIMP Initialize(IStream* pStm, __unused DWORD grfMode) {
         m_pStream = pStm;
         if (!m_pStream) {
             return E_INVALIDARG;
@@ -157,89 +147,8 @@ class PreviewBase : public IThumbnailProvider,
         *phwnd = m_hwndParent;
         return S_OK;
     }
-    IFACEMETHODIMP ContextSensitiveHelp([[maybe_unused]] BOOL fEnterMode) {
+    IFACEMETHODIMP ContextSensitiveHelp(__unused BOOL fEnterMode) {
         return E_NOTIMPL;
-    }
-
-    // IPersist (for Windows XP)
-    IFACEMETHODIMP GetClassID(CLSID* pClassID) {
-        return CLSIDFromString((WCHAR*)m_clsid, pClassID);
-    }
-
-    // IPersistFile (for Windows XP)
-    IFACEMETHODIMP Load(LPCOLESTR pszFileName, [[maybe_unused]] DWORD dwMode) {
-        strconv::StackWstrToUtf8 fileName = pszFileName;
-        dbglogf("PdfPreview: PreviewBase::Load('%s')\n", fileName.Get());
-
-        HANDLE hFile = CreateFile(pszFileName, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
-                                  FILE_ATTRIBUTE_NORMAL, nullptr);
-        if (hFile == INVALID_HANDLE_VALUE) {
-            dbglog("PdfPreview: PreviewBase::Load() failed, no file\n");
-            return E_INVALIDARG;
-        }
-        DWORD size = GetFileSize(hFile, nullptr), read;
-        HGLOBAL data = GlobalAlloc(GMEM_MOVEABLE, size);
-        if (!data) {
-            CloseHandle(hFile);
-            dbglog("PdfPreview: PreviewBase::Load() failed, not enough memory\n");
-            return E_OUTOFMEMORY;
-        }
-        BOOL ok = ReadFile(hFile, GlobalLock(data), size, &read, nullptr);
-        GlobalUnlock(data);
-        GetFileTime(hFile, nullptr, nullptr, &m_dateStamp);
-        CloseHandle(hFile);
-
-        IStream* pStm;
-        if (!ok || FAILED(CreateStreamOnHGlobal(data, TRUE, &pStm))) {
-            GlobalFree(data);
-            dbglog("PdfPreview: PreviewBase::Load() failed, couldn't create stream\n");
-            return E_FAIL;
-        }
-        HRESULT res = Initialize(pStm, 0);
-        pStm->Release();
-        return res;
-    }
-    IFACEMETHODIMP IsDirty() {
-        return E_NOTIMPL;
-    }
-    IFACEMETHODIMP Save([[maybe_unused]] LPCOLESTR pszFileName, [[maybe_unused]] BOOL bRemember) {
-        return E_NOTIMPL;
-    }
-    IFACEMETHODIMP SaveCompleted([[maybe_unused]] LPCOLESTR pszFileName) {
-        return E_NOTIMPL;
-    }
-    IFACEMETHODIMP GetCurFile([[maybe_unused]] LPOLESTR* ppszFileName) {
-        return E_NOTIMPL;
-    }
-
-    // IExtractImage2 (for Windows XP)
-    IFACEMETHODIMP Extract(HBITMAP* phBmpThumbnail) {
-        if (!phBmpThumbnail || !m_extractCx) {
-            return E_INVALIDARG;
-        }
-        dbglog("PdfPreview: PreviewBase::Extract()\n");
-        WTS_ALPHATYPE dummy;
-        return GetThumbnail(m_extractCx, phBmpThumbnail, &dummy);
-    }
-    IFACEMETHODIMP GetLocation([[maybe_unused]] LPWSTR pszPathBuffer, [[maybe_unused]] DWORD cch,
-                               [[maybe_unused]] DWORD* pdwPriority, const SIZE* prgSize,
-                               [[maybe_unused]] DWORD dwRecClrDepth, DWORD* pdwFlags) {
-        if (!prgSize || !pdwFlags) {
-            return E_INVALIDARG;
-        }
-        dbglog("PdfPreview: PreviewBase::GetLocation()\n");
-        // cheap implementation: ignore anything that isn't useful for IThumbnailProvider::GetThumbnail
-        m_extractCx = std::min(prgSize->cx, prgSize->cy);
-        *pdwFlags |= IEIFLAG_CACHE;
-        return S_OK;
-    }
-    IFACEMETHODIMP GetDateStamp(FILETIME* pDateStamp) {
-        if (!m_dateStamp.dwLowDateTime && !m_dateStamp.dwHighDateTime) {
-            return E_FAIL;
-        }
-        dbglog("PdfPreview: PreviewBase::GetDateStamp()\n");
-        *pDateStamp = m_dateStamp;
-        return S_OK;
     }
 
     EngineBase* GetEngine() {
@@ -263,35 +172,33 @@ class PreviewBase : public IThumbnailProvider,
     HWND m_hwnd{nullptr};
     HWND m_hwndParent{nullptr};
     Rect m_rcParent;
-    // for IExtractImage2
-    const WCHAR* m_clsid{nullptr};
-    uint m_extractCx{0};
-    FILETIME m_dateStamp{0};
 
     virtual EngineBase* LoadEngine(IStream* stream) = 0;
 };
 
-class CPdfPreview : public PreviewBase {
+class PdfPreview : public PreviewBase {
   public:
-    CPdfPreview(long* plRefCount) : PreviewBase(plRefCount, SZ_PDF_PREVIEW_CLSID) {
+    PdfPreview(long* plRefCount) : PreviewBase(plRefCount, SZ_PDF_PREVIEW_CLSID) {
     }
 
   protected:
     EngineBase* LoadEngine(IStream* stream) override;
 };
 
-class CXpsPreview : public PreviewBase {
+#if 0
+class XpsPreview : public PreviewBase {
   public:
-    CXpsPreview(long* plRefCount) : PreviewBase(plRefCount, SZ_XPS_PREVIEW_CLSID) {
+    XpsPreview(long* plRefCount) : PreviewBase(plRefCount, SZ_XPS_PREVIEW_CLSID) {
     }
 
   protected:
     EngineBase* LoadEngine(IStream* stream) override;
 };
+#endif
 
-class CDjVuPreview : public PreviewBase {
+class DjVuPreview : public PreviewBase {
   public:
-    CDjVuPreview(long* plRefCount) : PreviewBase(plRefCount, SZ_DJVU_PREVIEW_CLSID) {
+    DjVuPreview(long* plRefCount) : PreviewBase(plRefCount, SZ_DJVU_PREVIEW_CLSID) {
         m_gdiScope = new ScopedGdiPlus();
     }
 
@@ -299,36 +206,36 @@ class CDjVuPreview : public PreviewBase {
     EngineBase* LoadEngine(IStream* stream) override;
 };
 
-class CEpubPreview : public PreviewBase {
+class EpubPreview : public PreviewBase {
   public:
-    CEpubPreview(long* plRefCount);
-    ~CEpubPreview();
+    EpubPreview(long* plRefCount);
+    ~EpubPreview();
 
   protected:
     EngineBase* LoadEngine(IStream* stream) override;
 };
 
-class CFb2Preview : public PreviewBase {
+class Fb2Preview : public PreviewBase {
   public:
-    CFb2Preview(long* plRefCount);
-    ~CFb2Preview();
+    Fb2Preview(long* plRefCount);
+    ~Fb2Preview();
 
   protected:
     EngineBase* LoadEngine(IStream* stream) override;
 };
 
-class CMobiPreview : public PreviewBase {
+class MobiPreview : public PreviewBase {
   public:
-    CMobiPreview(long* plRefCount);
-    ~CMobiPreview();
+    MobiPreview(long* plRefCount);
+    ~MobiPreview();
 
   protected:
     EngineBase* LoadEngine(IStream* stream) override;
 };
 
-class CCbxPreview : public PreviewBase {
+class CbxPreview : public PreviewBase {
   public:
-    CCbxPreview(long* plRefCount) : PreviewBase(plRefCount, SZ_CBX_PREVIEW_CLSID) {
+    CbxPreview(long* plRefCount) : PreviewBase(plRefCount, SZ_CBX_PREVIEW_CLSID) {
         m_gdiScope = new ScopedGdiPlus();
     }
 
@@ -336,9 +243,9 @@ class CCbxPreview : public PreviewBase {
     EngineBase* LoadEngine(IStream* stream) override;
 };
 
-class CTgaPreview : public PreviewBase {
+class TgaPreview : public PreviewBase {
   public:
-    CTgaPreview(long* plRefCount) : PreviewBase(plRefCount, SZ_TGA_PREVIEW_CLSID) {
+    TgaPreview(long* plRefCount) : PreviewBase(plRefCount, SZ_TGA_PREVIEW_CLSID) {
         m_gdiScope = new ScopedGdiPlus();
     }
 

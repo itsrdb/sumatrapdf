@@ -346,7 +346,7 @@ static void parseTTF(fz_context* ctx, fz_stream* file, int offset, int index, co
         if (strcmp(szTTName, "Arial") != 0)
             szPSName[0] = '\0';
         // TODO: is there a better way to distinguish Arial Caps from Arial proper?
-        // cf. http://code.google.com/p/sumatrapdf/issues/detail?id=1290
+        // cf. https://code.google.com/p/sumatrapdf/issues/detail?id=1290
         else if (strstr(path, "caps") || strstr(path, "Caps"))
             fz_throw(ctx, FZ_ERROR_GENERIC, "ignore %s, as it can't be distinguished from Arial,Regular", path);
     }
@@ -355,7 +355,7 @@ static void parseTTF(fz_context* ctx, fz_stream* file, int offset, int index, co
         append_mapping(ctx, &fontlistMS, szPSName, path, index);
     if (szTTName[0]) {
         // derive a PostScript-like name and add it, if it's different from the font's
-        // included PostScript name; cf. http://code.google.com/p/sumatrapdf/issues/detail?id=376
+        // included PostScript name; cf. https://code.google.com/p/sumatrapdf/issues/detail?id=376
         makeFakePSName(szTTName, szStyle);
         // compare the two names before adding this one
         if (lookup_compare(szTTName, szPSName))
@@ -422,7 +422,7 @@ static void extend_system_font_list(fz_context* ctx, const WCHAR* path) {
     WIN32_FIND_DATA FileData;
     HANDLE hList;
 
-    GetFullPathName(path, nelem(szPath), szPath, &lpFileName);
+    GetFullPathNameW(path, nelem(szPath), szPath, &lpFileName);
 
     hList = FindFirstFile(szPath, &FileData);
     if (hList == INVALID_HANDLE_VALUE) {
@@ -456,7 +456,7 @@ static void extend_system_font_list(fz_context* ctx, const WCHAR* path) {
     FindClose(hList);
 }
 
-// cf. http://blogs.msdn.com/b/oldnewthing/archive/2004/10/25/247180.aspx
+// cf. https://blogs.msdn.com/b/oldnewthing/archive/2004/10/25/247180.aspx
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 #define CURRENT_HMODULE ((HMODULE)&__ImageBase)
 
@@ -481,7 +481,7 @@ static void create_system_font_list(fz_context* ctx) {
         szFile[0] = '\0';
         GetModuleFileName(CURRENT_HMODULE, szFontDir, MAX_PATH);
         szFontDir[nelem(szFontDir) - 1] = '\0';
-        GetFullPathName(szFontDir, MAX_PATH, szFile, &lpFileName);
+        GetFullPathNameW(szFontDir, MAX_PATH, szFile, &lpFileName);
         lstrcpyn(lpFileName, L"DroidSansFallback.ttf", szFile + MAX_PATH - lpFileName);
         extend_system_font_list(ctx, szFile);
     }
@@ -653,6 +653,9 @@ static fz_font* pdf_load_windows_font_by_name(fz_context* ctx, const char* orig_
             return NULL;
         }
         cached_font* f = (cached_font*)malloc(sizeof(cached_font));
+        if (!f) {
+            return NULL;
+        }
         f->fi = found;
         f->ctx = ctx;
         f->buffer = buffer;
@@ -674,36 +677,49 @@ static fz_font* pdf_load_windows_font(fz_context* ctx, const char* fontname, int
                                       int needs_exact_metrics) {
     fz_font* font;
     const char* clean_name = pdf_clean_font_name(fontname);
+    int is_base_14 = clean_name != fontname;
+
+    /* metrics for Times-Roman don't match those of Windows' Times-Roman */
+    /* https://code.google.com/p/sumatrapdf/issues/detail?id=2173 */
+    /* https://github.com/sumatrapdfreader/sumatrapdf/issues/2108 */
+    /* https://github.com/sumatrapdfreader/sumatrapdf/issues/2028 */
+    /* TODO: should this always return NULL if is_base_14 is true? */
+    if (is_base_14) {
+        if (!strncmp(clean_name, "Times", 5)) {
+            return NULL;
+        }
+        if (!strncmp(clean_name, "Helvetica", 9)) {
+            return NULL;
+        }
+        if (!strncmp(clean_name, "Courier", 7)) {
+            return NULL;
+        }
+    }
 
     if (needs_exact_metrics) {
-        /* TODO: the metrics for Times-Roman and Courier don't match
-           those of Windows' Times New Roman and Courier New; for
-           some reason, Poppler doesn't seem to have this problem */
         int len;
         if (fz_lookup_base14_font(ctx, fontname, &len))
             return NULL;
 
-        /* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=2173 */
         if (clean_name != fontname && !strncmp(clean_name, "Times-", 6))
             return NULL;
     }
 
     font = pdf_load_windows_font_by_name(ctx, fontname);
     /* use the font's own metrics for base 14 fonts */
-    if (clean_name != fontname)
+    if (is_base_14)
         font->flags.ft_substitute = 0;
     return font;
 }
 
 static fz_font* pdf_load_windows_cjk_font(fz_context* ctx, const char* fontname, int ros, int serif) {
-    fz_font* font;
+    fz_font* font = NULL;
 
     /* try to find a matching system font before falling back to an approximate one */
     fz_try(ctx) {
         font = pdf_load_windows_font_by_name(ctx, fontname);
     }
     fz_catch(ctx) {
-        font = NULL;
     }
     if (font)
         return font;
@@ -784,4 +800,11 @@ void pdf_install_load_system_font_funcs(fz_context* ctx) {
     init_system_font_list();
     fz_install_load_system_font_funcs(ctx, pdf_load_windows_font, pdf_load_windows_cjk_font, NULL);
 #endif
+}
+
+void version_check_3_4() {
+    // this is just to mark libmupdf.dll with a symbol so that we can check
+    // that version of SumatraPDF.exe and libmupdf.dll match
+    // this needs to be update when we update version in Version.h
+    // also must update libmupdf.def
 }

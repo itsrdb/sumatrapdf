@@ -1,3 +1,25 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #include "mupdf/fitz.h"
 #include "mupdf/pdf.h"
 
@@ -501,6 +523,8 @@ pdf_add_image(fz_context *ctx, pdf_document *doc, fz_image *image)
 	pdf_obj *dp;
 	fz_buffer *buffer = NULL;
 	fz_compressed_buffer *cbuffer;
+	fz_pixmap *smask_pixmap = NULL;
+	fz_image *smask_image = NULL;
 	int i, n;
 
 	/* If we can maintain compression, do so */
@@ -509,6 +533,8 @@ pdf_add_image(fz_context *ctx, pdf_document *doc, fz_image *image)
 	fz_var(pixmap);
 	fz_var(buffer);
 	fz_var(imobj);
+	fz_var(smask_pixmap);
+	fz_var(smask_image);
 
 	imobj = pdf_add_new_dict(ctx, doc, 3);
 	fz_try(ctx)
@@ -665,23 +691,57 @@ unknown_compression:
 				}
 				else
 				{
-					/* Need to remove the alpha and spot planes. */
-					/* TODO: extract alpha plane to a soft mask. */
+					size_t line_skip;
+					int skip;
+
+					/* Need to extract the alpha into a SMask and remove spot planes. */
 					/* TODO: convert spots to colors. */
 
-					size_t line_skip = pixmap->stride - pixmap->w * (size_t)pixmap->n;
-					int skip = pixmap->n - n;
-					while (h--)
+					if (pixmap->alpha && !image->mask)
 					{
-						int w = pixmap->w;
-						while (w--)
+						smask_pixmap = fz_new_pixmap_from_alpha_channel(ctx, pixmap);
+						smask_image = fz_new_image_from_pixmap(ctx, smask_pixmap, NULL);
+						pdf_dict_put_drop(ctx, imobj, PDF_NAME(SMask), pdf_add_image(ctx, doc, smask_image));
+						fz_drop_image(ctx, smask_image);
+						smask_image = NULL;
+						fz_drop_pixmap(ctx, smask_pixmap);
+						smask_pixmap = NULL;
+					}
+
+					line_skip = pixmap->stride - pixmap->w * (size_t)pixmap->n;
+					skip = pixmap->n - n;
+					if (pixmap->alpha)
+					{
+						int n1 = pixmap->n-1;
+						while (h--)
 						{
-							int k;
-							for (k = 0; k < n; ++k)
-								*d++ = *s++;
-							s += skip;
+							int w = pixmap->w;
+							while (w--)
+							{
+								int a = s[n1];
+								int inva = a ? 255 * 256 / a : 0;
+								int k;
+								for (k = 0; k < n; k++)
+									*d++ = (*s++ * inva) >> 8;
+								s += skip;
+							}
+							s += line_skip;
 						}
-						s += line_skip;
+					}
+					else
+					{
+						while (h--)
+						{
+							int w = pixmap->w;
+							while (w--)
+							{
+								int k;
+								for (k = 0; k < n; ++k)
+									*d++ = *s++;
+								s += skip;
+							}
+							s += line_skip;
+						}
 					}
 				}
 			}
@@ -764,6 +824,8 @@ unknown_compression:
 	}
 	fz_always(ctx)
 	{
+		fz_drop_image(ctx, smask_image);
+		fz_drop_pixmap(ctx, smask_pixmap);
 		fz_drop_pixmap(ctx, pixmap);
 		fz_drop_buffer(ctx, buffer);
 	}

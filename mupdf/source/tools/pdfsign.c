@@ -1,3 +1,25 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 /*
  * PDF signature tool: verify and sign digital signatures in PDF files.
  */
@@ -39,7 +61,7 @@ static void verify_signature(fz_context *ctx, pdf_document *doc, pdf_obj *signat
 	pdf_signature_error err;
 	pdf_pkcs7_verifier *verifier;
 	int edits;
-	pdf_pkcs7_designated_name *dn = NULL;
+	pdf_pkcs7_distinguished_name *dn = NULL;
 
 	printf("Verifying signature %d:\n", pdf_to_num(ctx, signature));
 
@@ -56,8 +78,8 @@ static void verify_signature(fz_context *ctx, pdf_document *doc, pdf_obj *signat
 		dn = pdf_signature_get_signatory(ctx, verifier, doc, signature);
 		if (dn)
 		{
-			name = pdf_signature_format_designated_name(ctx, dn);
-			printf("\tDesignated name: %s\n", name);
+			name = pdf_signature_format_distinguished_name(ctx, dn);
+			printf("\tDistinguished name: %s\n", name);
 			fz_free(ctx, name);
 		}
 		else
@@ -82,7 +104,7 @@ static void verify_signature(fz_context *ctx, pdf_document *doc, pdf_obj *signat
 	}
 	fz_always(ctx)
 	{
-		pdf_signature_drop_designated_name(ctx, dn);
+		pdf_signature_drop_distinguished_name(ctx, dn);
 		pdf_drop_verifier(ctx, verifier);
 	}
 	fz_catch(ctx)
@@ -92,7 +114,7 @@ static void verify_signature(fz_context *ctx, pdf_document *doc, pdf_obj *signat
 static void clear_signature(fz_context *ctx, pdf_document *doc, pdf_obj *signature)
 {
 	pdf_page *page = NULL;
-	pdf_widget *widget;
+	pdf_annot *widget;
 	pdf_obj *parent;
 	int pageno;
 
@@ -106,7 +128,7 @@ static void clear_signature(fz_context *ctx, pdf_document *doc, pdf_obj *signatu
 		pageno = pdf_lookup_page_number(ctx, doc, parent);
 		page = pdf_load_page(ctx, doc, pageno);
 		for (widget = pdf_first_widget(ctx, page); widget; widget = pdf_next_widget(ctx, widget))
-			if (pdf_widget_type(ctx, widget) == PDF_WIDGET_TYPE_SIGNATURE && !pdf_objcmp_resolve(ctx, widget->obj, signature))
+			if (pdf_widget_type(ctx, widget) == PDF_WIDGET_TYPE_SIGNATURE && !pdf_objcmp_resolve(ctx, pdf_annot_obj(ctx, widget), signature))
 				pdf_clear_signature(ctx, widget);
 	}
 	fz_always(ctx)
@@ -119,7 +141,7 @@ static void sign_signature(fz_context *ctx, pdf_document *doc, pdf_obj *signatur
 {
 	pdf_pkcs7_signer *signer = NULL;
 	pdf_page *page = NULL;
-	pdf_widget *widget;
+	pdf_annot *widget;
 	pdf_obj *parent;
 	int pageno;
 
@@ -136,8 +158,12 @@ static void sign_signature(fz_context *ctx, pdf_document *doc, pdf_obj *signatur
 		pageno = pdf_lookup_page_number(ctx, doc, parent);
 		page = pdf_load_page(ctx, doc, pageno);
 		for (widget = pdf_first_widget(ctx, page); widget; widget = pdf_next_widget(ctx, widget))
-			if (pdf_widget_type(ctx, widget) == PDF_WIDGET_TYPE_SIGNATURE && !pdf_objcmp_resolve(ctx, widget->obj, signature))
-				pdf_sign_signature(ctx, widget, signer, NULL);
+			if (pdf_widget_type(ctx, widget) == PDF_WIDGET_TYPE_SIGNATURE && !pdf_objcmp_resolve(ctx, pdf_annot_obj(ctx, widget), signature))
+				pdf_sign_signature(ctx, widget, signer,
+					PDF_SIGNATURE_DEFAULT_APPEARANCE,
+					NULL,
+					NULL,
+					NULL);
 	}
 	fz_always(ctx)
 	{
@@ -151,7 +177,7 @@ static void sign_signature(fz_context *ctx, pdf_document *doc, pdf_obj *signatur
 
 static void list_signature(fz_context *ctx, pdf_document *doc, pdf_obj *signature)
 {
-	pdf_pkcs7_designated_name *dn;
+	pdf_pkcs7_distinguished_name *dn;
 	pdf_pkcs7_verifier *verifier;
 
 	if (!pdf_signature_is_signed(ctx, doc, signature))
@@ -165,10 +191,10 @@ static void list_signature(fz_context *ctx, pdf_document *doc, pdf_obj *signatur
 	dn = pdf_signature_get_signatory(ctx, verifier, doc, signature);
 	if (dn)
 	{
-		char *s = pdf_signature_format_designated_name(ctx, dn);
-		printf("%5d: Designated name: %s\n", pdf_to_num(ctx, signature), s);
+		char *s = pdf_signature_format_distinguished_name(ctx, dn);
+		printf("%5d: Distinguished name: %s\n", pdf_to_num(ctx, signature), s);
 		fz_free(ctx, s);
-		pdf_signature_drop_designated_name(ctx, dn);
+		pdf_signature_drop_distinguished_name(ctx, dn);
 	}
 	else
 	{

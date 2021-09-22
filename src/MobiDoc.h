@@ -21,7 +21,7 @@ class MobiDoc {
     size_t imageFirstRec = 0; // 0 if no images
     size_t coverImageRec = 0; // 0 if no cover image
 
-    ImageData* images = nullptr;
+    ByteSlice* images = nullptr;
 
     HuffDicDecompressor* huffDic = nullptr;
 
@@ -47,17 +47,14 @@ class MobiDoc {
 
     ~MobiDoc();
 
-    std::span<u8> GetHtmlData() const;
-    size_t GetHtmlDataSize() const {
-        return doc->size();
-    }
-    ImageData* GetCoverImage();
-    ImageData* GetImage(size_t imgRecIndex) const;
-    const WCHAR* GetFileName() const {
+    [[nodiscard]] ByteSlice GetHtmlData() const;
+    ByteSlice* GetCoverImage();
+    [[nodiscard]] ByteSlice* GetImage(size_t imgRecIndex) const;
+    [[nodiscard]] const WCHAR* GetFileName() const {
         return fileName;
     }
     WCHAR* GetProperty(DocumentProperty prop);
-    PdbDocType GetDocType() const {
+    [[nodiscard]] PdbDocType GetDocType() const {
         return docType;
     }
 

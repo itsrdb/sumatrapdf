@@ -27,6 +27,16 @@ TODO:
 /* Note: I would prefer this code be in utils but it depends on mui, so it must
 be in mui to avoid circular dependency */
 
+using Gdiplus::Bitmap;
+using Gdiplus::Color;
+using Gdiplus::Graphics;
+using Gdiplus::Ok;
+using Gdiplus::Region;
+using Gdiplus::SolidBrush;
+using Gdiplus::Status;
+using Gdiplus::StringFormat;
+using Gdiplus::StringFormatFlagsDirectionRightToLeft;
+
 namespace mui {
 
 TextRenderGdi* TextRenderGdi::Create(Graphics* gfx) {
@@ -118,8 +128,8 @@ RectF TextRenderGdi::Measure(const WCHAR* s, size_t sLen) {
 }
 
 RectF TextRenderGdi::Measure(const char* s, size_t sLen) {
-    size_t strLen = strconv::Utf8ToWcharBuf(s, sLen, txtConvBuf, dimof(txtConvBuf));
-    return Measure(txtConvBuf, strLen);
+    auto buf = ToWstrTemp(s, sLen);
+    return Measure(buf, buf.size());
 }
 
 void TextRenderGdi::SetTextColor(Gdiplus::Color col) {
@@ -183,8 +193,8 @@ void TextRenderGdi::Draw(const char* s, size_t sLen, const RectF bb, bool isRtl)
 #if 0
     DrawTransparent(s, sLen, bb, isRtl);
 #else
-    size_t strLen = strconv::Utf8ToWcharBuf(s, sLen, txtConvBuf, dimof(txtConvBuf));
-    return Draw(txtConvBuf, strLen, bb, isRtl);
+    auto buf = ToWstrTemp(s, sLen);
+    return Draw(buf, buf.size(), bb, isRtl);
 #endif
 }
 
@@ -202,7 +212,7 @@ void TextRenderGdi::CreateClearBmpOfSize(int dx, int dy) {
     }
 
     if (dx <= memBmpDx && dy <= memBmpDy) {
-        ZeroMemory(memBmpData, memBmpDx * memBmpDy * 4);
+        ZeroMemory(memBmpData, (size_t)memBmpDx * (size_t)memBmpDy * 4);
         return;
     }
     if (!memHdc) {
@@ -225,7 +235,7 @@ void TextRenderGdi::CreateClearBmpOfSize(int dx, int dy) {
         return;
     }
 
-    ZeroMemory(memBmpData, memBmpDx * memBmpDy * 4);
+    ZeroMemory(memBmpData, (size_t)memBmpDx * (size_t)memBmpDy * 4);
 
     RestoreMemHdcPrevBitmap();
     memHdcPrevBitmap = SelectObject(memHdc, memBmp);
@@ -276,8 +286,8 @@ void TextRenderGdi::DrawTransparent(const WCHAR* s, size_t sLen, const RectF bb,
 }
 
 void TextRenderGdi::DrawTransparent(const char* s, size_t sLen, const RectF bb, bool isRtl) {
-    size_t strLen = strconv::Utf8ToWcharBuf(s, sLen, txtConvBuf, dimof(txtConvBuf));
-    return DrawTransparent(txtConvBuf, strLen, bb, isRtl);
+    auto buf = ToWstrTemp(s, sLen);
+    return DrawTransparent(buf, buf.size(), bb, isRtl);
 }
 
 TextRenderGdiplus* TextRenderGdiplus::Create(Graphics* gfx, TextMeasureAlgorithm measureAlgo) {
@@ -310,8 +320,9 @@ RectF TextRenderGdiplus::Measure(const WCHAR* s, size_t sLen) {
 
 RectF TextRenderGdiplus::Measure(const char* s, size_t sLen) {
     CrashIf(!currFont);
-    size_t strLen = strconv::Utf8ToWcharBuf(s, sLen, txtConvBuf, dimof(txtConvBuf));
-    return MeasureText(gfx, currFont->font, txtConvBuf, strLen, measureAlgo);
+    auto buf = ToWstrTemp(s, sLen);
+    size_t strLen = buf.size();
+    return MeasureText(gfx, currFont->font, buf, strLen, measureAlgo);
 }
 
 TextRenderGdiplus::~TextRenderGdiplus() {
@@ -340,7 +351,8 @@ void TextRenderGdiplus::Draw(const WCHAR* s, size_t sLen, const RectF bb, bool i
 }
 
 void TextRenderGdiplus::Draw(const char* s, size_t sLen, const RectF bb, bool isRtl) {
-    size_t strLen = strconv::Utf8ToWcharBuf(s, sLen, txtConvBuf, dimof(txtConvBuf));
+    auto buf = ToWstrTemp(s, sLen);
+    size_t strLen = buf.size();
     Draw(txtConvBuf, strLen, bb, isRtl);
 }
 
@@ -424,7 +436,8 @@ float TextRenderHdc::GetCurrFontLineSpacing() {
 RectF TextRenderHdc::Measure(const char* s, size_t sLen) {
     CrashIf(!currFont);
     CrashIf(!hdc);
-    size_t strLen = strconv::Utf8ToWcharBuf(s, sLen, txtConvBuf, dimof(txtConvBuf));
+    auto buf = ToWstrTemp(s, sLen);
+    size_t strLen = buf.size();
     return Measure(txtConvBuf, strLen);
 }
 
@@ -437,11 +450,12 @@ RectF TextRenderHdc::Measure(const WCHAR* s, size_t sLen) {
 }
 
 void TextRenderHdc::Draw(const char* s, size_t sLen, const RectF bb, bool isRtl) {
-    size_t strLen = strconv::Utf8ToWcharBuf(s, sLen, txtConvBuf, dimof(txtConvBuf));
+    auto buf = ToWstrTemp(s, sLen);
+    size_t strLen = buf.size();
     return Draw(txtConvBuf, strLen, bb, isRtl);
 }
 
-void TextRenderHdc::Draw(const WCHAR* s, size_t sLen, const RectF bb, [[maybe_unused]] bool isRtl) {
+void TextRenderHdc::Draw(const WCHAR* s, size_t sLen, const RectF bb, __unused bool isRtl) {
     CrashIf(!hdc);
     int x = (int)bb.x;
     int y = (int)bb.y;
@@ -462,16 +476,16 @@ TextRenderHdc::~TextRenderHdc() {
 
 ITextRender* CreateTextRender(TextRenderMethod method, Graphics* gfx, int dx, int dy) {
     ITextRender* res = nullptr;
-    if (TextRenderMethodGdiplus == method) {
+    if (TextRenderMethod::Gdiplus == method) {
         res = TextRenderGdiplus::Create(gfx);
     }
-    if (TextRenderMethodGdiplusQuick == method) {
+    if (TextRenderMethod::GdiplusQuick == method) {
         res = TextRenderGdiplus::Create(gfx, MeasureTextQuick);
     }
-    if (TextRenderMethodGdi == method) {
+    if (TextRenderMethod::Gdi == method) {
         res = TextRenderGdi::Create(gfx);
     }
-    if (TextRenderMethodHdc == method) {
+    if (TextRenderMethod::Hdc == method) {
         res = TextRenderHdc::Create(gfx, dx, dy);
     }
     CrashIf(!res);

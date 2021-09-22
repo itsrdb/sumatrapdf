@@ -3,6 +3,7 @@
 
 #include "utils/BaseUtil.h"
 #include "utils/Dpi.h"
+#include "utils/ScopedWin.h"
 #include "utils/WinUtil.h"
 
 #include "Layout.h"
@@ -346,7 +347,7 @@ VBox::~VBox() {
     }
 }
 
-int VBox::ChildrenCount() {
+int VBox::ChildrenCount() const {
     return children.isize();
 }
 
@@ -399,7 +400,7 @@ Size VBox::Layout(const Constraints bc) {
     if (alignMain == MainAxisAlign::Homogeneous) {
         auto count = (i64)NonCollapsedChildrenCount();
         auto gap = CalculateVGap(nullptr, nullptr);
-        cbc.TightenHeight(Scale(cbc.max.dy, 1, count) - Scale(gap, count - 1, count));
+        cbc = cbc.TightenHeight(Scale(cbc.max.dy, 1, count) - Scale(gap, count - 1, count));
     } else {
         cbc.min.dy = 0;
         cbc.max.dy = Inf;
@@ -619,7 +620,7 @@ void VBox::SetBounds(Rect bounds) {
     }
 }
 
-void VBox::SetBoundsForChild(int i, ILayout* v, int posX, int posY, int posX2, int posY2) {
+void VBox::SetBoundsForChild(int i, ILayout* v, int posX, int posY, int posX2, int posY2) const {
     auto dx = children[i].size.dx;
     Rect r{};
     switch (alignCross) {
@@ -673,7 +674,7 @@ HBox::~HBox() {
     }
 }
 
-int HBox::ChildrenCount() {
+int HBox::ChildrenCount() const {
     return children.isize();
 }
 
@@ -703,7 +704,7 @@ Size HBox::Layout(const Constraints bc) {
         auto count = (i64)NonCollapsedChildrenCount();
         auto gap = CalculateHGap(nullptr, nullptr);
         auto maxw = cbc.max.dx;
-        cbc.TightenWidth(Scale(maxw, 1, count) - Scale(gap, count - 1, count));
+        cbc = cbc.TightenWidth(Scale(maxw, 1, count) - Scale(gap, count - 1, count));
     } else {
         cbc.min.dx = 0;
         cbc.max.dx = Inf;
@@ -928,7 +929,7 @@ void HBox::SetBounds(Rect bounds) {
     }
 }
 
-void HBox::SetBoundsForChild(int i, ILayout* v, int posX, int posY, int posX2, int posY2) {
+void HBox::SetBoundsForChild(int i, ILayout* v, int posX, int posY, int posX2, int posY2) const {
     auto dy = children[i].size.dy;
     switch (alignCross) {
         case CrossAxisAlign::CrossStart:
@@ -980,8 +981,7 @@ Align::Align(ILayout* c) {
     kind = kindAlign;
 }
 
-Align::~Align() {
-}
+Align::~Align() = default;
 
 Size Align::Layout(const Constraints bc) {
     dbglayoutf("Align::Layout() ");

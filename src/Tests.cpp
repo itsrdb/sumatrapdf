@@ -4,24 +4,19 @@
 #include "utils/BaseUtil.h"
 #include "utils/ScopedWin.h"
 #include "utils/WinUtil.h"
+
+#include "wingui/TreeModel.h"
 #include "DisplayMode.h"
+#include "Controller.h"
+#include "EngineBase.h"
+#include "EngineAll.h"
 #include "SettingsStructs.h"
 #include "GlobalPrefs.h"
 #include "Flags.h"
 
-#include "wingui/TreeModel.h"
-
-#include "Annotation.h"
-#include "EngineBase.h"
-#include "EngineCreate.h"
-
-// TODO(port)
-// extern "C" void fz_redirect_dll_io_to_console();
-
 void TestRenderPage(const Flags& i) {
     if (i.showConsole) {
         RedirectIOToConsole();
-        // fz_redirect_dll_io_to_console();
     }
 
     if (i.pageNumber == -1) {
@@ -38,9 +33,9 @@ void TestRenderPage(const Flags& i) {
         zoom = i.startZoom;
     }
     for (auto fileName : files) {
-        AutoFree fileNameUtf(strconv::WstrToUtf8(fileName));
-        printf("rendering page %d for '%s', zoom: %.2f\n", i.pageNumber, fileNameUtf.Get(), zoom);
-        auto engine = CreateEngine(fileName);
+        auto fileNameA(ToUtf8Temp(fileName));
+        printf("rendering page %d for '%s', zoom: %.2f\n", i.pageNumber, fileNameA.Get(), zoom);
+        auto engine = CreateEngine(fileName, nullptr, true);
         if (engine == nullptr) {
             printf("failed to create engine\n");
             continue;
@@ -61,13 +56,13 @@ static void extractPageText(EngineBase* engine, int pageNo) {
         return;
     }
     AutoFreeWstr uni = str::Replace(pageText.text, L"\n", L"_");
-    AutoFree utf = strconv::WstrToUtf8(uni);
+    auto uniA = ToUtf8Temp(uni);
     printf("text on page %d: '", pageNo);
     // print characters as hex because I don't know what kind of locale-specific mangling
     // printf() might do
     int idx = 0;
-    while (utf.Get()[idx] != 0) {
-        char c = utf.Get()[idx++];
+    while (uniA.Get()[idx] != 0) {
+        char c = uniA.Get()[idx++];
         printf("%02x ", (u8)c);
     }
     printf("'\n");
@@ -77,7 +72,6 @@ static void extractPageText(EngineBase* engine, int pageNo) {
 void TestExtractPage(const Flags& ci) {
     if (ci.showConsole) {
         RedirectIOToConsole();
-        // fz_redirect_dll_io_to_console();
     }
 
     int pageNo = ci.pageNumber;
@@ -88,10 +82,10 @@ void TestExtractPage(const Flags& ci) {
         return;
     }
     for (auto fileName : files) {
-        AutoFree fileNameUtf(strconv::WstrToUtf8(fileName));
-        auto engine = CreateEngine(fileName);
+        auto fileNameA(ToUtf8Temp(fileName));
+        auto engine = CreateEngine(fileName, nullptr, true);
         if (engine == nullptr) {
-            printf("failed to create engine for file '%s'\n", fileNameUtf.Get());
+            printf("failed to create engine for file '%s'\n", fileNameA.Get());
             continue;
         }
         if (pageNo < 0) {

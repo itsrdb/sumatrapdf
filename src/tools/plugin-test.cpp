@@ -5,7 +5,7 @@
 
 #include "utils/BaseUtil.h"
 #include "utils/WinUtil.h"
-#include "utils/CmdLineParser.h"
+#include "utils/CmdLineArgsIter.h"
 #include "utils/FileUtil.h"
 
 #define PLUGIN_TEST_NAME L"SumatraPDF Plugin Test"
@@ -45,7 +45,7 @@ LRESULT CALLBACK PluginParentWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) 
         HWND hChild = FindWindowEx(hwnd, nullptr, nullptr, nullptr);
         COPYDATASTRUCT* cds = (COPYDATASTRUCT*)lp;
         if (cds && 0x4C5255 /* URL */ == cds->dwData && (HWND)wp == hChild) {
-            AutoFreeWstr url(strconv::Utf8ToWstr((const char*)cds->lpData));
+            auto url(ToWstrTemp((const char*)cds->lpData));
             ShellExecute(hChild, L"open", url, nullptr, nullptr, SW_SHOW);
             return TRUE;
         }
@@ -84,14 +84,13 @@ WCHAR* GetSumatraExePath() {
     return path.StealData();
 }
 
-int APIENTRY WinMain(HINSTANCE hInstance, [[maybe_unused]] HINSTANCE hPrevInstance, [[maybe_unused]] LPSTR lpCmdLineA,
-                     int nCmdShow) {
+int APIENTRY WinMain(HINSTANCE hInstance, __unused HINSTANCE hPrevInstance, __unused LPSTR lpCmdLineA, int nCmdShow) {
     WStrVec argList;
     ParseCmdLine(GetCommandLine(), argList);
 
     if (argList.size() == 1) {
-        AutoFreeWstr msg(str::Format(L"Syntax: %s [<SumatraPDF.exe>] [<URL>] <filename.ext>",
-                                     path::GetBaseNameNoFree(argList.at(0))));
+        AutoFreeWstr msg(
+            str::Format(L"Syntax: %s [<SumatraPDF.exe>] [<URL>] <filename.ext>", path::GetBaseNameTemp(argList.at(0))));
         MessageBox(nullptr, msg, PLUGIN_TEST_NAME, MB_OK | MB_ICONINFORMATION);
         return 1;
     }

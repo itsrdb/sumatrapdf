@@ -297,8 +297,6 @@ col, colgroup, table, tbody, td, tfoot, th, thead, tr {
 .img-wrapper {
   position: relative;
   min-width: 90vw;
-  max-width: 720px;
-  max-height: 700px;
   display: flex;
   justify-content: space-around;
 }
@@ -353,24 +351,58 @@ a.for-nav-icon:hover {
   display: flex;
   flex-direction: row;
   /* justify-content: center; */
-  align-items: center;
-  align-content: center;
+  justify-content: space-around;
+  /* align-items: stretch; */
+  /* align-content: center; */
   flex-wrap: wrap;
   width: 100%;
 }
 
 .testimonial {
+  display: flex;
+  flex-direction: column;
   width: 30%;
-  /* background-color: #FBF0FA; */
+
   padding-left: 10px;
   padding-right: 10px;
+  padding-bottom: 8px;;
+
+  margin-left: 14px;
+  margin-top: 12px;
+
+  background: linear-gradient(180deg,#fff,hsla(0,0%,100%,.94));
+  border: 1px solid rgba(12,29,71,.1);
+  border-radius: 8px;
+  box-shadow: 1px 1px 1px #ccc
 }
 
 .testimonials-text {
   font-style: italic;
+  flex-grow: 1;
 }
 
 .testimonial-who {
   font-size: 90%;
   float: right;
+  align-self: center;
+}
+
+.testimonial-who a {
+  color: #b5b5b5;
+}
+
+/* keyboard shortcut */
+.ks {
+  margin-right: .2em;
+  color: #eb5757;
+  background: rgba(135, 131, 120, 0.07);
+  border-radius: 3px;
+  padding: .2em .4em;
+  font-family: monospace;
+  font-size: 1.2em;
+}
+
+/* better spacing between links to pages on index page */
+.page {
+  margin-bottom: 2px;
 }

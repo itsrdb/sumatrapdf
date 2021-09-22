@@ -18,7 +18,7 @@ struct SplitterMoveEvent {
     bool resizeAllowed{true};
 };
 
-typedef std::function<void(SplitterMoveEvent*)> SplitterMoveHandler;
+using SplitterMoveHandler = std::function<void(SplitterMoveEvent*)>;
 
 // TODO: maybe derive from WindowBase and allow registering custom classes
 // for WindowBase
@@ -36,7 +36,7 @@ struct SplitterCtrl : public Window {
     // parent and restore it when we're done
     bool parentClipsChildren{false};
 
-    SplitterCtrl(HWND parent);
+    explicit SplitterCtrl(HWND parent);
     ~SplitterCtrl() override;
 
     bool Create() override;

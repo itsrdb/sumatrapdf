@@ -17,18 +17,17 @@ extern "C" {
 #include "utils/TrivialHtmlParser.h"
 #include "utils/WinUtil.h"
 #include "utils/ZipUtil.h"
-#include "utils/Log.h"
 
 #include "AppColors.h"
-#include "wingui/TreeModel.h"
-
 #include "SumatraConfig.h"
-#include "Annotation.h"
+#include "DisplayMode.h"
+#include "Controller.h"
+#include "wingui/TreeModel.h"
 #include "EngineBase.h"
-#include "EngineFzUtil.h"
-#include "EngineCreate.h"
-#include "ParseBKM.h"
-#include "EngineMulti.h"
+#include "EngineMupdfImpl.h"
+#include "EngineAll.h"
+
+#include "utils/Log.h"
 
 struct EngineInfo {
     TocItem* tocRoot = nullptr;
@@ -45,7 +44,7 @@ Kind kindEngineMulti = "enginePdfMulti";
 class EngineMulti : public EngineBase {
   public:
     EngineMulti();
-    virtual ~EngineMulti();
+    ~EngineMulti() override;
     EngineBase* Clone() override;
 
     RectF PageMediabox(int pageNo) override;
@@ -55,9 +54,9 @@ class EngineMulti : public EngineBase {
 
     RectF Transform(const RectF& rect, int pageNo, float zoom, int rotation, bool inverse = false) override;
 
-    std::span<u8> GetFileData() override;
-    bool SaveFileAs(const char* copyFileName, bool includeUserAnnots = false) override;
-    bool SaveFileAsPdf(const char* pdfFileName, bool includeUserAnnots = false);
+    ByteSlice GetFileData() override;
+    bool SaveFileAs(const char* copyFileName) override;
+    bool SaveFileAsPDF(const char* pdfFileName) override;
     PageText ExtractPageText(int pageNo) override;
 
     bool HasClipOptimizations(int pageNo) override;
@@ -65,14 +64,15 @@ class EngineMulti : public EngineBase {
 
     bool BenchLoadPage(int pageNo) override;
 
-    Vec<IPageElement*>* GetElements(int pageNo) override;
+    Vec<IPageElement*> GetElements(int pageNo) override;
     IPageElement* GetElementAtPos(int pageNo, PointF pt) override;
+
     RenderedBitmap* GetImageForPageElement(IPageElement*) override;
 
-    PageDestination* GetNamedDest(const WCHAR* name) override;
+    IPageDestination* GetNamedDest(const WCHAR* name) override;
     TocTree* GetToc() override;
 
-    WCHAR* GetPageLabel(int pageNo) const override;
+    [[nodiscard]] WCHAR* GetPageLabel(int pageNo) const override;
     int GetPageByLabel(const WCHAR* label) const override;
 
     bool Load(const WCHAR* fileName, PasswordUI* pwdUI);
@@ -80,7 +80,6 @@ class EngineMulti : public EngineBase {
     void UpdatePagesForEngines(Vec<EngineInfo>& enginesInfo);
 
     EngineBase* PageToEngine(int& pageNo) const;
-    VbkmFile vbkm;
     Vec<EnginePage> pageToEngine;
     Vec<EngineInfo> enginesInfo;
     TocTree* tocTree = nullptr;
@@ -94,7 +93,7 @@ EngineBase* EngineMulti::PageToEngine(int& pageNo) const {
 
 EngineMulti::EngineMulti() {
     kind = kindEngineMulti;
-    defaultFileExt = L".vbkm";
+    defaultExt = L""; // TODO: no extension, is it important?
     fileDPI = 72.0f;
 }
 
@@ -106,10 +105,9 @@ EngineMulti::~EngineMulti() {
 }
 
 EngineBase* EngineMulti::Clone() {
-    const WCHAR* fileName = FileName();
-    CrashIf(!fileName);
     // TODO: support CreateFromFiles()
-    return CreateEngineMultiFromFile(fileName, nullptr);
+    CrashIf(true);
+    return nullptr;
 }
 
 RectF EngineMulti::PageMediabox(int pageNo) {
@@ -132,15 +130,15 @@ RectF EngineMulti::Transform(const RectF& rect, int pageNo, float zoom, int rota
     return e->Transform(rect, pageNo, zoom, rotation, inverse);
 }
 
-std::span<u8> EngineMulti::GetFileData() {
+ByteSlice EngineMulti::GetFileData() {
     return {};
 }
 
-bool EngineMulti::SaveFileAs(const char* copyFileName, bool includeUserAnnots) {
+bool EngineMulti::SaveFileAs(const char*) {
     return false;
 }
 
-bool EngineMulti::SaveFileAsPdf(const char* pdfFileName, bool includeUserAnnots) {
+bool EngineMulti::SaveFileAsPDF(const char*) {
     return false;
 }
 
@@ -163,23 +161,25 @@ bool EngineMulti::BenchLoadPage(int pageNo) {
     return e->BenchLoadPage(pageNo);
 }
 
-Vec<IPageElement*>* EngineMulti::GetElements(int pageNo) {
+Vec<IPageElement*> EngineMulti::GetElements(int pageNo) {
     EngineBase* e = PageToEngine(pageNo);
     return e->GetElements(pageNo);
 }
 
+// don't delete the result
 IPageElement* EngineMulti::GetElementAtPos(int pageNo, PointF pt) {
     EngineBase* e = PageToEngine(pageNo);
     return e->GetElementAtPos(pageNo, pt);
 }
 
 RenderedBitmap* EngineMulti::GetImageForPageElement(IPageElement* ipel) {
-    PageElement* pel = (PageElement*)ipel;
+    CrashIf(kindPageElementImage != ipel->GetKind());
+    PageElementImage* pel = (PageElementImage*)ipel;
     EngineBase* e = PageToEngine(pel->pageNo);
     return e->GetImageForPageElement(pel);
 }
 
-PageDestination* EngineMulti::GetNamedDest(const WCHAR* name) {
+IPageDestination* EngineMulti::GetNamedDest(const WCHAR* name) {
     for (auto&& pe : pageToEngine) {
         EngineBase* e = pe.engine;
         auto dest = e->GetNamedDest(name);
@@ -191,11 +191,11 @@ PageDestination* EngineMulti::GetNamedDest(const WCHAR* name) {
     return nullptr;
 }
 
-static bool IsPageNavigationDestination(PageDestination* dest) {
+static bool IsPageNavigationDestination(IPageDestination* dest) {
     if (!dest) {
         return false;
     }
-    if (dest->kind == kindDestinationScrollTo) {
+    if (dest->GetKind() == kindDestinationScrollTo) {
         return true;
     }
     // TODO: possibly more kinds
@@ -212,7 +212,8 @@ static void updateTocItemsPageNo(TocItem* ti, int nPageNoAdd, bool root) {
     auto curr = ti;
     while (curr) {
         if (IsPageNavigationDestination(curr->dest)) {
-            curr->dest->pageNo += nPageNoAdd;
+            auto dest = (PageDestination*)curr->dest;
+            dest->pageNo += nPageNoAdd;
             curr->pageNo += nPageNoAdd;
         }
 
@@ -250,6 +251,7 @@ int EngineMulti::GetPageByLabel(const WCHAR* label) const {
     return -1;
 }
 
+#if 0
 static void CollectTocItemsRecur(TocItem* ti, Vec<TocItem*>& v) {
     while (ti) {
         v.Append(ti);
@@ -262,7 +264,7 @@ static bool cmpByPageNo(TocItem* ti1, TocItem* ti2) {
     return ti1->pageNo < ti2->pageNo;
 }
 
-void CalcEndPageNo(TocItem* root, int nPages) {
+static void CalcEndPageNo(TocItem* root, int nPages) {
     Vec<TocItem*> tocItems;
     CollectTocItemsRecur(root, tocItems);
     size_t n = tocItems.size();
@@ -281,63 +283,44 @@ void CalcEndPageNo(TocItem* root, int nPages) {
     }
     prev->endPageNo = nPages;
 }
-
-#if 0
-static void MarkAsInvisibleRecur(TocItem* ti, bool markInvisible, Vec<bool>& visible) {
-    while (ti) {
-        if (markInvisible) {
-            for (int i = ti->pageNo; i < ti->endPageNo; i++) {
-                visible[i - 1] = false;
-            }
-        }
-        bool childMarkInvisible = markInvisible;
-        if (!childMarkInvisible) {
-            childMarkInvisible = ti->isUnchecked;
-        }
-        MarkAsInvisibleRecur(ti->child, childMarkInvisible, visible);
-        ti = ti->next;
-    }
-}
-
-static void MarkAsVisibleRecur(TocItem* ti, bool markVisible, Vec<bool>& visible) {
-    if (!markVisible) {
-        return;
-    }
-    while (ti) {
-        for (int i = ti->pageNo; i < ti->endPageNo; i++) {
-            visible[i - 1] = true;
-        }
-        MarkAsInvisibleRecur(ti->child, ti->isUnchecked, visible);
-        ti = ti->next;
-    }
-}
-
-static void CalcRemovedPages(TocItem* root, Vec<bool>& visible) {
-    int nPages = (int)visible.size();
-    CalcEndPageNo(root, nPages);
-    // in the first pass we mark the pages under unchecked nodes as invisible
-    MarkAsInvisibleRecur(root, root->isUnchecked, visible);
-
-    // in the second pass we mark back pages that are visible
-    // from nodes that are not unchecked
-    MarkAsVisibleRecur(root, !root->isUnchecked, visible);
-}
 #endif
 
-// to supporting moving .vbkm and it's associated files, we accept absolute paths
-// and relative to directory of .vbkm file
-std::string_view FindEnginePath(std::string_view vbkmPath, std::string_view engineFilePath) {
-    if (file::Exists(engineFilePath)) {
-        return str::Dup(engineFilePath);
+static TocItem* CloneTocItemRecur(TocItem* ti, bool removeUnchecked) {
+    if (ti == nullptr) {
+        return nullptr;
     }
-    AutoFreeStr dir = path::GetDir(vbkmPath);
-    const char* engineFileName = path::GetBaseNameNoFree(engineFilePath.data());
-    AutoFreeStr path = path::JoinUtf(dir, engineFileName, nullptr);
-    if (file::Exists(path.AsView())) {
-        std::string_view res = path.Release();
-        return res;
+    if (removeUnchecked && ti->isUnchecked) {
+        TocItem* next = ti->next;
+        while (next && next->isUnchecked) {
+            next = next->next;
+        }
+        return CloneTocItemRecur(next, removeUnchecked);
     }
-    return {};
+    TocItem* res = new TocItem();
+    res->parent = ti->parent;
+    res->title = str::Dup(ti->title);
+    res->isOpenDefault = ti->isOpenDefault;
+    res->isOpenToggled = ti->isOpenToggled;
+    res->isUnchecked = ti->isUnchecked;
+    res->pageNo = ti->pageNo;
+    res->id = ti->id;
+    res->fontFlags = ti->fontFlags;
+    res->color = ti->color;
+    res->dest = ti->dest;
+    res->destNotOwned = true;
+    res->child = CloneTocItemRecur(ti->child, removeUnchecked);
+
+    res->nPages = ti->nPages;
+    res->engineFilePath = str::Dup(ti->engineFilePath);
+
+    TocItem* next = ti->next;
+    if (removeUnchecked) {
+        while (next && next->isUnchecked) {
+            next = next->next;
+        }
+    }
+    res->next = CloneTocItemRecur(next, removeUnchecked);
+    return res;
 }
 
 TocItem* CreateWrapperItem(EngineBase* engine) {
@@ -349,11 +332,11 @@ TocItem* CreateWrapperItem(EngineBase* engine) {
     }
 
     int nPages = engine->PageCount();
-    const WCHAR* title = path::GetBaseNameNoFree(engine->FileName());
+    const WCHAR* title = path::GetBaseNameTemp(engine->FileName());
     TocItem* tocWrapper = new TocItem(tocFileRoot, title, 0);
     tocWrapper->isOpenDefault = true;
     tocWrapper->child = tocFileRoot;
-    char* filePath = (char*)strconv::WstrToUtf8(engine->FileName()).data();
+    char* filePath = (char*)strconv::WstrToUtf8(engine->FileName());
     tocWrapper->engineFilePath = filePath;
     tocWrapper->nPages = nPages;
     tocWrapper->pageNo = 1;
@@ -368,8 +351,8 @@ bool EngineMulti::LoadFromFiles(std::string_view dir, VecStr& files) {
     TocItem* tocFiles = nullptr;
     for (int i = 0; i < n; i++) {
         std::string_view path = files.at(i);
-        AutoFreeWstr pathW = strconv::Utf8ToWstr(path);
-        EngineBase* engine = CreateEngine(pathW);
+        auto pathW = ToWstrTemp(path);
+        EngineBase* engine = CreateEngine(pathW, nullptr, true);
         if (!engine) {
             continue;
         }
@@ -391,12 +374,14 @@ bool EngineMulti::LoadFromFiles(std::string_view dir, VecStr& files) {
     }
     UpdatePagesForEngines(enginesInfo);
 
-    AutoFreeWstr dirW = strconv::Utf8ToWstr(dir);
+    auto dirW = ToWstrTemp(dir);
     TocItem* root = new TocItem(nullptr, dirW, 0);
     root->child = tocFiles;
-    tocTree = new TocTree(root);
+    auto realRoot = new TocItem();
+    realRoot->child = root;
+    tocTree = new TocTree(realRoot);
 
-    AutoFreeWstr fileName = strconv::Utf8ToWstr(dir);
+    auto fileName = ToWstrTemp(dir);
     SetFileName(fileName);
 
     return true;
@@ -410,31 +395,12 @@ void EngineMulti::UpdatePagesForEngines(Vec<EngineInfo>& enginesInfo) {
             continue;
         }
         int nPages = ei.engine->PageCount();
-#if 0
-        Vec<bool> visiblePages;
-        for (int i = 0; i < nPages; i++) {
-            visiblePages.Append(true);
-        }
-        CalcRemovedPages(child, visiblePages);
-        int nPage = 0;
-        for (int i = 0; i < nPages; i++) {
-            if (!visiblePages[i]) {
-                continue;
-            }
-            EnginePage ep{i + 1, ei.engine};
-            pageToEngine.Append(ep);
-            nPage++;
-        }
-        updateTocItemsPageNo(child, nTotalPages);
-        nTotalPages += nPage;
-#else
         for (int i = 1; i <= nPages; i++) {
             EnginePage ep{i, ei.engine};
             pageToEngine.Append(ep);
         }
         updateTocItemsPageNo(ei.tocRoot, nTotalPages, true);
         nTotalPages += nPages;
-#endif
     }
     pageCount = nTotalPages;
     CrashIf((size_t)pageCount != pageToEngine.size());
@@ -457,72 +423,8 @@ void EngineMulti::UpdatePagesForEngines(Vec<EngineInfo>& enginesInfo) {
     }
 }
 
-bool EngineMulti::Load(const WCHAR* fileName, PasswordUI* pwdUI) {
-    AutoFreeStr filePath = strconv::WstrToUtf8(fileName);
-    bool ok = LoadVbkmFile(filePath.Get(), vbkm);
-    if (!ok) {
-        return false;
-    }
-
-    TocItem* tocRoot = CloneTocItemRecur(vbkm.tree->root, true);
-    delete vbkm.tree;
-    vbkm.tree = nullptr;
-
-    // load all referenced files
-    auto loadEngines = [this, &filePath](TocItem* ti) -> bool {
-        if (ti->engineFilePath == nullptr) {
-            return true;
-        }
-        if (ti->isUnchecked) {
-            return true;
-        }
-
-        EngineBase* engine = nullptr;
-        AutoFreeStr path = FindEnginePath(filePath.AsView(), ti->engineFilePath);
-        if (path.empty()) {
-            return false;
-        }
-        AutoFreeWstr pathW = strconv::Utf8ToWstr(path.AsView());
-        engine = CreateEngine(pathW, nullptr);
-        if (!engine) {
-            return false;
-        }
-        EngineInfo ei;
-        ei.engine = engine;
-        ei.tocRoot = ti;
-        this->enginesInfo.Append(ei);
-        return true;
-    };
-
-    ok = VisitTocTree(tocRoot, loadEngines);
-    if (!ok) {
-        delete tocRoot;
-        return false;
-    }
-
-    UpdatePagesForEngines(enginesInfo);
-    tocTree = new TocTree(tocRoot);
-    SetFileName(fileName);
-    return true;
-}
-
 bool IsEngineMultiSupportedFileType(Kind kind) {
-    return kind == kindFileVbkm;
-}
-
-EngineBase* CreateEngineMultiFromFile(const WCHAR* path, PasswordUI* pwdUI) {
-    if (str::IsEmpty(path)) {
-        return nullptr;
-    }
-    if (path::IsDirectory(path)) {
-        return CreateEngineMultiFromDirectory(path);
-    }
-    EngineMulti* engine = new EngineMulti();
-    if (!engine->Load(path, pwdUI)) {
-        delete engine;
-        return nullptr;
-    }
-    return engine;
+    return kind == kindDirectory;
 }
 
 EngineBase* CreateEngineMultiFromFiles(std::string_view dir, VecStr& files) {
@@ -540,7 +442,7 @@ EngineBase* CreateEngineMultiFromDirectory(const WCHAR* dirW) {
         return isValid;
     };
     VecStr files;
-    AutoFreeStr dir = strconv::WstrToUtf8(dirW);
+    auto dir = ToUtf8Temp(dirW);
     bool ok = CollectFilesFromDirectory(dir.AsView(), files, isValidFunc);
     if (!ok) {
         // TODO: show error message

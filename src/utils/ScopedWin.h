@@ -1,5 +1,8 @@
+/* Copyright 2021 the SumatraPDF project authors (see AUTHORS file).
+   License: Simplified BSD (see COPYING.BSD) */
+
 struct ScopedCritSec {
-    CRITICAL_SECTION* cs = nullptr;
+    CRITICAL_SECTION* cs{nullptr};
 
     explicit ScopedCritSec(CRITICAL_SECTION* cs) : cs(cs) {
         EnterCriticalSection(cs);
@@ -10,12 +13,12 @@ struct ScopedCritSec {
 };
 
 class AutoCloseHandle {
-    HANDLE handle = nullptr;
+    HANDLE handle{nullptr};
 
   public:
     AutoCloseHandle() = default;
 
-    AutoCloseHandle(HANDLE h) {
+    AutoCloseHandle(HANDLE h) { // NOLINT
         handle = h;
     }
 
@@ -32,19 +35,19 @@ class AutoCloseHandle {
         return *this;
     }
 
-    operator HANDLE() const {
+    [[nodiscard]] operator HANDLE() const { // NOLINT
         return handle;
     }
 
-    bool IsValid() const {
-        return handle != NULL && handle != INVALID_HANDLE_VALUE;
+    [[nodiscard]] bool IsValid() const {
+        return handle != nullptr && handle != INVALID_HANDLE_VALUE;
     }
 };
 
 template <class T>
 class ScopedComPtr {
   protected:
-    T* ptr = nullptr;
+    T* ptr{nullptr};
 
   public:
     ScopedComPtr() = default;
@@ -64,10 +67,10 @@ class ScopedComPtr {
         HRESULT hr = CoCreateInstance(clsid, nullptr, CLSCTX_ALL, IID_PPV_ARGS(&ptr));
         return SUCCEEDED(hr);
     }
-    T* Get() const {
+    [[nodiscard]] T* Get() const {
         return ptr;
     }
-    operator T*() const {
+    [[nodiscard]] operator T*() const { // NOLINT
         return ptr;
     }
     T** operator&() {
@@ -76,18 +79,19 @@ class ScopedComPtr {
     T* operator->() const {
         return ptr;
     }
-    T* operator=(T* newPtr) {
+    ScopedComPtr<T>& operator=(T* newPtr) {
         if (ptr) {
             ptr->Release();
         }
-        return (ptr = newPtr);
+        ptr = newPtr;
+        return *this;
     }
 };
 
 template <class T>
 class ScopedComQIPtr {
   protected:
-    T* ptr = nullptr;
+    T* ptr{nullptr};
 
   public:
     ScopedComQIPtr() = default;
@@ -118,7 +122,7 @@ class ScopedComQIPtr {
             ptr = nullptr;
         return ptr;
     }
-    operator T*() const {
+    [[nodiscard]] operator T*() const { // NOLINT
         return ptr;
     }
     T** operator&() {
@@ -135,7 +139,7 @@ class ScopedComQIPtr {
 };
 
 class AutoDeleteDC {
-    HDC hdc = nullptr;
+    HDC hdc{nullptr};
 
   public:
     explicit AutoDeleteDC(HDC hdc) {
@@ -144,7 +148,7 @@ class AutoDeleteDC {
     ~AutoDeleteDC() {
         DeleteDC(hdc);
     }
-    operator HDC() const {
+    [[nodiscard]] operator HDC() const { // NOLINT
         return hdc;
     }
 };
@@ -154,23 +158,23 @@ class ScopedGdiObj {
     T obj;
 
   public:
-    ScopedGdiObj(T obj) {
+    ScopedGdiObj(T obj) { // NOLINT
         this->obj = obj;
     }
     ~ScopedGdiObj() {
         DeleteObject(obj);
     }
-    operator T() const {
+    [[nodiscard]] operator T() const { // NOLINT
         return obj;
     }
 };
-typedef ScopedGdiObj<HFONT> AutoDeleteFont;
-typedef ScopedGdiObj<HPEN> AutoDeletePen;
-typedef ScopedGdiObj<HBRUSH> AutoDeleteBrush;
+using AutoDeleteFont = ScopedGdiObj<HFONT>;
+using AutoDeletePen = ScopedGdiObj<HPEN>;
+using AutoDeleteBrush = ScopedGdiObj<HBRUSH>;
 
 class ScopedGetDC {
-    HDC hdc = nullptr;
-    HWND hwnd = nullptr;
+    HDC hdc{nullptr};
+    HWND hwnd{nullptr};
 
   public:
     explicit ScopedGetDC(HWND hwnd) {
@@ -180,14 +184,14 @@ class ScopedGetDC {
     ~ScopedGetDC() {
         ReleaseDC(hwnd, hdc);
     }
-    operator HDC() const {
+    [[nodiscard]] operator HDC() const { // NOLINT
         return hdc;
     }
 };
 
 class ScopedSelectObject {
-    HDC hdc = nullptr;
-    HGDIOBJ prev = nullptr;
+    HDC hdc{nullptr};
+    HGDIOBJ prev{nullptr};
 
   public:
     ScopedSelectObject(HDC hdc, HGDIOBJ obj) : hdc(hdc) {
@@ -199,8 +203,8 @@ class ScopedSelectObject {
 };
 
 class ScopedSelectFont {
-    HDC hdc = nullptr;
-    HFONT prevFont = nullptr;
+    HDC hdc{nullptr};
+    HFONT prevFont{nullptr};
 
   public:
     explicit ScopedSelectFont(HDC hdc, HFONT font) {
@@ -213,8 +217,8 @@ class ScopedSelectFont {
 };
 
 class ScopedSelectPen {
-    HDC hdc = nullptr;
-    HPEN prevPen = nullptr;
+    HDC hdc{nullptr};
+    HPEN prevPen{nullptr};
 
   public:
     explicit ScopedSelectPen(HDC hdc, HPEN pen) {
@@ -227,8 +231,8 @@ class ScopedSelectPen {
 };
 
 class ScopedSelectBrush {
-    HDC hdc = nullptr;
-    HBRUSH prevBrush = nullptr;
+    HDC hdc{nullptr};
+    HBRUSH prevBrush{nullptr};
 
   public:
     explicit ScopedSelectBrush(HDC hdc, HBRUSH pen) {
@@ -261,10 +265,11 @@ class ScopedOle {
 
 class ScopedGdiPlus {
   protected:
-    Gdiplus::GdiplusStartupInput si;
-    Gdiplus::GdiplusStartupOutput so;
-    ULONG_PTR token, hookToken = 0;
-    bool noBgThread = false;
+    Gdiplus::GdiplusStartupInput si{};
+    Gdiplus::GdiplusStartupOutput so{};
+    ULONG_PTR token{0};
+    ULONG_PTR hookToken{0};
+    bool noBgThread{false};
 
   public:
     // suppress the GDI+ background thread when initiating in WinMain,

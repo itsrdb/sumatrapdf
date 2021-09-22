@@ -251,7 +251,7 @@ RectF::RectF(PointF pt, SizeF size) : x(pt.x), y(pt.y), dx(size.dx), dy(size.dy)
 RectF::RectF(PointF min, PointF max) : x(min.x), y(min.y), dx(max.x - min.x), dy(max.y - min.y) {
 }
 
-bool RectF::EqSize(float otherDx, float otherDy) {
+bool RectF::EqSize(float otherDx, float otherDy) const {
     return (dx == otherDx) && (dy == otherDy);
 }
 
@@ -286,7 +286,7 @@ bool RectF::IsEmpty() const {
     return dx == 0 || dy == 0;
 }
 
-bool RectF::Contains(PointF pt) {
+bool RectF::Contains(PointF pt) const {
     if (pt.x < this->x) {
         return false;
     }
@@ -303,7 +303,7 @@ bool RectF::Contains(PointF pt) {
 }
 
 /* Returns an empty rectangle if there's no intersection (see IsEmpty). */
-RectF RectF::Intersect(RectF other) {
+RectF RectF::Intersect(RectF other) const {
     /* The intersection starts with the larger of the start coordinates
         and ends with the smaller of the end coordinates */
     float _x = std::max(this->x, other.x);
@@ -404,7 +404,7 @@ Size ToSize(const SizeF s) {
     return Size(dx, dy);
 }
 
-RectF ToRectFl(const Rect r) {
+RectF ToRectF(const Rect r) {
     return {(float)r.x, (float)r.y, (float)r.dx, (float)r.dy};
 }
 
@@ -443,4 +443,18 @@ Gdiplus::Rect ToGdipRect(const RectF r) {
 
 Gdiplus::RectF ToGdipRectF(const RectF r) {
     return Gdiplus::RectF(r.x, r.y, r.dx, r.dy);
+}
+
+int NormalizeRotation(int rotation) {
+    while (rotation < 0) {
+        rotation += 360;
+    }
+    while (rotation >= 360) {
+        rotation -= 360;
+    }
+    if ((rotation % 90) != 0) {
+        CrashIf(true);
+        return 0;
+    }
+    return rotation;
 }

@@ -2,6 +2,7 @@
    License: Simplified BSD (see COPYING.BSD) */
 
 #include "utils/BaseUtil.h"
+#include "utils/ScopedWin.h"
 #include "utils/WinUtil.h"
 
 #include "wingui/WinGui.h"
@@ -20,8 +21,7 @@ ProgressCtrl::ProgressCtrl(HWND p, int initialMax) : WindowBase(p) {
     max = initialMax;
 }
 
-ProgressCtrl::~ProgressCtrl() {
-}
+ProgressCtrl::~ProgressCtrl() = default;
 
 bool ProgressCtrl::Create() {
     bool ok = WindowBase::Create();

@@ -53,7 +53,7 @@ HRESULT STDMETHODCALLTYPE SumatraUIAutomationProvider::QueryInterface(REFIID rii
     static const QITAB qit[] = {QITABENT(SumatraUIAutomationProvider, IRawElementProviderSimple),
                                 QITABENT(SumatraUIAutomationProvider, IRawElementProviderFragment),
                                 QITABENT(SumatraUIAutomationProvider, IRawElementProviderFragmentRoot),
-                                {0}};
+                                {nullptr}};
     return QISearch(this, qit, riid, ppv);
 }
 
@@ -70,7 +70,7 @@ ULONG STDMETHODCALLTYPE SumatraUIAutomationProvider::Release() {
     return res;
 }
 
-HRESULT STDMETHODCALLTYPE SumatraUIAutomationProvider::GetPatternProvider([[maybe_unused]] PATTERNID patternId,
+HRESULT STDMETHODCALLTYPE SumatraUIAutomationProvider::GetPatternProvider(__unused PATTERNID patternId,
                                                                           IUnknown** pRetVal) {
     *pRetVal = nullptr;
     return S_OK;

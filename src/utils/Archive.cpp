@@ -2,29 +2,30 @@
    License: Simplified BSD (see COPYING.BSD) */
 
 #include "utils/BaseUtil.h"
-#include "utils/Archive.h"
-
-#include "utils/StrSlice.h"
 #include "utils/FileUtil.h"
+#include "utils/ScopedWin.h"
 #include "utils/WinUtil.h"
 #include "utils/CryptoUtil.h"
+
+#include "utils/Archive.h"
 
 extern "C" {
 #include <unarr.h>
 }
+
+// TODO: set include path to ext/ dir
+#include "../../ext/unrar/dll.hpp"
 
 // we pad data read with 3 zeros for convenience. That way returned
 // data is a valid null-terminated string or WCHAR*.
 // 3 is for absolute worst case of WCHAR* where last char was partially written
 #define ZERO_PADDING_COUNT 3
 
-#if OS_WIN
 FILETIME MultiFormatArchive::FileInfo::GetWinFileTime() const {
     FILETIME ft = {(DWORD)-1, (DWORD)-1};
     LocalFileTimeToFileTime((FILETIME*)&fileTime, &ft);
     return ft;
 }
-#endif
 
 MultiFormatArchive::MultiFormatArchive(archive_opener_t opener, MultiFormatArchive::Format format)
     : format(format), opener_(opener) {
@@ -56,14 +57,27 @@ bool MultiFormatArchive::Open(ar_stream* data, const char* archivePath) {
         if (!name) {
             name = "";
         }
-
         FileInfo* i = allocator_.AllocStruct<FileInfo>();
         i->fileId = fileId;
         i->fileSizeUncompressed = ar_entry_get_size(ar_);
         i->filePos = ar_entry_get_offset(ar_);
         i->fileTime = ar_entry_get_filetime(ar_);
-        i->name = Allocator::AllocString(&allocator_, name);
+        i->name = str::Dup(&allocator_, name);
+        i->data = nullptr;
         fileInfos_.Append(i);
+        // doesn't benchmark faster for .zip files but not much slower either
+        // is probably faster for .tar.gz files
+        if (loadOnOpen) {
+            size_t size = i->fileSizeUncompressed;
+            i->data = AllocArray<char>(size + ZERO_PADDING_COUNT);
+            if (i->data) {
+                bool ok = ar_entry_uncompress(ar_, (void*)i->data, size);
+                if (!ok) {
+                    free(i->data);
+                    i->data = nullptr;
+                }
+            }
+        }
 
         fileId++;
     }
@@ -73,6 +87,9 @@ bool MultiFormatArchive::Open(ar_stream* data, const char* archivePath) {
 MultiFormatArchive::~MultiFormatArchive() {
     ar_close_archive(ar_);
     ar_close(data_);
+    for (auto& fi : fileInfos_) {
+        free((void*)fi->data);
+    }
 }
 
 size_t getFileIdByName(Vec<MultiFormatArchive::FileInfo*>& fileInfos, const char* name) {
@@ -92,23 +109,32 @@ size_t MultiFormatArchive::GetFileId(const char* fileName) {
     return getFileIdByName(fileInfos_, fileName);
 }
 
-#if OS_WIN
-std::span<u8> MultiFormatArchive::GetFileDataByName(const WCHAR* fileName) {
-    AutoFree fileNameUtf8 = strconv::WstrToUtf8(fileName);
-    return GetFileDataByName(fileNameUtf8);
+ByteSlice MultiFormatArchive::GetFileDataByName(const WCHAR* fileName) {
+    auto fileNameA = ToUtf8Temp(fileName);
+    return GetFileDataByName(fileNameA);
 }
-#endif
 
-std::span<u8> MultiFormatArchive::GetFileDataByName(const char* fileName) {
+ByteSlice MultiFormatArchive::GetFileDataByName(const char* fileName) {
     size_t fileId = getFileIdByName(fileInfos_, fileName);
     return GetFileDataById(fileId);
 }
 
-std::span<u8> MultiFormatArchive::GetFileDataById(size_t fileId) {
+// the caller must free()
+ByteSlice MultiFormatArchive::GetFileDataById(size_t fileId) {
     if (fileId == (size_t)-1) {
         return {};
     }
     CrashIf(fileId >= fileInfos_.size());
+
+    auto* fileInfo = fileInfos_[fileId];
+    CrashIf(fileInfo->fileId != fileId);
+
+    if (fileInfo->data != nullptr) {
+        // the caller takes ownership
+        ByteSlice res{(u8*)fileInfo->data, fileInfo->fileSizeUncompressed};
+        fileInfo->data = nullptr;
+        return res;
+    }
 
     if (LoadedUsingUnrarDll()) {
         return GetFileDataByIdUnarrDll(fileId);
@@ -117,9 +143,6 @@ std::span<u8> MultiFormatArchive::GetFileDataById(size_t fileId) {
     if (!ar_) {
         return {};
     }
-
-    auto* fileInfo = fileInfos_[fileId];
-    CrashIf(fileInfo->fileId != fileId);
 
     auto filePos = fileInfo->filePos;
     if (!ar_parse_entry_at(ar_, filePos)) {
@@ -174,10 +197,9 @@ static MultiFormatArchive* open(MultiFormatArchive* archive, const char* path) {
     return archive;
 }
 
-#if OS_WIN
 static MultiFormatArchive* open(MultiFormatArchive* archive, const WCHAR* path) {
-    AutoFree pathUtf = strconv::WstrToUtf8(path);
-    bool ok = archive->Open(ar_open_file_w(path), pathUtf);
+    auto pathA = ToUtf8Temp(path);
+    bool ok = archive->Open(ar_open_file_w(path), pathA.Get());
     if (!ok) {
         delete archive;
         return nullptr;
@@ -193,7 +215,6 @@ static MultiFormatArchive* open(MultiFormatArchive* archive, IStream* stream) {
     }
     return archive;
 }
-#endif
 
 MultiFormatArchive* OpenZipArchive(const char* path, bool deflatedOnly) {
     auto opener = ar_open_zip_archive_any;
@@ -219,7 +240,6 @@ MultiFormatArchive* OpenRarArchive(const char* path) {
     return open(archive, path);
 }
 
-#if OS_WIN
 MultiFormatArchive* OpenZipArchive(const WCHAR* path, bool deflatedOnly) {
     auto opener = ar_open_zip_archive_any;
     if (deflatedOnly) {
@@ -243,9 +263,7 @@ MultiFormatArchive* OpenRarArchive(const WCHAR* path) {
     auto* archive = new MultiFormatArchive(ar_open_rar_archive, MultiFormatArchive::Format::Rar);
     return open(archive, path);
 }
-#endif
 
-#if OS_WIN
 MultiFormatArchive* OpenZipArchive(IStream* stream, bool deflatedOnly) {
     auto opener = ar_open_zip_archive_any;
     if (deflatedOnly) {
@@ -269,10 +287,6 @@ MultiFormatArchive* OpenRarArchive(IStream* stream) {
     auto* archive = new MultiFormatArchive(ar_open_rar_archive, MultiFormatArchive::Format::Rar);
     return open(archive, stream);
 }
-#endif
-
-// TODO: set include path to ext/ dir
-#include "../../ext/unrar/dll.hpp"
 
 // return 1 on success. Other values for msg that we don't handle: UCM_CHANGEVOLUME, UCM_NEEDPASSWORD
 static int CALLBACK unrarCallback(UINT msg, LPARAM userData, LPARAM rarBuffer, LPARAM bytesProcessed) {
@@ -296,7 +310,7 @@ static bool FindFile(HANDLE hArc, RARHeaderDataEx* rarHeader, const WCHAR* fileN
         if (0 != res) {
             return false;
         }
-        str::TransChars(rarHeader->FileNameW, L"\\", L"/");
+        str::TransCharsInPlace(rarHeader->FileNameW, L"\\", L"/");
         if (str::EqI(rarHeader->FileNameW, fileName)) {
             // don't support files whose uncompressed size is greater than 4GB
             return rarHeader->UnpSizeHigh == 0;
@@ -305,14 +319,20 @@ static bool FindFile(HANDLE hArc, RARHeaderDataEx* rarHeader, const WCHAR* fileN
     }
 }
 
-std::span<u8> MultiFormatArchive::GetFileDataByIdUnarrDll(size_t fileId) {
+ByteSlice MultiFormatArchive::GetFileDataByIdUnarrDll(size_t fileId) {
     CrashIf(!rarFilePath_);
 
-    AutoFreeWstr rarPath = strconv::Utf8ToWstr(rarFilePath_);
+    auto* fileInfo = fileInfos_[fileId];
+    CrashIf(fileInfo->fileId != fileId);
+    if (fileInfo->data != nullptr) {
+        return {(u8*)fileInfo->data, fileInfo->fileSizeUncompressed};
+    }
+
+    auto rarPath = ToWstrTemp(rarFilePath_);
 
     str::Slice uncompressedBuf;
 
-    RAROpenArchiveDataEx arcData = {0};
+    RAROpenArchiveDataEx arcData = {nullptr};
     arcData.ArcNameW = rarPath.Get();
     arcData.OpenMode = RAR_OM_EXTRACT;
     arcData.Callback = unrarCallback;
@@ -323,12 +343,9 @@ std::span<u8> MultiFormatArchive::GetFileDataByIdUnarrDll(size_t fileId) {
         return {};
     }
 
-    auto* fileInfo = fileInfos_[fileId];
-    CrashIf(fileInfo->fileId != fileId);
-
     char* data = nullptr;
     size_t size = 0;
-    AutoFreeWstr fileName = strconv::Utf8ToWstr(fileInfo->name.data());
+    auto fileName = ToWstrTemp(fileInfo->name.data());
     RARHeaderDataEx rarHeader = {0};
     int res;
     bool ok = FindFile(hArc, &rarHeader, fileName.Get());
@@ -362,16 +379,23 @@ Exit:
 
 // asan build crashes in UnRAR code
 // see https://codeeval.dev/gist/801ad556960e59be41690d0c2fa7cba0
-bool MultiFormatArchive::OpenUnrarFallback(const char* rarPathUtf) {
-    if (!rarPathUtf) {
+bool MultiFormatArchive::OpenUnrarFallback(const char* rarPath) {
+    if (!rarPath) {
         return false;
     }
     CrashIf(rarFilePath_);
-    AutoFreeWstr rarPath = strconv::Utf8ToWstr(rarPathUtf);
+    auto rarPathW = ToWstrTemp(rarPath);
 
-    RAROpenArchiveDataEx arcData = {0};
-    arcData.ArcNameW = (WCHAR*)rarPath;
-    arcData.OpenMode = RAR_OM_EXTRACT;
+    str::Slice uncompressedBuf;
+
+    RAROpenArchiveDataEx arcData = {nullptr};
+    arcData.ArcNameW = (WCHAR*)rarPathW;
+    arcData.OpenMode = RAR_OM_LIST;
+    if (loadOnOpen) {
+        arcData.OpenMode = RAR_OM_EXTRACT;
+        arcData.Callback = unrarCallback;
+        arcData.UserData = (LPARAM)&uncompressedBuf;
+    }
 
     HANDLE hArc = RAROpenArchiveEx(&arcData);
     if (!hArc || arcData.OpenResult != 0) {
@@ -386,25 +410,34 @@ bool MultiFormatArchive::OpenUnrarFallback(const char* rarPathUtf) {
             break;
         }
 
-        str::TransChars(rarHeader.FileNameW, L"\\", L"/");
-        AutoFree name = strconv::WstrToUtf8(rarHeader.FileNameW);
+        str::TransCharsInPlace(rarHeader.FileNameW, L"\\", L"/");
+        auto name = ToUtf8Temp(rarHeader.FileNameW);
 
         FileInfo* i = allocator_.AllocStruct<FileInfo>();
         i->fileId = fileId;
         i->fileSizeUncompressed = (size_t)rarHeader.UnpSize;
         i->filePos = 0;
         i->fileTime = (i64)rarHeader.FileTime;
-        i->name = Allocator::AllocString(&allocator_, name.Get());
+        i->name = str::Dup(&allocator_, name.Get());
+        i->data = nullptr;
+        if (loadOnOpen) {
+            // +2 so that it's zero-terminated even when interprted as WCHAR*
+            i->data = AllocArray<char>(i->fileSizeUncompressed + 2);
+            uncompressedBuf.Set(i->data, i->fileSizeUncompressed);
+        }
         fileInfos_.Append(i);
 
         fileId++;
 
-        RARProcessFile(hArc, RAR_SKIP, nullptr, nullptr);
+        int op = RAR_SKIP;
+        if (loadOnOpen) {
+            op = RAR_EXTRACT;
+        }
+        RARProcessFile(hArc, op, nullptr, nullptr);
     }
 
     RARCloseArchive(hArc);
 
-    auto tmp = Allocator::AllocString(&allocator_, rarPathUtf);
-    rarFilePath_ = tmp.data();
+    rarFilePath_ = str::Dup(&allocator_, rarPath);
     return true;
 }

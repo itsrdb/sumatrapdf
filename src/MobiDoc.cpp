@@ -10,15 +10,16 @@
 #include "utils/GdiPlusUtil.h"
 #include "utils/HtmlParserLookup.h"
 #include "utils/HtmlPullParser.h"
-#include "utils/PalmDbReader.h"
 #include "utils/TrivialHtmlParser.h"
 
 #include "wingui/TreeModel.h"
-
-#include "Annotation.h"
+#include "DisplayMode.h"
+#include "Controller.h"
 #include "EngineBase.h"
 #include "EbookBase.h"
+#include "PalmDbReader.h"
 #include "MobiDoc.h"
+
 #include "utils/Log.h"
 
 constexpr size_t kInvalidSize = (size_t)-1;
@@ -492,7 +493,7 @@ bool MobiDoc::ParseHeader() {
         return false;
     }
 
-    std::span<u8> rec = pdbReader->GetRecord(0);
+    auto rec = pdbReader->GetRecord(0);
     u8* firstRecData = rec.data();
     size_t recSize = rec.size();
     if (!firstRecData || recSize < kPalmDocHeaderLen) {
@@ -545,7 +546,7 @@ bool MobiDoc::ParseHeader() {
         compressionType = COMPRESSION_UNSUPPORTED_DRM;
         Metadata prop;
         prop.prop = DocumentProperty::UnsupportedFeatures;
-        auto tmp = strconv::WstrToCodePage(L"DRM", mobiHdr.textEncoding);
+        auto tmp = strconv::WstrToCodePageV(mobiHdr.textEncoding, L"DRM");
         prop.value = (char*)tmp.data();
         props.Append(prop);
     }
@@ -560,7 +561,7 @@ bool MobiDoc::ParseHeader() {
             imagesCount = pdbReader->GetRecordCount() - imageFirstRec;
         }
     }
-    if (kPalmDocHeaderLen + mobiHdr.hdrLen > recSize) {
+    if (kPalmDocHeaderLen + (size_t)mobiHdr.hdrLen > recSize) {
         logf("MobiHeader too big\n");
         return false;
     }
@@ -673,7 +674,7 @@ bool MobiDoc::DecodeExthHeader(const u8* data, size_t dataLen) {
             default:
                 continue;
         }
-        prop.value = str::DupN((char*)(data + d.Offset() - length + 8), length - 8);
+        prop.value = str::Dup((char*)(data + d.Offset() - length + 8), length - 8);
         if (prop.value) {
             props.Append(prop);
         }
@@ -690,11 +691,11 @@ bool MobiDoc::DecodeExthHeader(const u8* data, size_t dataLen) {
 #define SRCS_REC 0x53524353 // 'SRCS'
 #define VIDE_REC 0x56494445 // 'VIDE'
 
-static bool IsEofRecord(std::span<u8> d) {
+static bool IsEofRecord(ByteSlice d) {
     return (4 == d.size()) && (EOF_REC == UInt32BE(d.data()));
 }
 
-static bool KnownNonImageRec(std::span<u8> d) {
+static bool KnownNonImageRec(ByteSlice d) {
     if (d.size() < 4) {
         return false;
     }
@@ -712,8 +713,8 @@ static bool KnownNonImageRec(std::span<u8> d) {
     return false;
 }
 
-static bool KnownImageFormat(std::span<u8> d) {
-    return ImgFormat::Unknown != GfxFormatFromData(d);
+static bool KnownImageFormat(ByteSlice d) {
+    return nullptr != GuessFileTypeFromContent(d);
 }
 
 // return false if we should stop loading images (because we
@@ -721,7 +722,7 @@ static bool KnownImageFormat(std::span<u8> d) {
 bool MobiDoc::LoadImage(size_t imageNo) {
     size_t imageRec = imageFirstRec + imageNo;
 
-    std::span<u8> rec = pdbReader->GetRecord(imageRec);
+    auto rec = pdbReader->GetRecord(imageRec);
     if (rec.empty()) {
         return false;
     }
@@ -735,8 +736,7 @@ bool MobiDoc::LoadImage(size_t imageNo) {
         logf("MobiDoc::LoadImage: unknown image format\n");
         return true;
     }
-    images[imageNo].data = (char*)rec.data();
-    images[imageNo].len = rec.size();
+    images[imageNo] = rec;
     return true;
 }
 
@@ -744,7 +744,7 @@ void MobiDoc::LoadImages() {
     if (0 == imagesCount) {
         return;
     }
-    images = AllocArray<ImageData>(imagesCount);
+    images = AllocArray<ByteSlice>(imagesCount);
     for (size_t i = 0; i < imagesCount; i++) {
         if (!LoadImage(i)) {
             return;
@@ -756,23 +756,23 @@ void MobiDoc::LoadImages() {
 // as far as I can tell, this means: it starts at 1
 // returns nullptr if there is no image (e.g. it's not a format we
 // recognize)
-ImageData* MobiDoc::GetImage(size_t imgRecIndex) const {
+ByteSlice* MobiDoc::GetImage(size_t imgRecIndex) const {
     if ((imgRecIndex > imagesCount) || (imgRecIndex < 1)) {
         return nullptr;
     }
     --imgRecIndex;
-    if (!images[imgRecIndex].data || (0 == images[imgRecIndex].len)) {
+    if (images[imgRecIndex].empty()) {
         return nullptr;
     }
     return &images[imgRecIndex];
 }
 
-ImageData* MobiDoc::GetCoverImage() {
+ByteSlice* MobiDoc::GetCoverImage() {
     if (!coverImageRec || coverImageRec < imageFirstRec) {
         return nullptr;
     }
     size_t imageNo = coverImageRec - imageFirstRec;
-    if (imageNo >= imagesCount || !images[imageNo].data) {
+    if (imageNo >= imagesCount || images[imageNo].empty()) {
         return nullptr;
     }
     return &images[imageNo];
@@ -816,7 +816,7 @@ static size_t GetRealRecordSize(const u8* recData, size_t recLen, size_t trailer
 // Load a given record of a document into strOut, uncompressing if necessary.
 // Returns false if error.
 bool MobiDoc::LoadDocRecordIntoBuffer(size_t recNo, str::Str& strOut) {
-    std::span<u8> rec = pdbReader->GetRecord(recNo);
+    auto rec = pdbReader->GetRecord(recNo);
     u8* recData = rec.data();
     if (nullptr == recData) {
         return false;
@@ -857,7 +857,6 @@ bool MobiDoc::LoadDocRecordIntoBuffer(size_t recNo, str::Str& strOut) {
 }
 
 bool MobiDoc::LoadDocument(PdbReader* pdbReader) {
-    logToDebugger = true;
     this->pdbReader = pdbReader;
     if (!ParseHeader()) {
         return false;
@@ -888,7 +887,7 @@ bool MobiDoc::LoadDocument(PdbReader* pdbReader) {
         *s = ' ';
     }
     if (textEncoding != CP_UTF8) {
-        const char* docUtf8 = strconv::ToMultiByte(doc->Get(), textEncoding, CP_UTF8).data();
+        const char* docUtf8 = strconv::ToMultiByteV(doc->Get(), textEncoding, CP_UTF8).data();
         if (docUtf8) {
             doc->Reset();
             doc->AppendAndFree(docUtf8);
@@ -897,7 +896,7 @@ bool MobiDoc::LoadDocument(PdbReader* pdbReader) {
     return true;
 }
 
-std::span<u8> MobiDoc::GetHtmlData() const {
+ByteSlice MobiDoc::GetHtmlData() const {
     if (doc) {
         return doc->AsSpan();
     }
@@ -907,7 +906,7 @@ std::span<u8> MobiDoc::GetHtmlData() const {
 WCHAR* MobiDoc::GetProperty(DocumentProperty prop) {
     for (size_t i = 0; i < props.size(); i++) {
         if (props.at(i).prop == prop) {
-            return strconv::FromCodePage(props.at(i).value, textEncoding);
+            return strconv::StrToWstr(props.at(i).value, textEncoding);
         }
     }
     return nullptr;

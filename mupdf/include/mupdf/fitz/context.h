@@ -1,3 +1,25 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #ifndef MUPDF_FITZ_CONTEXT_H
 #define MUPDF_FITZ_CONTEXT_H
 
@@ -45,6 +67,9 @@ const char *fz_caught_message(fz_context *ctx);
 int fz_caught(fz_context *ctx);
 void fz_rethrow_if(fz_context *ctx, int errcode);
 
+void fz_start_throw_on_repair(fz_context *ctx);
+void fz_end_throw_on_repair(fz_context *ctx);
+
 enum
 {
 	FZ_ERROR_NONE = 0,
@@ -54,6 +79,7 @@ enum
 	FZ_ERROR_MINOR = 4,
 	FZ_ERROR_TRYLATER = 5,
 	FZ_ERROR_ABORT = 6,
+	FZ_ERROR_REPAIRED = 7,
 	FZ_ERROR_COUNT
 };
 
@@ -526,16 +552,23 @@ int fz_do_try(fz_context *ctx);
 int fz_do_always(fz_context *ctx);
 int fz_do_catch(fz_context *ctx);
 
+#ifndef FZ_JMPBUF_ALIGN
+#define FZ_JMPBUF_ALIGN 32
+#endif
+
 typedef struct
 {
-	int state, code;
 	fz_jmp_buf buffer;
+	int state, code;
+	char padding[FZ_JMPBUF_ALIGN-sizeof(int)*2];
 } fz_error_stack_slot;
 
 typedef struct
 {
 	fz_error_stack_slot *top;
 	fz_error_stack_slot stack[256];
+	fz_error_stack_slot padding;
+	fz_error_stack_slot *stack_base;
 	int errcode;
 	void *print_user;
 	void (*print)(void *user, const char *message);
@@ -574,6 +607,7 @@ struct fz_context
 #if FZ_ENABLE_ICC
 	int icc_enabled;
 #endif
+	int throw_on_repair;
 
 	/* TODO: should these be unshared? */
 	fz_document_handler_context *handler;
@@ -625,6 +659,21 @@ fz_keep_imp(fz_context *ctx, void *p, int *refs)
 			++*refs;
 		}
 		fz_unlock(ctx, FZ_LOCK_ALLOC);
+	}
+	return p;
+}
+
+static inline void *
+fz_keep_imp_locked(fz_context *ctx FZ_UNUSED, void *p, int *refs)
+{
+	if (p)
+	{
+		(void)Memento_checkIntPointerOrNull(refs);
+		if (*refs > 0)
+		{
+			(void)Memento_takeRef(p);
+			++*refs;
+		}
 	}
 	return p;
 }

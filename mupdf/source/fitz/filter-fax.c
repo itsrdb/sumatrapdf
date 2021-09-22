@@ -1,3 +1,25 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #include "mupdf/fitz.h"
 
 #include <string.h>
@@ -702,6 +724,7 @@ eol:
 			fax->dim = 2;
 	}
 
+#if 0
 	/* if end_of_line & encoded_byte_align, EOLs are *not* optional */
 	if (fax->encoded_byte_align)
 	{
@@ -710,6 +733,40 @@ eol:
 		else
 			eat_bits(fax, (8 - fax->bidx) & 7);
 	}
+#else
+	/* SumatraPDF: from https://bugs.ghostscript.com/show_bug.cgi?id=702896 */
+	/*
+	 *  If we're not expecting an EOL, try and align. If the alignment is invalid
+	 *  (not all zeros), skip it and turn off the alignment flag.
+	 *
+	 *  A note about how this works: when we start reading a line (in `loop` above)
+	 *  there is already logic to skip any number of leading 0 bits followed by an
+	 *  EOL. So, if we're expecting an EOL (i.e. if fax->end_of_line is set), then
+	 *  we don't have to handle anything here; we can just let that logic take care
+	 *  of it. This also allows us to handle the case where the alignment is missing
+	 *  but end_of_line is set; from source code comments in other
+	 *  PDF packages apparently acrobat/other tools will sometimes do this, and
+	 *  we've seen examples in the wild.
+	 */
+	if (fax->encoded_byte_align && ! fax->end_of_line)
+	{
+			int to_eat = (8 - fax->bidx) & 7;
+				/* This explicit check prevents us from right-shifting by
+				 * 32 bits, which is not allowed and puts us in the realm of
+				 * undefined behavior
+				*/
+				if (to_eat != 0) 
+				{
+						if (fax->word >> (32 - to_eat) == 0) 
+						{
+								eat_bits(fax, to_eat);
+						} else {
+								/* The data actually wasn't aligned */
+								fax->encoded_byte_align = 0;
+						}
+				}
+		}
+#endif
 
 	/* no more space in output, don't decode the next row yet */
 	if (p == fax->buffer + max)

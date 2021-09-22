@@ -1,7 +1,7 @@
 /* Copyright 2021 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-struct ChmDoc;
+struct ChmFile;
 struct ChmTocTraceItem;
 class HtmlWindow;
 class HtmlWindowCallback;
@@ -12,32 +12,35 @@ struct ChmModel : Controller {
     ~ChmModel() override;
 
     // meta data
-    const WCHAR* FilePath() const override;
-    const WCHAR* DefaultFileExt() const override;
-    int PageCount() const override;
+    [[nodiscard]] const WCHAR* GetFilePath() const override;
+    [[nodiscard]] const WCHAR* GetDefaultFileExt() const override;
+    [[nodiscard]] int PageCount() const override;
     WCHAR* GetProperty(DocumentProperty prop) override;
 
     // page navigation (stateful)
-    int CurrentPageNo() const override;
+    [[nodiscard]] int CurrentPageNo() const override;
     void GoToPage(int pageNo, bool addNavPoint) override;
-    bool CanNavigate(int dir) const override;
+    [[nodiscard]] bool CanNavigate(int dir) const override;
     void Navigate(int dir) override;
 
     // view settings
     void SetDisplayMode(DisplayMode mode, bool keepContinuous = false) override;
-    DisplayMode GetDisplayMode() const override;
+    [[nodiscard]] DisplayMode GetDisplayMode() const override;
     void SetPresentationMode(bool enable) override;
     void SetZoomVirtual(float zoom, Point* fixPt) override;
-    float GetZoomVirtual(bool absolute = false) const override;
-    float GetNextZoomStep(float towards) const override;
+    [[nodiscard]] float GetZoomVirtual(bool absolute = false) const override;
+    [[nodiscard]] float GetNextZoomStep(float towards) const override;
     void SetViewPortSize(Size size) override;
 
     // table of contents
     TocTree* GetToc() override;
-    void ScrollToLink(PageDestination* link) override;
-    PageDestination* GetNamedDest(const WCHAR* name) override;
+    void ScrollTo(int pageNo, RectF rect, float zoom) override;
 
-    void GetDisplayState(DisplayState* ds) override;
+    bool HandleLink(IPageDestination*, ILinkHandler*) override;
+
+    IPageDestination* GetNamedDest(const WCHAR* name) override;
+
+    void GetDisplayState(FileState* ds) override;
     // asynchronously calls saveThumbnail (fails silently)
     void CreateThumbnail(Size size, const onBitmapRenderedCb& saveThumbnail) override;
 
@@ -51,23 +54,23 @@ struct ChmModel : Controller {
     bool SetParentHwnd(HWND hwnd);
     void RemoveParentHwnd();
 
-    void PrintCurrentPage(bool showUI);
-    void FindInCurrentPage();
-    void SelectAll();
-    void CopySelection();
-    LRESULT PassUIMsg(UINT msg, WPARAM wp, LPARAM lp);
+    void PrintCurrentPage(bool showUI) const;
+    void FindInCurrentPage() const;
+    void SelectAll() const;
+    void CopySelection() const;
+    LRESULT PassUIMsg(UINT msg, WPARAM wp, LPARAM lp) const;
 
     // for HtmlWindowCallback (called through htmlWindowCb)
     bool OnBeforeNavigate(const WCHAR* url, bool newWindow);
     void OnDocumentComplete(const WCHAR* url);
     void OnLButtonDown();
-    std::span<u8> GetDataForUrl(const WCHAR* url);
-    void DownloadData(const WCHAR* url, std::span<u8> data);
+    ByteSlice GetDataForUrl(const WCHAR* url);
+    void DownloadData(const WCHAR* url, ByteSlice data);
 
     static bool IsSupportedFileType(Kind);
 
     AutoFreeWstr fileName;
-    ChmDoc* doc = nullptr;
+    ChmFile* doc = nullptr;
     TocTree* tocTree = nullptr;
     CRITICAL_SECTION docAccess;
     Vec<ChmTocTraceItem>* tocTrace = nullptr;
@@ -86,7 +89,7 @@ struct ChmModel : Controller {
     bool Load(const WCHAR* fileName);
     void DisplayPage(const WCHAR* pageUrl);
 
-    ChmCacheEntry* FindDataForUrl(const WCHAR* url);
+    ChmCacheEntry* FindDataForUrl(const WCHAR* url) const;
 
-    void ZoomTo(float zoomLevel);
+    void ZoomTo(float zoomLevel) const;
 };

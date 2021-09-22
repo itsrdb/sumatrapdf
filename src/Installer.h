@@ -31,7 +31,6 @@ extern int gButtonDy;
 struct ButtonCtrl;
 
 extern WCHAR* firstError;
-extern Flags* gCli;
 extern const WCHAR* gDefaultMsg;
 extern HWND gHwndFrame;
 extern HFONT gFontDefault;
@@ -68,8 +67,9 @@ const WCHAR** GetSupportedExts();
 
 WCHAR* GetShortcutPath(int csidl);
 
+bool ExtractInstallerFiles();
 WCHAR* GetExistingInstallationDir();
-WCHAR* GetInstallDirNoFree();
+WCHAR* GetInstallDirTemp();
 WCHAR* GetInstalledExePath();
 
 WCHAR* GetInstallationFilePath(const WCHAR* name);

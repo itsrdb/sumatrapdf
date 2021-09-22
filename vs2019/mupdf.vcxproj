@@ -9,28 +9,12 @@
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug x32_asan|Win32">
-      <Configuration>Debug x32_asan</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug x32_asan|x64">
-      <Configuration>Debug x32_asan</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug x64_asan|Win32">
       <Configuration>Debug x64_asan</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Debug x64_asan|x64">
       <Configuration>Debug x64_asan</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug x64_ramicro|Win32">
-      <Configuration>Debug x64_ramicro</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug x64_ramicro|x64">
-      <Configuration>Debug x64_ramicro</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
@@ -41,28 +25,12 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Release x32_asan|Win32">
-      <Configuration>Release x32_asan</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release x32_asan|x64">
-      <Configuration>Release x32_asan</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Release x64_asan|Win32">
       <Configuration>Release x64_asan</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release x64_asan|x64">
       <Configuration>Release x64_asan</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release x64_ramicro|Win32">
-      <Configuration>Release x64_ramicro</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release x64_ramicro|x64">
-      <Configuration>Release x64_ramicro</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="ReleaseAnalyze|Win32">
@@ -73,28 +41,12 @@
       <Configuration>ReleaseAnalyze</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="ReleaseAnalyze x32_asan|Win32">
-      <Configuration>ReleaseAnalyze x32_asan</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="ReleaseAnalyze x32_asan|x64">
-      <Configuration>ReleaseAnalyze x32_asan</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="ReleaseAnalyze x64_asan|Win32">
       <Configuration>ReleaseAnalyze x64_asan</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="ReleaseAnalyze x64_asan|x64">
       <Configuration>ReleaseAnalyze x64_asan</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="ReleaseAnalyze x64_ramicro|Win32">
-      <Configuration>ReleaseAnalyze x64_ramicro</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="ReleaseAnalyze x64_ramicro|x64">
-      <Configuration>ReleaseAnalyze x64_ramicro</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
@@ -107,42 +59,23 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug x32_asan|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
+    <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
+    <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug x64_asan|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug x64_ramicro|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
+    <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release x32_asan|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
@@ -161,23 +94,8 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release x64_ramicro|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x32_asan|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
@@ -196,22 +114,11 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_ramicro|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug x32_asan|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -220,13 +127,7 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug x64_asan|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug x64_ramicro|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release x32_asan|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -235,13 +136,7 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release x64_asan|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release x64_ramicro|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x32_asan|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze|x64'">
@@ -250,19 +145,10 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_asan|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_ramicro|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>..\out\dbg32\</OutDir>
     <IntDir>..\out\dbg32\obj\x32\Debug\mupdf\</IntDir>
-    <TargetName>mupdf</TargetName>
-    <TargetExt>.lib</TargetExt>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug x32_asan|Win32'">
-    <OutDir>..\out\dbg32_asan\</OutDir>
-    <IntDir>..\out\dbg32_asan\obj\x32_asan\Debug\mupdf\</IntDir>
     <TargetName>mupdf</TargetName>
     <TargetExt>.lib</TargetExt>
   </PropertyGroup>
@@ -278,21 +164,9 @@
     <TargetName>mupdf</TargetName>
     <TargetExt>.lib</TargetExt>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug x64_ramicro|x64'">
-    <OutDir>..\out\dbg64ra\</OutDir>
-    <IntDir>..\out\dbg64ra\obj\x64_ramicro\Debug\mupdf\</IntDir>
-    <TargetName>mupdf</TargetName>
-    <TargetExt>.lib</TargetExt>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>..\out\rel32\</OutDir>
     <IntDir>..\out\rel32\obj\x32\Release\mupdf\</IntDir>
-    <TargetName>mupdf</TargetName>
-    <TargetExt>.lib</TargetExt>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release x32_asan|Win32'">
-    <OutDir>..\out\rel32_asan\</OutDir>
-    <IntDir>..\out\rel32_asan\obj\x32_asan\Release\mupdf\</IntDir>
     <TargetName>mupdf</TargetName>
     <TargetExt>.lib</TargetExt>
   </PropertyGroup>
@@ -303,26 +177,14 @@
     <TargetExt>.lib</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release x64_asan|x64'">
-    <OutDir>..\out\re64_asan\</OutDir>
-    <IntDir>..\out\re64_asan\obj\x64_asan\Release\mupdf\</IntDir>
-    <TargetName>mupdf</TargetName>
-    <TargetExt>.lib</TargetExt>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release x64_ramicro|x64'">
-    <OutDir>..\out\rel64ra\</OutDir>
-    <IntDir>..\out\rel64ra\obj\x64_ramicro\Release\mupdf\</IntDir>
+    <OutDir>..\out\rel64_asan\</OutDir>
+    <IntDir>..\out\rel64_asan\obj\x64_asan\Release\mupdf\</IntDir>
     <TargetName>mupdf</TargetName>
     <TargetExt>.lib</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze|Win32'">
     <OutDir>..\out\rel32_prefast\</OutDir>
     <IntDir>..\out\rel32_prefast\obj\x32\ReleaseAnalyze\mupdf\</IntDir>
-    <TargetName>mupdf</TargetName>
-    <TargetExt>.lib</TargetExt>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x32_asan|Win32'">
-    <OutDir>..\out\rel32_prefast_asan\</OutDir>
-    <IntDir>..\out\rel32_prefast_asan\obj\x32_asan\ReleaseAnalyze\mupdf\</IntDir>
     <TargetName>mupdf</TargetName>
     <TargetExt>.lib</TargetExt>
   </PropertyGroup>
@@ -338,50 +200,21 @@
     <TargetName>mupdf</TargetName>
     <TargetExt>.lib</TargetExt>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_ramicro|x64'">
-    <OutDir>..\out\rel64ra_prefast\</OutDir>
-    <IntDir>..\out\rel64ra_prefast\obj\x64_ramicro\ReleaseAnalyze\mupdf\</IntDir>
-    <TargetName>mupdf</TargetName>
-    <TargetExt>.lib</TargetExt>
-  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;DEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4457;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;_HAS_ITERATOR_DEBUGGING=0;DEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;X86_FEATURES;X86_PCLMULQDQ_CRC;X86_SSE2;X86_SSE42_CRC_INTRIN;X86_SSE42_CRC_HASH;X86_AVX2;X86_AVX_CHUNKSET;X86_SSE2_CHUNKSET;UNALIGNED_OK;UNALIGNED64_OK;WITH_GZFILEOP;ZLIB_COMPAT;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib-ng;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;..\ext\extract\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>false</MinimalRebuild>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <ExceptionHandling>false</ExceptionHandling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <FullProgramDatabaseFile>true</FullProgramDatabaseFile>
-      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug x32_asan|Win32'">
-    <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
-      <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;DEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
-      <Optimization>Disabled</Optimization>
-      <MinimalRebuild>false</MinimalRebuild>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <ExceptionHandling>false</ExceptionHandling>
-      <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions>/fsanitize=address %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -394,13 +227,13 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;DEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4457;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;_HAS_ITERATOR_DEBUGGING=0;DEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;X86_FEATURES;X86_PCLMULQDQ_CRC;X86_SSE2;X86_SSE42_CRC_INTRIN;X86_SSE42_CRC_HASH;X86_AVX2;X86_AVX_CHUNKSET;X86_SSE2_CHUNKSET;UNALIGNED_OK;UNALIGNED64_OK;WITH_GZFILEOP;ZLIB_COMPAT;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib-ng;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;..\ext\extract\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>false</MinimalRebuild>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <ExceptionHandling>false</ExceptionHandling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -416,39 +249,17 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;DEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4457;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>ASAN_BUILD=1;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;_HAS_ITERATOR_DEBUGGING=0;DEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;X86_FEATURES;X86_PCLMULQDQ_CRC;X86_SSE2;X86_SSE42_CRC_INTRIN;X86_SSE42_CRC_HASH;X86_AVX2;X86_AVX_CHUNKSET;X86_SSE2_CHUNKSET;UNALIGNED_OK;UNALIGNED64_OK;WITH_GZFILEOP;ZLIB_COMPAT;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib-ng;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;..\ext\extract\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>false</MinimalRebuild>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <ExceptionHandling>false</ExceptionHandling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/fsanitize=address %(AdditionalOptions)</AdditionalOptions>
-    </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <FullProgramDatabaseFile>true</FullProgramDatabaseFile>
-      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug x64_ramicro|x64'">
-    <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
-      <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;DEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
-      <Optimization>Disabled</Optimization>
-      <MinimalRebuild>false</MinimalRebuild>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <ExceptionHandling>false</ExceptionHandling>
-      <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -461,11 +272,11 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4457;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;_HAS_ITERATOR_DEBUGGING=0;NDEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;X86_FEATURES;X86_PCLMULQDQ_CRC;X86_SSE2;X86_SSE42_CRC_INTRIN;X86_SSE42_CRC_HASH;X86_AVX2;X86_AVX_CHUNKSET;X86_SSE2_CHUNKSET;UNALIGNED_OK;UNALIGNED64_OK;WITH_GZFILEOP;ZLIB_COMPAT;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib-ng;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;..\ext\extract\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
+      <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
@@ -474,33 +285,6 @@
       <ExceptionHandling>false</ExceptionHandling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release x32_asan|Win32'">
-    <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
-      <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <MinimalRebuild>false</MinimalRebuild>
-      <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <ExceptionHandling>false</ExceptionHandling>
-      <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions>/fsanitize=address %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -514,11 +298,11 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4457;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;_HAS_ITERATOR_DEBUGGING=0;NDEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;X86_FEATURES;X86_PCLMULQDQ_CRC;X86_SSE2;X86_SSE42_CRC_INTRIN;X86_SSE42_CRC_HASH;X86_AVX2;X86_AVX_CHUNKSET;X86_SSE2_CHUNKSET;UNALIGNED_OK;UNALIGNED64_OK;WITH_GZFILEOP;ZLIB_COMPAT;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib-ng;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;..\ext\extract\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
+      <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
@@ -540,11 +324,11 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4457;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>ASAN_BUILD=1;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;_HAS_ITERATOR_DEBUGGING=0;NDEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;X86_FEATURES;X86_PCLMULQDQ_CRC;X86_SSE2;X86_SSE42_CRC_INTRIN;X86_SSE42_CRC_HASH;X86_AVX2;X86_AVX_CHUNKSET;X86_SSE2_CHUNKSET;UNALIGNED_OK;UNALIGNED64_OK;WITH_GZFILEOP;ZLIB_COMPAT;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib-ng;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;..\ext\extract\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
+      <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
@@ -554,32 +338,6 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/fsanitize=address %(AdditionalOptions)</AdditionalOptions>
-    </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release x64_ramicro|x64'">
-    <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
-      <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <MinimalRebuild>false</MinimalRebuild>
-      <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <ExceptionHandling>false</ExceptionHandling>
-      <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -592,11 +350,11 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4457;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;_HAS_ITERATOR_DEBUGGING=0;NDEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;X86_FEATURES;X86_PCLMULQDQ_CRC;X86_SSE2;X86_SSE42_CRC_INTRIN;X86_SSE42_CRC_HASH;X86_AVX2;X86_AVX_CHUNKSET;X86_SSE2_CHUNKSET;UNALIGNED_OK;UNALIGNED64_OK;WITH_GZFILEOP;ZLIB_COMPAT;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib-ng;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;..\ext\extract\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
+      <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
@@ -605,33 +363,6 @@
       <ExceptionHandling>false</ExceptionHandling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <FullProgramDatabaseFile>true</FullProgramDatabaseFile>
-      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x32_asan|Win32'">
-    <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <MinimalRebuild>false</MinimalRebuild>
-      <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <ExceptionHandling>false</ExceptionHandling>
-      <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions>/fsanitize=address %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -645,11 +376,11 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4457;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;_HAS_ITERATOR_DEBUGGING=0;NDEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;X86_FEATURES;X86_PCLMULQDQ_CRC;X86_SSE2;X86_SSE42_CRC_INTRIN;X86_SSE42_CRC_HASH;X86_AVX2;X86_AVX_CHUNKSET;X86_SSE2_CHUNKSET;UNALIGNED_OK;UNALIGNED64_OK;WITH_GZFILEOP;ZLIB_COMPAT;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib-ng;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;..\ext\extract\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
+      <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
@@ -671,11 +402,11 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4457;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>ASAN_BUILD=1;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;_HAS_ITERATOR_DEBUGGING=0;NDEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;X86_FEATURES;X86_PCLMULQDQ_CRC;X86_SSE2;X86_SSE42_CRC_INTRIN;X86_SSE42_CRC_HASH;X86_AVX2;X86_AVX_CHUNKSET;X86_SSE2_CHUNKSET;UNALIGNED_OK;UNALIGNED64_OK;WITH_GZFILEOP;ZLIB_COMPAT;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib-ng;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;..\ext\extract\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
+      <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
@@ -685,32 +416,6 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/fsanitize=address %(AdditionalOptions)</AdditionalOptions>
-    </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <FullProgramDatabaseFile>true</FullProgramDatabaseFile>
-      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_ramicro|x64'">
-    <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4702;4800;6319;4005;4018;4057;4100;4115;4130;4204;4206;4245;4267;4295;4305;4389;4456;4703;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;USE_JPIP;OPJ_EXPORTS;HAVE_LCMS2MT=1;OPJ_STATIC;SHARE_JPEG;TOFU;TOFU_CJK_LANG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\mupdf\include;..\mupdf\generated;..\ext\jbig2dec;..\ext\libjpeg-turbo;..\ext\openjpeg\src\lib\openjp2;..\ext\zlib;..\mupdf\scripts\freetype;..\ext\freetype\include;..\ext\mujs;..\ext\harfbuzz\src;..\ext\lcms2\include;..\ext\gumbo-parser\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <MinimalRebuild>false</MinimalRebuild>
-      <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <ExceptionHandling>false</ExceptionHandling>
-      <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -736,6 +441,7 @@
     <ClInclude Include="..\mupdf\include\mupdf\fitz\device.h" />
     <ClInclude Include="..\mupdf\include\mupdf\fitz\display-list.h" />
     <ClInclude Include="..\mupdf\include\mupdf\fitz\document.h" />
+    <ClInclude Include="..\mupdf\include\mupdf\fitz\export.h" />
     <ClInclude Include="..\mupdf\include\mupdf\fitz\filter.h" />
     <ClInclude Include="..\mupdf\include\mupdf\fitz\font.h" />
     <ClInclude Include="..\mupdf\include\mupdf\fitz\geometry.h" />
@@ -785,7 +491,6 @@
     <ClInclude Include="..\mupdf\include\mupdf\pdf\javascript.h" />
     <ClInclude Include="..\mupdf\include\mupdf\pdf\name-table.h" />
     <ClInclude Include="..\mupdf\include\mupdf\pdf\object.h" />
-    <ClInclude Include="..\mupdf\include\mupdf\pdf\output-pdf.h" />
     <ClInclude Include="..\mupdf\include\mupdf\pdf\page.h" />
     <ClInclude Include="..\mupdf\include\mupdf\pdf\parse.h" />
     <ClInclude Include="..\mupdf\include\mupdf\pdf\resource.h" />
@@ -808,6 +513,8 @@
     <ClInclude Include="..\mupdf\source\fitz\tessocr.h" />
     <ClInclude Include="..\mupdf\source\fitz\ucdn_db.h" />
     <ClInclude Include="..\mupdf\source\fitz\z-imp.h" />
+    <ClInclude Include="..\mupdf\source\pdf\annotation-icons.h" />
+    <ClInclude Include="..\mupdf\source\pdf\pdf-annot-imp.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ext\mupdf_load_system_font.c" />
@@ -878,7 +585,7 @@
     <ClCompile Include="..\mupdf\source\fitz\load-jbig2.c" />
     <ClCompile Include="..\mupdf\source\fitz\load-jpeg.c" />
     <ClCompile Include="..\mupdf\source\fitz\load-jpx.c" />
-    <ClCompile Include="..\mupdf\source\fitz\load-jxr.c" />
+    <ClCompile Include="..\mupdf\source\fitz\load-jxr-win.c" />
     <ClCompile Include="..\mupdf\source\fitz\load-png.c" />
     <ClCompile Include="..\mupdf\source\fitz\load-pnm.c" />
     <ClCompile Include="..\mupdf\source\fitz\load-tiff.c" />
@@ -888,6 +595,7 @@
     <ClCompile Include="..\mupdf\source\fitz\noto.c" />
     <ClCompile Include="..\mupdf\source\fitz\outline.c" />
     <ClCompile Include="..\mupdf\source\fitz\output-cbz.c" />
+    <ClCompile Include="..\mupdf\source\fitz\output-docx.c" />
     <ClCompile Include="..\mupdf\source\fitz\output-pcl.c" />
     <ClCompile Include="..\mupdf\source\fitz\output-pclm.c" />
     <ClCompile Include="..\mupdf\source\fitz\output-pdfocr.c" />
@@ -982,6 +690,7 @@
     <ClCompile Include="..\mupdf\source\pdf\pdf-write.c" />
     <ClCompile Include="..\mupdf\source\pdf\pdf-xobject.c" />
     <ClCompile Include="..\mupdf\source\pdf\pdf-xref.c" />
+    <ClCompile Include="..\mupdf\source\reflow\reflow-doc.c" />
     <ClCompile Include="..\mupdf\source\svg\svg-color.c" />
     <ClCompile Include="..\mupdf\source\svg\svg-doc.c" />
     <ClCompile Include="..\mupdf\source\svg\svg-parse.c" />
@@ -1003,82 +712,40 @@
     <CustomBuild Include="..\mupdf\fonts_32.asm">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\bin\nasm.exe -f win32 -I ../mupdf/ -o "$(IntDir)/%(Filename).obj" "%(Identity)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug x32_asan|Win32'">..\bin\nasm.exe -f win32 -I ../mupdf/ -o "$(IntDir)/%(Filename).obj" "%(Identity)"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\bin\nasm.exe -f win32 -I ../mupdf/ -o "$(IntDir)/%(Filename).obj" "%(Identity)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release x32_asan|Win32'">..\bin\nasm.exe -f win32 -I ../mupdf/ -o "$(IntDir)/%(Filename).obj" "%(Identity)"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze|Win32'">..\bin\nasm.exe -f win32 -I ../mupdf/ -o "$(IntDir)/%(Filename).obj" "%(Identity)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x32_asan|Win32'">..\bin\nasm.exe -f win32 -I ../mupdf/ -o "$(IntDir)/%(Filename).obj" "%(Identity)"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../out/dbg32/obj/x32/Debug/mupdf/fonts_32.obj</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug x32_asan|Win32'">../out/dbg32_asan/obj/x32_asan/Debug/mupdf/fonts_32.obj</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">../out/rel32/obj/x32/Release/mupdf/fonts_32.obj</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release x32_asan|Win32'">../out/rel32_asan/obj/x32_asan/Release/mupdf/fonts_32.obj</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze|Win32'">../out/rel32_prefast/obj/x32/ReleaseAnalyze/mupdf/fonts_32.obj</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x32_asan|Win32'">../out/rel32_prefast_asan/obj/x32_asan/ReleaseAnalyze/mupdf/fonts_32.obj</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compiling %(Identity)</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug x32_asan|Win32'">Compiling %(Identity)</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compiling %(Identity)</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release x32_asan|Win32'">Compiling %(Identity)</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze|Win32'">Compiling %(Identity)</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x32_asan|Win32'">Compiling %(Identity)</Message>
     </CustomBuild>
     <CustomBuild Include="..\mupdf\fonts_64.asm">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\bin\nasm.exe -f win64 -DWIN64 -I ../mupdf/ -o "$(IntDir)/%(Filename).obj" "%(Identity)"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug x64_asan|x64'">..\bin\nasm.exe -f win64 -DWIN64 -I ../mupdf/ -o "$(IntDir)/%(Filename).obj" "%(Identity)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug x64_ramicro|x64'">..\bin\nasm.exe -f win64 -DWIN64 -I ../mupdf/ -o "$(IntDir)/%(Filename).obj" "%(Identity)"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\bin\nasm.exe -f win64 -DWIN64 -I ../mupdf/ -o "$(IntDir)/%(Filename).obj" "%(Identity)"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release x64_asan|x64'">..\bin\nasm.exe -f win64 -DWIN64 -I ../mupdf/ -o "$(IntDir)/%(Filename).obj" "%(Identity)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release x64_ramicro|x64'">..\bin\nasm.exe -f win64 -DWIN64 -I ../mupdf/ -o "$(IntDir)/%(Filename).obj" "%(Identity)"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze|x64'">..\bin\nasm.exe -f win64 -DWIN64 -I ../mupdf/ -o "$(IntDir)/%(Filename).obj" "%(Identity)"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_asan|x64'">..\bin\nasm.exe -f win64 -DWIN64 -I ../mupdf/ -o "$(IntDir)/%(Filename).obj" "%(Identity)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_ramicro|x64'">..\bin\nasm.exe -f win64 -DWIN64 -I ../mupdf/ -o "$(IntDir)/%(Filename).obj" "%(Identity)"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">../out/dbg64/obj/x64/Debug/mupdf/fonts_64.obj</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug x64_asan|x64'">../out/dbg64_asan/obj/x64_asan/Debug/mupdf/fonts_64.obj</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug x64_ramicro|x64'">../out/dbg64ra/obj/x64_ramicro/Debug/mupdf/fonts_64.obj</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">../out/rel64/obj/x64/Release/mupdf/fonts_64.obj</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release x64_asan|x64'">../out/re64_asan/obj/x64_asan/Release/mupdf/fonts_64.obj</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release x64_ramicro|x64'">../out/rel64ra/obj/x64_ramicro/Release/mupdf/fonts_64.obj</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release x64_asan|x64'">../out/rel64_asan/obj/x64_asan/Release/mupdf/fonts_64.obj</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze|x64'">../out/rel64_prefast/obj/x64/ReleaseAnalyze/mupdf/fonts_64.obj</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_asan|x64'">../out/rel64_prefast_asan/obj/x64_asan/ReleaseAnalyze/mupdf/fonts_64.obj</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_ramicro|x64'">../out/rel64ra_prefast/obj/x64_ramicro/ReleaseAnalyze/mupdf/fonts_64.obj</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compiling %(Identity)</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug x64_asan|x64'">Compiling %(Identity)</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug x64_ramicro|x64'">Compiling %(Identity)</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compiling %(Identity)</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release x64_asan|x64'">Compiling %(Identity)</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release x64_ramicro|x64'">Compiling %(Identity)</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze|x64'">Compiling %(Identity)</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_asan|x64'">Compiling %(Identity)</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_ramicro|x64'">Compiling %(Identity)</Message>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="zlib.vcxproj">
-      <Project>{16CFA17C-0206-A30D-ABF2-881097081F0F}</Project>
-    </ProjectReference>
-    <ProjectReference Include="freetype.vcxproj">
-      <Project>{89895BD8-7556-B6E3-9E6F-A48B8A9BEB71}</Project>
-    </ProjectReference>
-    <ProjectReference Include="libjpeg-turbo.vcxproj">
-      <Project>{DB56484D-4717-C483-1052-0D017CD10860}</Project>
-    </ProjectReference>
-    <ProjectReference Include="jbig2dec.vcxproj">
-      <Project>{BF5813C3-AB25-6ECE-D43E-5C76C06AA35C}</Project>
-    </ProjectReference>
-    <ProjectReference Include="openjpeg.vcxproj">
-      <Project>{FDC4548D-E991-AF98-12AB-9D40FED6E426}</Project>
-    </ProjectReference>
-    <ProjectReference Include="lcms2.vcxproj">
-      <Project>{C67ED90F-3293-01C1-FB14-A52067E8FDF1}</Project>
-    </ProjectReference>
-    <ProjectReference Include="harfbuzz.vcxproj">
-      <Project>{B1649CB2-9D31-F7BD-C64A-E565B2762C4C}</Project>
-    </ProjectReference>
-    <ProjectReference Include="mujs.vcxproj">
-      <Project>{A4D49A7C-900B-9C0D-39F8-8110250E180F}</Project>
-    </ProjectReference>
-    <ProjectReference Include="gumbo.vcxproj">
-      <Project>{1FE1880F-8BF5-B0C0-5477-5420C04AADF1}</Project>
+    <ProjectReference Include="mupdf-libs.vcxproj">
+      <Project>{18B1F38A-0469-35D8-6D70-0E345947D0C8}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

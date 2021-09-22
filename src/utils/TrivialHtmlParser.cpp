@@ -62,7 +62,7 @@ static WCHAR IntToChar(int codepoint) {
 
 // caller needs to free() the result
 WCHAR* DecodeHtmlEntitites(const char* string, uint codepage) {
-    WCHAR* fixed = strconv::FromCodePage(string, codepage);
+    WCHAR* fixed = strconv::StrToWstr(string, codepage);
     WCHAR* dst = fixed;
     const WCHAR* src = fixed;
 
@@ -108,8 +108,7 @@ WCHAR* DecodeHtmlEntitites(const char* string, uint codepage) {
 
 HtmlParser::HtmlParser()
 
-{
-}
+    = default;
 
 HtmlParser::~HtmlParser() {
     if (freeHtml) {
@@ -239,7 +238,7 @@ size_t HtmlParser::TotalAttrCount() const {
 
 // Parse s in place i.e. we assume we can modify it. Must be 0-terminated.
 // The caller owns the memory for s.
-HtmlElement* HtmlParser::ParseInPlace(std::span<u8> d, uint codepage) {
+HtmlElement* HtmlParser::ParseInPlace(ByteSlice d, uint codepage) {
     if (this->html) {
         Reset();
     }
@@ -290,8 +289,8 @@ HtmlElement* HtmlParser::ParseInPlace(std::span<u8> d, uint codepage) {
     return rootElement;
 }
 
-HtmlElement* HtmlParser::Parse(std::span<u8> d, uint codepage) {
-    char* s = str::DupN(d);
+HtmlElement* HtmlParser::Parse(ByteSlice d, uint codepage) {
+    char* s = str::Dup(d);
     HtmlElement* root = ParseInPlace(str::ToSpan(s), codepage);
     freeHtml = true;
     return root;

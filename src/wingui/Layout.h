@@ -5,7 +5,7 @@
 
 const int Inf = std::numeric_limits<int>::max();
 
-RECT RectToRECT(const Rect);
+RECT RectToRECT(Rect);
 
 int Clamp(int v, int vmin, int vmax);
 int Scale(int v, i64 num, i64 den);
@@ -15,36 +15,36 @@ struct Constraints {
     Size min{};
     Size max{};
 
-    Size Constrain(const Size) const;
-    Size ConstrainAndAttemptToPreserveAspectRatio(const Size) const;
-    int ConstrainHeight(int height) const;
-    int ConstrainWidth(int width) const;
-    bool HasBoundedHeight() const;
-    bool HasBoundedWidth() const;
-    bool HasTightWidth() const;
-    bool HasTightHeight() const;
-    Constraints Inset(int width, int height) const;
-    bool IsBounded() const;
-    bool IsNormalized() const;
-    bool IsTight() const;
-    bool IsSatisfiedBy(Size) const;
-    bool IsZero() const;
-    Constraints Loosen() const;
-    Constraints LoosenHeight() const;
-    Constraints LoosenWidth() const;
-    Constraints Tighten(Size) const;
-    Constraints TightenHeight(int height) const;
-    Constraints TightenWidth(int width) const;
+    [[nodiscard]] Size Constrain(Size) const;
+    [[nodiscard]] Size ConstrainAndAttemptToPreserveAspectRatio(Size) const;
+    [[nodiscard]] int ConstrainHeight(int height) const;
+    [[nodiscard]] int ConstrainWidth(int width) const;
+    [[nodiscard]] bool HasBoundedHeight() const;
+    [[nodiscard]] bool HasBoundedWidth() const;
+    [[nodiscard]] bool HasTightWidth() const;
+    [[nodiscard]] bool HasTightHeight() const;
+    [[nodiscard]] Constraints Inset(int width, int height) const;
+    [[nodiscard]] bool IsBounded() const;
+    [[nodiscard]] bool IsNormalized() const;
+    [[nodiscard]] bool IsTight() const;
+    [[nodiscard]] bool IsSatisfiedBy(Size) const;
+    [[nodiscard]] bool IsZero() const;
+    [[nodiscard]] Constraints Loosen() const;
+    [[nodiscard]] Constraints LoosenHeight() const;
+    [[nodiscard]] Constraints LoosenWidth() const;
+    [[nodiscard]] Constraints Tighten(Size) const;
+    [[nodiscard]] Constraints TightenHeight(int height) const;
+    [[nodiscard]] Constraints TightenWidth(int width) const;
 };
 
 Constraints ExpandInf();
 Constraints ExpandHeight(int width);
 Constraints ExpandWidth(int height);
-Constraints Loose(const Size size);
-Constraints Tight(const Size size);
+Constraints Loose(Size size);
+Constraints Tight(Size size);
 Constraints TightHeight(int height);
 
-typedef std::function<void()> NeedLayout;
+using NeedLayout = std::function<void()>;
 
 // works like css visibility property
 enum class Visibility {
@@ -56,13 +56,14 @@ enum class Visibility {
 };
 
 struct ILayout {
-    virtual ~ILayout(){};
+    virtual ~ILayout() = default;
+    ;
     virtual Kind GetKind() = 0;
     virtual void SetVisibility(Visibility) = 0;
     virtual Visibility GetVisibility() = 0;
     virtual int MinIntrinsicHeight(int width) = 0;
     virtual int MinIntrinsicWidth(int height) = 0;
-    virtual Size Layout(const Constraints bc) = 0;
+    virtual Size Layout(Constraints bc) = 0;
     virtual void SetBounds(Rect) = 0;
 };
 
@@ -77,7 +78,7 @@ struct LayoutBase : public ILayout {
     Rect lastBounds{};
 
     LayoutBase() = default;
-    LayoutBase(Kind);
+    explicit LayoutBase(Kind);
 
     Kind GetKind() override;
     void SetVisibility(Visibility) override;
@@ -105,7 +106,7 @@ struct Padding : LayoutBase {
 
     Padding(ILayout*, const Insets&);
     ~Padding() override;
-    Size Layout(const Constraints bc) override;
+    Size Layout(Constraints bc) override;
     int MinIntrinsicHeight(int width) override;
     int MinIntrinsicWidth(int height) override;
     void SetBounds(Rect) override;
@@ -159,16 +160,16 @@ struct VBox : LayoutBase {
 
     VBox();
     ~VBox() override;
-    Size Layout(const Constraints bc) override;
+    Size Layout(Constraints bc) override;
     int MinIntrinsicHeight(int width) override;
     int MinIntrinsicWidth(int height) override;
     void SetBounds(Rect bounds) override;
 
-    void SetBoundsForChild(int i, ILayout* v, int posX, int posY, int posX2, int posY2);
+    void SetBoundsForChild(int i, ILayout* v, int posX, int posY, int posX2, int posY2) const;
 
     boxElementInfo& AddChild(ILayout* child);
     boxElementInfo& AddChild(ILayout* child, int flex);
-    int ChildrenCount();
+    int ChildrenCount() const;
     int NonCollapsedChildrenCount();
 };
 
@@ -182,15 +183,15 @@ struct HBox : LayoutBase {
     int totalFlex = 0;
 
     ~HBox() override;
-    Size Layout(const Constraints bc) override;
+    Size Layout(Constraints bc) override;
     int MinIntrinsicHeight(int width) override;
     int MinIntrinsicWidth(int height) override;
     void SetBounds(Rect bounds) override;
 
-    void SetBoundsForChild(int i, ILayout* v, int posX, int posY, int posX2, int posY2);
+    void SetBoundsForChild(int i, ILayout* v, int posX, int posY, int posX2, int posY2) const;
     boxElementInfo& AddChild(ILayout* child);
     boxElementInfo& AddChild(ILayout* child, int flex);
-    int ChildrenCount();
+    int ChildrenCount() const;
     int NonCollapsedChildrenCount();
 };
 
@@ -208,12 +209,12 @@ struct Align : LayoutBase {
     Alignment VAlign = AlignStart; // Vertical alignment of child widget.
     float WidthFactor = 0;         // If greater than zero, ratio of container width to child width.
     float HeightFactor = 0;        // If greater than zero, ratio of container height to child height.
-    ILayout* Child = 0;
+    ILayout* Child = nullptr;
     Size childSize{};
 
-    Align(ILayout*);
+    explicit Align(ILayout*);
     ~Align() override;
-    Size Layout(const Constraints bc) override;
+    Size Layout(Constraints bc) override;
     int MinIntrinsicHeight(int width) override;
     int MinIntrinsicWidth(int height) override;
     void SetBounds(Rect) override;
@@ -227,14 +228,14 @@ struct Spacer : LayoutBase {
 
     Spacer(int, int);
     ~Spacer() override;
-    Size Layout(const Constraints bc) override;
+    Size Layout(Constraints bc) override;
     int MinIntrinsicHeight(int width) override;
     int MinIntrinsicWidth(int height) override;
     void SetBounds(Rect) override;
 };
 
 void LayoutAndSizeToContent(ILayout* layout, int minDx, int minDy, HWND hwnd);
-Size LayoutToSize(ILayout* layout, const Size size);
+Size LayoutToSize(ILayout* layout, Size size);
 
 void dbglayoutf(const char* fmt, ...);
 void LogConstraints(Constraints c, const char* suffix);

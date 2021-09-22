@@ -9,28 +9,12 @@
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug x32_asan|Win32">
-      <Configuration>Debug x32_asan</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug x32_asan|x64">
-      <Configuration>Debug x32_asan</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug x64_asan|Win32">
       <Configuration>Debug x64_asan</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Debug x64_asan|x64">
       <Configuration>Debug x64_asan</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug x64_ramicro|Win32">
-      <Configuration>Debug x64_ramicro</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug x64_ramicro|x64">
-      <Configuration>Debug x64_ramicro</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
@@ -41,28 +25,12 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Release x32_asan|Win32">
-      <Configuration>Release x32_asan</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release x32_asan|x64">
-      <Configuration>Release x32_asan</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Release x64_asan|Win32">
       <Configuration>Release x64_asan</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release x64_asan|x64">
       <Configuration>Release x64_asan</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release x64_ramicro|Win32">
-      <Configuration>Release x64_ramicro</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release x64_ramicro|x64">
-      <Configuration>Release x64_ramicro</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="ReleaseAnalyze|Win32">
@@ -73,28 +41,12 @@
       <Configuration>ReleaseAnalyze</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="ReleaseAnalyze x32_asan|Win32">
-      <Configuration>ReleaseAnalyze x32_asan</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="ReleaseAnalyze x32_asan|x64">
-      <Configuration>ReleaseAnalyze x32_asan</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="ReleaseAnalyze x64_asan|Win32">
       <Configuration>ReleaseAnalyze x64_asan</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="ReleaseAnalyze x64_asan|x64">
       <Configuration>ReleaseAnalyze x64_asan</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="ReleaseAnalyze x64_ramicro|Win32">
-      <Configuration>ReleaseAnalyze x64_ramicro</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="ReleaseAnalyze x64_ramicro|x64">
-      <Configuration>ReleaseAnalyze x64_ramicro</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
@@ -106,12 +58,6 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug x32_asan|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
@@ -129,37 +75,21 @@
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug x64_ramicro|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v142</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release x32_asan|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release x64_asan|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release x64_ramicro|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
@@ -170,26 +100,16 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v142</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x32_asan|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_asan|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_ramicro|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
@@ -201,22 +121,13 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug x32_asan|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug x64_asan|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug x64_ramicro|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release x32_asan|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -225,13 +136,7 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release x64_asan|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release x64_ramicro|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x32_asan|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze|x64'">
@@ -240,21 +145,11 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_asan|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_ramicro|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>..\out\dbg32\</OutDir>
     <IntDir>..\out\dbg32\obj\x32\Debug\libmupdf\</IntDir>
-    <TargetName>libmupdf</TargetName>
-    <TargetExt>.dll</TargetExt>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug x32_asan|Win32'">
-    <LinkIncremental>false</LinkIncremental>
-    <OutDir>..\out\dbg32_asan\</OutDir>
-    <IntDir>..\out\dbg32_asan\obj\x32_asan\Debug\libmupdf\</IntDir>
     <TargetName>libmupdf</TargetName>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
@@ -272,24 +167,10 @@
     <TargetName>libmupdf</TargetName>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug x64_ramicro|x64'">
-    <LinkIncremental>false</LinkIncremental>
-    <OutDir>..\out\dbg64ra\</OutDir>
-    <IntDir>..\out\dbg64ra\obj\x64_ramicro\Debug\libmupdf\</IntDir>
-    <TargetName>libmupdf</TargetName>
-    <TargetExt>.dll</TargetExt>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>..\out\rel32\</OutDir>
     <IntDir>..\out\rel32\obj\x32\Release\libmupdf\</IntDir>
-    <TargetName>libmupdf</TargetName>
-    <TargetExt>.dll</TargetExt>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release x32_asan|Win32'">
-    <LinkIncremental>false</LinkIncremental>
-    <OutDir>..\out\rel32_asan\</OutDir>
-    <IntDir>..\out\rel32_asan\obj\x32_asan\Release\libmupdf\</IntDir>
     <TargetName>libmupdf</TargetName>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
@@ -302,15 +183,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release x64_asan|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>..\out\re64_asan\</OutDir>
-    <IntDir>..\out\re64_asan\obj\x64_asan\Release\libmupdf\</IntDir>
-    <TargetName>libmupdf</TargetName>
-    <TargetExt>.dll</TargetExt>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release x64_ramicro|x64'">
-    <LinkIncremental>false</LinkIncremental>
-    <OutDir>..\out\rel64ra\</OutDir>
-    <IntDir>..\out\rel64ra\obj\x64_ramicro\Release\libmupdf\</IntDir>
+    <OutDir>..\out\rel64_asan\</OutDir>
+    <IntDir>..\out\rel64_asan\obj\x64_asan\Release\libmupdf\</IntDir>
     <TargetName>libmupdf</TargetName>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
@@ -318,13 +192,6 @@
     <LinkIncremental>false</LinkIncremental>
     <OutDir>..\out\rel32_prefast\</OutDir>
     <IntDir>..\out\rel32_prefast\obj\x32\ReleaseAnalyze\libmupdf\</IntDir>
-    <TargetName>libmupdf</TargetName>
-    <TargetExt>.dll</TargetExt>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x32_asan|Win32'">
-    <LinkIncremental>false</LinkIncremental>
-    <OutDir>..\out\rel32_prefast_asan\</OutDir>
-    <IntDir>..\out\rel32_prefast_asan\obj\x32_asan\ReleaseAnalyze\libmupdf\</IntDir>
     <TargetName>libmupdf</TargetName>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
@@ -342,23 +209,16 @@
     <TargetName>libmupdf</TargetName>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_ramicro|x64'">
-    <LinkIncremental>false</LinkIncremental>
-    <OutDir>..\out\rel64ra_prefast\</OutDir>
-    <IntDir>..\out\rel64ra_prefast\obj\x64_ramicro\ReleaseAnalyze\libmupdf\</IntDir>
-    <TargetName>libmupdf</TargetName>
-    <TargetExt>.dll</TargetExt>
-  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4800;6319;4206;4702;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <UndefinePreprocessorDefinitions>DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
+      <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
@@ -369,7 +229,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -380,42 +240,8 @@
       <AdditionalDependencies>advapi32.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;shell32.lib;windowscodecs.lib;comctl32.lib;msimg32.lib;winspool.lib;wininet.lib;urlmon.lib;gdiplus.lib;ole32.lib;oleAut32.lib;shlwapi.lib;version.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImportLibrary>..\out\dbg32\libmupdf.lib</ImportLibrary>
       <GenerateMapFile>true</GenerateMapFile>
-      <AdditionalOptions>/DEF:..\src\libmupdf.def -IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug x32_asan|Win32'">
-    <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
-      <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4800;6319;4206;4702;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <UndefinePreprocessorDefinitions>DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <MinimalRebuild>false</MinimalRebuild>
-      <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <ExceptionHandling>false</ExceptionHandling>
-      <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions>/fsanitize=address %(AdditionalOptions)</AdditionalOptions>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;RAMICRO;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <FullProgramDatabaseFile>true</FullProgramDatabaseFile>
-      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>advapi32.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;shell32.lib;windowscodecs.lib;comctl32.lib;msimg32.lib;winspool.lib;wininet.lib;urlmon.lib;gdiplus.lib;ole32.lib;oleAut32.lib;shlwapi.lib;version.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ImportLibrary>..\out\dbg32_asan\libmupdf.lib</ImportLibrary>
-      <GenerateMapFile>true</GenerateMapFile>
-      <AdditionalOptions>/DEF:..\src\libmupdf.def -IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
+      <ModuleDefinitionFile>../src/libmupdf.def</ModuleDefinitionFile>
+      <AdditionalOptions>-IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -424,10 +250,10 @@
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4800;6319;4206;4702;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <UndefinePreprocessorDefinitions>DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
+      <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
@@ -438,7 +264,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_WIN64;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_WIN64;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -449,7 +275,8 @@
       <AdditionalDependencies>advapi32.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;shell32.lib;windowscodecs.lib;comctl32.lib;msimg32.lib;winspool.lib;wininet.lib;urlmon.lib;gdiplus.lib;ole32.lib;oleAut32.lib;shlwapi.lib;version.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImportLibrary>..\out\dbg64\libmupdf.lib</ImportLibrary>
       <GenerateMapFile>true</GenerateMapFile>
-      <AdditionalOptions>/DEF:..\src\libmupdf.def -IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
+      <ModuleDefinitionFile>../src/libmupdf.def</ModuleDefinitionFile>
+      <AdditionalOptions>-IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug x64_asan|x64'">
@@ -458,10 +285,10 @@
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4800;6319;4206;4702;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ASAN_BUILD=1;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <UndefinePreprocessorDefinitions>DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
+      <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
@@ -473,7 +300,7 @@
       <AdditionalOptions>/fsanitize=address %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;RAMICRO;_WIN64;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ASAN_BUILD=1;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_WIN64;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -484,41 +311,8 @@
       <AdditionalDependencies>advapi32.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;shell32.lib;windowscodecs.lib;comctl32.lib;msimg32.lib;winspool.lib;wininet.lib;urlmon.lib;gdiplus.lib;ole32.lib;oleAut32.lib;shlwapi.lib;version.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImportLibrary>..\out\dbg64_asan\libmupdf.lib</ImportLibrary>
       <GenerateMapFile>true</GenerateMapFile>
-      <AdditionalOptions>/DEF:..\src\libmupdf.def -IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug x64_ramicro|x64'">
-    <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
-      <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4800;6319;4206;4702;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <UndefinePreprocessorDefinitions>DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <MinimalRebuild>false</MinimalRebuild>
-      <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <ExceptionHandling>false</ExceptionHandling>
-      <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_WIN64;RAMICRO;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <FullProgramDatabaseFile>true</FullProgramDatabaseFile>
-      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>advapi32.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;shell32.lib;windowscodecs.lib;comctl32.lib;msimg32.lib;winspool.lib;wininet.lib;urlmon.lib;gdiplus.lib;ole32.lib;oleAut32.lib;shlwapi.lib;version.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ImportLibrary>..\out\dbg64ra\libmupdf.lib</ImportLibrary>
-      <GenerateMapFile>true</GenerateMapFile>
-      <AdditionalOptions>/DEF:..\src\libmupdf.def -IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
+      <ModuleDefinitionFile>../src/libmupdf.def</ModuleDefinitionFile>
+      <AdditionalOptions>-IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -527,10 +321,10 @@
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4800;6319;4206;4702;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <UndefinePreprocessorDefinitions>DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
+      <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
@@ -541,7 +335,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -551,41 +345,8 @@
       <AdditionalDependencies>advapi32.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;shell32.lib;windowscodecs.lib;comctl32.lib;msimg32.lib;winspool.lib;wininet.lib;urlmon.lib;gdiplus.lib;ole32.lib;oleAut32.lib;shlwapi.lib;version.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImportLibrary>..\out\rel32\libmupdf.lib</ImportLibrary>
       <GenerateMapFile>true</GenerateMapFile>
-      <AdditionalOptions>/DEF:..\src\libmupdf.def -IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release x32_asan|Win32'">
-    <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
-      <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4800;6319;4206;4702;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <UndefinePreprocessorDefinitions>DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <MinimalRebuild>false</MinimalRebuild>
-      <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <ExceptionHandling>false</ExceptionHandling>
-      <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions>/fsanitize=address %(AdditionalOptions)</AdditionalOptions>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;RAMICRO;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>advapi32.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;shell32.lib;windowscodecs.lib;comctl32.lib;msimg32.lib;winspool.lib;wininet.lib;urlmon.lib;gdiplus.lib;ole32.lib;oleAut32.lib;shlwapi.lib;version.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ImportLibrary>..\out\rel32_asan\libmupdf.lib</ImportLibrary>
-      <GenerateMapFile>true</GenerateMapFile>
-      <AdditionalOptions>/DEF:..\src\libmupdf.def -IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
+      <ModuleDefinitionFile>../src/libmupdf.def</ModuleDefinitionFile>
+      <AdditionalOptions>-IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -594,10 +355,10 @@
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4800;6319;4206;4702;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <UndefinePreprocessorDefinitions>DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
+      <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
@@ -608,7 +369,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_WIN64;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_WIN64;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -618,7 +379,8 @@
       <AdditionalDependencies>advapi32.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;shell32.lib;windowscodecs.lib;comctl32.lib;msimg32.lib;winspool.lib;wininet.lib;urlmon.lib;gdiplus.lib;ole32.lib;oleAut32.lib;shlwapi.lib;version.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImportLibrary>..\out\rel64\libmupdf.lib</ImportLibrary>
       <GenerateMapFile>true</GenerateMapFile>
-      <AdditionalOptions>/DEF:..\src\libmupdf.def -IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
+      <ModuleDefinitionFile>../src/libmupdf.def</ModuleDefinitionFile>
+      <AdditionalOptions>-IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release x64_asan|x64'">
@@ -627,10 +389,10 @@
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4800;6319;4206;4702;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ASAN_BUILD=1;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <UndefinePreprocessorDefinitions>DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
+      <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
@@ -642,7 +404,7 @@
       <AdditionalOptions>/fsanitize=address %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;RAMICRO;_WIN64;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ASAN_BUILD=1;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_WIN64;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -650,42 +412,10 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>advapi32.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;shell32.lib;windowscodecs.lib;comctl32.lib;msimg32.lib;winspool.lib;wininet.lib;urlmon.lib;gdiplus.lib;ole32.lib;oleAut32.lib;shlwapi.lib;version.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ImportLibrary>..\out\re64_asan\libmupdf.lib</ImportLibrary>
+      <ImportLibrary>..\out\rel64_asan\libmupdf.lib</ImportLibrary>
       <GenerateMapFile>true</GenerateMapFile>
-      <AdditionalOptions>/DEF:..\src\libmupdf.def -IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release x64_ramicro|x64'">
-    <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
-      <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4800;6319;4206;4702;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <UndefinePreprocessorDefinitions>DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <MinimalRebuild>false</MinimalRebuild>
-      <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <ExceptionHandling>false</ExceptionHandling>
-      <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_WIN64;RAMICRO;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>advapi32.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;shell32.lib;windowscodecs.lib;comctl32.lib;msimg32.lib;winspool.lib;wininet.lib;urlmon.lib;gdiplus.lib;ole32.lib;oleAut32.lib;shlwapi.lib;version.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ImportLibrary>..\out\rel64ra\libmupdf.lib</ImportLibrary>
-      <GenerateMapFile>true</GenerateMapFile>
-      <AdditionalOptions>/DEF:..\src\libmupdf.def -IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
+      <ModuleDefinitionFile>../src/libmupdf.def</ModuleDefinitionFile>
+      <AdditionalOptions>-IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze|Win32'">
@@ -693,10 +423,10 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4800;6319;4206;4702;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <UndefinePreprocessorDefinitions>DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
+      <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
@@ -707,7 +437,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -718,41 +448,8 @@
       <AdditionalDependencies>advapi32.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;shell32.lib;windowscodecs.lib;comctl32.lib;msimg32.lib;winspool.lib;wininet.lib;urlmon.lib;gdiplus.lib;ole32.lib;oleAut32.lib;shlwapi.lib;version.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImportLibrary>..\out\rel32_prefast\libmupdf.lib</ImportLibrary>
       <GenerateMapFile>true</GenerateMapFile>
-      <AdditionalOptions>/DEF:..\src\libmupdf.def -IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x32_asan|Win32'">
-    <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4800;6319;4206;4702;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <UndefinePreprocessorDefinitions>DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <MinimalRebuild>false</MinimalRebuild>
-      <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <ExceptionHandling>false</ExceptionHandling>
-      <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions>/fsanitize=address %(AdditionalOptions)</AdditionalOptions>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;RAMICRO;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <FullProgramDatabaseFile>true</FullProgramDatabaseFile>
-      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>advapi32.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;shell32.lib;windowscodecs.lib;comctl32.lib;msimg32.lib;winspool.lib;wininet.lib;urlmon.lib;gdiplus.lib;ole32.lib;oleAut32.lib;shlwapi.lib;version.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ImportLibrary>..\out\rel32_prefast_asan\libmupdf.lib</ImportLibrary>
-      <GenerateMapFile>true</GenerateMapFile>
-      <AdditionalOptions>/DEF:..\src\libmupdf.def -IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
+      <ModuleDefinitionFile>../src/libmupdf.def</ModuleDefinitionFile>
+      <AdditionalOptions>-IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze|x64'">
@@ -760,10 +457,10 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4800;6319;4206;4702;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <UndefinePreprocessorDefinitions>DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
+      <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
@@ -774,7 +471,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_WIN64;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_WIN64;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -785,7 +482,8 @@
       <AdditionalDependencies>advapi32.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;shell32.lib;windowscodecs.lib;comctl32.lib;msimg32.lib;winspool.lib;wininet.lib;urlmon.lib;gdiplus.lib;ole32.lib;oleAut32.lib;shlwapi.lib;version.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImportLibrary>..\out\rel64_prefast\libmupdf.lib</ImportLibrary>
       <GenerateMapFile>true</GenerateMapFile>
-      <AdditionalOptions>/DEF:..\src\libmupdf.def -IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
+      <ModuleDefinitionFile>../src/libmupdf.def</ModuleDefinitionFile>
+      <AdditionalOptions>-IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_asan|x64'">
@@ -793,10 +491,10 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4800;6319;4206;4702;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ASAN_BUILD=1;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <UndefinePreprocessorDefinitions>DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
+      <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
@@ -808,7 +506,7 @@
       <AdditionalOptions>/fsanitize=address %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>ASAN_BUILD=1;RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;RAMICRO;_WIN64;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ASAN_BUILD=1;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;_HAS_ITERATOR_DEBUGGING=0;FZ_ENABLE_SVG;_WIN64;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -819,60 +517,34 @@
       <AdditionalDependencies>advapi32.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;shell32.lib;windowscodecs.lib;comctl32.lib;msimg32.lib;winspool.lib;wininet.lib;urlmon.lib;gdiplus.lib;ole32.lib;oleAut32.lib;shlwapi.lib;version.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImportLibrary>..\out\rel64_prefast_asan\libmupdf.lib</ImportLibrary>
       <GenerateMapFile>true</GenerateMapFile>
-      <AdditionalOptions>/DEF:..\src\libmupdf.def -IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAnalyze x64_ramicro|x64'">
-    <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
-      <DisableSpecificWarnings>4127;4189;4324;4458;4522;4611;4800;6319;4206;4702;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <UndefinePreprocessorDefinitions>DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Optimization>Full</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <MinimalRebuild>false</MinimalRebuild>
-      <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <ExceptionHandling>false</ExceptionHandling>
-      <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>RAMICRO;WIN32;_WIN32;WINVER=0x0605;_WIN32_WINNT=0x0603;NDEBUG;FZ_ENABLE_SVG;_WIN64;RAMICRO;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <FullProgramDatabaseFile>true</FullProgramDatabaseFile>
-      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>advapi32.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;shell32.lib;windowscodecs.lib;comctl32.lib;msimg32.lib;winspool.lib;wininet.lib;urlmon.lib;gdiplus.lib;ole32.lib;oleAut32.lib;shlwapi.lib;version.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ImportLibrary>..\out\rel64ra_prefast\libmupdf.lib</ImportLibrary>
-      <GenerateMapFile>true</GenerateMapFile>
-      <AdditionalOptions>/DEF:..\src\libmupdf.def -IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
+      <ModuleDefinitionFile>../src/libmupdf.def</ModuleDefinitionFile>
+      <AdditionalOptions>-IGNORE:4702 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\no_op_for_premake.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\src\libmupdf.def" />
+  </ItemGroup>
+  <ItemGroup>
     <ResourceCompile Include="..\src\libmupdf.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="mupdf-opt.vcxproj">
-      <Project>{C1BD3D23-2D28-F299-7666-A33FE20FD0EE}</Project>
+    <ProjectReference Include="mupdf.vcxproj">
+      <Project>{2181F50F-8D95-1DC1-5617-C120C2EA19F2}</Project>
     </ProjectReference>
-    <ProjectReference Include="libdjvu-opt.vcxproj">
-      <Project>{55D973B3-C18E-ECA8-4A83-E67FB637E3AC}</Project>
+    <ProjectReference Include="zlib-ng.vcxproj">
+      <Project>{584D90B6-C42C-0F52-CD44-9A2839A375B3}</Project>
     </ProjectReference>
-    <ProjectReference Include="unarrlib-opt.vcxproj">
-      <Project>{E4B0F517-D013-85BC-7999-BD7265DB503F}</Project>
+    <ProjectReference Include="libdjvu.vcxproj">
+      <Project>{B5F26479-21D2-E314-2AEA-6EEB96484A76}</Project>
     </ProjectReference>
-    <ProjectReference Include="libwebp-opt.vcxproj">
-      <Project>{2ACF718C-9684-EA81-1F79-E4588B2DE185}</Project>
+    <ProjectReference Include="libwebp.vcxproj">
+      <Project>{0A466F79-7625-EE14-7F3D-79EBEB9B5476}</Project>
+    </ProjectReference>
+    <ProjectReference Include="unarrlib.vcxproj">
+      <Project>{C45AE373-B027-3E7F-D940-2C27C56C730D}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

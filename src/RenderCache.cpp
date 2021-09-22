@@ -7,21 +7,18 @@
 #include "utils/Timer.h"
 
 #include "wingui/TreeModel.h"
-
-#include "Annotation.h"
-#include "EngineBase.h"
-#include "EngineCreate.h"
 #include "DisplayMode.h"
-#include "SettingsStructs.h"
 #include "Controller.h"
+#include "EngineBase.h"
+#include "EngineAll.h"
+#include "SettingsStructs.h"
 #include "DisplayModel.h"
 #include "GlobalPrefs.h"
 #include "RenderCache.h"
 #include "TextSelection.h"
 
-#include "utils/Log.h"
 #define NO_LOG
-#include "utils/LogDbg.h"
+#include "utils/Log.h"
 
 #pragma warning(disable : 28159) // silence /analyze: Consider using 'GetTickCount64' instead of 'GetTickCount'
 
@@ -45,7 +42,7 @@ RenderCache::RenderCache() : maxTileSize({GetSystemMetrics(SM_CXSCREEN), GetSyst
     InitializeCriticalSection(&requestAccess);
 
     startRendering = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-    renderThread = CreateThread(nullptr, 0, RenderCacheThread, this, 0, 0);
+    renderThread = CreateThread(nullptr, 0, RenderCacheThread, this, 0, nullptr);
     CrashIf(nullptr == renderThread);
 }
 
@@ -108,8 +105,8 @@ bool RenderCache::DropCacheEntry(BitmapCacheEntry* entry) {
     }
     CrashIf(entry->refs != 0);
     CrashIf(cache[idx] != entry);
-    dbglogf("RenderCache::DropCacheEntry: pageNo: %d, rotation: %d, zoom: %.2f\n", entry->pageNo, entry->rotation,
-            entry->zoom);
+    logf("RenderCache::DropCacheEntry: pageNo: %d, rotation: %d, zoom: %.2f\n", entry->pageNo, entry->rotation,
+         entry->zoom);
 
     delete entry;
 
@@ -205,7 +202,7 @@ static Rect GetTileRectDevice(EngineBase* engine, int pageNo, int rotation, floa
 
 static RectF GetTileRectUser(EngineBase* engine, int pageNo, int rotation, float zoom, TilePosition tile) {
     Rect pixelbox = GetTileRectDevice(engine, pageNo, rotation, zoom, tile);
-    return engine->Transform(ToRectFl(pixelbox), pageNo, zoom, rotation, true);
+    return engine->Transform(ToRectF(pixelbox), pageNo, zoom, rotation, true);
 }
 
 static Rect GetTileOnScreen(EngineBase* engine, int pageNo, int rotation, float zoom, TilePosition tile,
@@ -240,7 +237,7 @@ static bool IsTileVisible(DisplayModel* dm, int pageNo, TilePosition tile, float
 /* Free all bitmaps in the cache that are of a specific page (or all pages
    of the given DisplayModel, or even all invisible pages). */
 void RenderCache::FreePage(DisplayModel* dm, int pageNo, TilePosition* tile) {
-    dbglogf("RenderCache::FreePage: dm: 0x%p, pageNo: %d\n", dm, pageNo);
+    logf("RenderCache::FreePage: dm: 0x%p, pageNo: %d\n", dm, pageNo);
     ScopedCritSec scope(&cacheAccess);
 
     // must go from end becaues freeing changes the cache
@@ -322,7 +319,7 @@ void RenderCache::Invalidate(DisplayModel* dm, int pageNo, RectF rect) {
 }
 
 // determine the count of tiles required for a page at a given zoom level
-USHORT RenderCache::GetTileRes(DisplayModel* dm, int pageNo) {
+USHORT RenderCache::GetTileRes(DisplayModel* dm, int pageNo) const {
     auto engine = dm->GetEngine();
     RectF mediabox = engine->PageMediabox(pageNo);
     float zoom = dm->GetZoomReal(pageNo);
@@ -369,7 +366,7 @@ USHORT RenderCache::GetMaxTileRes(DisplayModel* dm, int pageNo, int rotation) {
 
 // reduce the size of tiles in order to hopefully use less memory overall
 bool RenderCache::ReduceTileSize() {
-    dbglogf("RenderCache::ReduceTileSize(): reducing tile size (current: %d x %d)\n", maxTileSize.dx, maxTileSize.dy);
+    logf("RenderCache::ReduceTileSize(): reducing tile size (current: %d x %d)\n", maxTileSize.dx, maxTileSize.dy);
     if (maxTileSize.dx < 200 || maxTileSize.dy < 200) {
         return false;
     }
@@ -414,7 +411,7 @@ void RenderCache::RequestRendering(DisplayModel* dm, int pageNo) {
 
 /* Render a bitmap for page <pageNo> in <dm>. */
 void RenderCache::RequestRendering(DisplayModel* dm, int pageNo, TilePosition tile, bool clearQueueForPage) {
-    dbglogf("RenderCache::RequestRendering(): pageNo %d\n", pageNo);
+    logf("RenderCache::RequestRendering(): pageNo %d\n", pageNo);
     ScopedCritSec scope(&requestAccess);
     CrashIf(!dm);
     if (!dm || dm->dontRenderFlag) {
@@ -479,7 +476,7 @@ void RenderCache::Render(DisplayModel* dm, int pageNo, int rotation, float zoom,
 
 bool RenderCache::Render(DisplayModel* dm, int pageNo, int rotation, float zoom, TilePosition* tile, RectF* pageRect,
                          RenderingCallback* renderCb) {
-    dbglogf("RenderCache::Render(): pageNo %d\n", pageNo);
+    logf("RenderCache::Render(): pageNo %d\n", pageNo);
     CrashIf(!dm);
     if (!dm || dm->dontRenderFlag) {
         return false;
@@ -692,7 +689,9 @@ DWORD WINAPI RenderCache::RenderCacheThread(LPVOID data) {
             cache->Add(req, bmp);
             req.dm->RepaintDisplay();
         }
+        ResetTempAllocator();
     }
+    DestroyTempAllocator();
 }
 
 // TODO: conceptually, RenderCache is not the right place for code that paints
@@ -788,7 +787,7 @@ int RenderCache::Paint(HDC hdc, Rect bounds, DisplayModel* dm, int pageNo, PageI
     auto timeStart = TimeGet();
     defer {
         auto dur = TimeSinceInMs(timeStart);
-        logf("RenderCache::Paint() pageNo: %d, bounds={%d,%d,%d,%d} in %.2f\n", pageNo, bounds.x, bounds.y, bounds.dx,
+        logf("RenderCache::Paint() pageNo: %d, bounds={%d,%d,%d,%d} in %.2f ms\n", pageNo, bounds.x, bounds.y, bounds.dx,
              bounds.dy, dur);
     };
 #endif
@@ -798,7 +797,7 @@ int RenderCache::Paint(HDC hdc, Rect bounds, DisplayModel* dm, int pageNo, PageI
         float zoom = dm->GetZoomReal(pageNo);
         bounds = pageInfo->pageOnScreen.Intersect(bounds);
 
-        RectF area = ToRectFl(bounds);
+        RectF area = ToRectF(bounds);
         area.Offset(-pageInfo->pageOnScreen.x, -pageInfo->pageOnScreen.y);
         area = dm->GetEngine()->Transform(area, pageNo, zoom, rotation, true);
 
@@ -867,7 +866,7 @@ int RenderCache::Paint(HDC hdc, Rect bounds, DisplayModel* dm, int pageNo, PageI
         }
         // free tiles with different resolution
         TilePosition tile(targetRes, (USHORT)-1, 0);
-        dbglogf("RenderCache::Paint: calling FreePage() pageNo: %d\n", pageNo);
+        logf("RenderCache::Paint: calling FreePage() pageNo: %d\n", pageNo);
         FreePage(dm, pageNo, &tile);
     }
     FreeNotVisible();

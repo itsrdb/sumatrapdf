@@ -1,12 +1,35 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #ifndef MUPDF_PDF_DOCUMENT_H
 #define MUPDF_PDF_DOCUMENT_H
+
+#include "mupdf/fitz/export.h"
 
 typedef struct pdf_xref pdf_xref;
 typedef struct pdf_ocg_descriptor pdf_ocg_descriptor;
 
 typedef struct pdf_page pdf_page;
 typedef struct pdf_annot pdf_annot;
-typedef struct pdf_annot pdf_widget;
 typedef struct pdf_js pdf_js;
 
 enum
@@ -42,7 +65,13 @@ typedef struct pdf_doc_event pdf_doc_event;
 	the type of function via which the app receives
 	document events.
 */
-typedef void (pdf_doc_event_cb)(fz_context *ctx, pdf_document *doc, pdf_doc_event *event, void *data);
+typedef void (pdf_doc_event_cb)(fz_context *ctx, pdf_document *doc, pdf_doc_event *evt, void *data);
+
+/*
+	the type of function via which the app frees
+	the data provided to the event callback pdf_doc_event_cb.
+*/
+typedef void (pdf_free_doc_event_data_cb)(fz_context *ctx, void *data);
 
 /*
 	Open a PDF document.
@@ -363,10 +392,11 @@ struct pdf_document
 	pdf_js *js;
 
 	int recalculate;
-	int dirty;
 	int redacted;
+	int resynth_required;
 
 	pdf_doc_event_cb *event_cb;
+	pdf_free_doc_event_data_cb *free_event_data_cb;
 	void *event_cb_data;
 
 	int num_type3_fonts;
@@ -472,6 +502,17 @@ void pdf_graft_mapped_page(fz_context *ctx, pdf_graft_map *map, int page_to, pdf
 fz_device *pdf_page_write(fz_context *ctx, pdf_document *doc, fz_rect mediabox, pdf_obj **presources, fz_buffer **pcontents);
 
 /*
+	Create a pdf device. Rendering to the device creates
+	new pdf content. WARNING: this device is work in progress. It doesn't
+	currently support all rendering cases.
+
+	Note that contents must be a stream (dictionary) to be updated (or
+	a reference to a stream). Callers should take care to ensure that it
+	is not an array, and that is it not shared with other objects/pages.
+*/
+fz_device *pdf_new_pdf_device(fz_context *ctx, pdf_document *doc, fz_matrix topctm, pdf_obj *resources, fz_buffer *contents);
+
+/*
 	Create a pdf_obj within a document that
 	represents a page, from a previously created resources
 	dictionary and page content stream. This should then be
@@ -563,9 +604,10 @@ typedef struct
 	int permissions; /* Document encryption permissions. */
 	char opwd_utf8[128]; /* Owner password. */
 	char upwd_utf8[128]; /* User password. */
+	int do_snapshot; /* Do not use directly. Use the snapshot functions. */
 } pdf_write_options;
 
-extern const pdf_write_options pdf_default_write_options;
+FZ_DATA extern const pdf_write_options pdf_default_write_options;
 
 /*
 	Parse option string into a pdf_write_options struct.
@@ -589,12 +631,26 @@ int pdf_has_unsaved_sigs(fz_context *ctx, pdf_document *doc);
 /*
 	Write out the document to an output stream with all changes finalised.
 */
-void pdf_write_document(fz_context *ctx, pdf_document *doc, fz_output *out, pdf_write_options *opts);
+void pdf_write_document(fz_context *ctx, pdf_document *doc, fz_output *out, const pdf_write_options *opts);
 
 /*
 	Write out the document to a file with all changes finalised.
 */
-void pdf_save_document(fz_context *ctx, pdf_document *doc, const char *filename, pdf_write_options *opts);
+void pdf_save_document(fz_context *ctx, pdf_document *doc, const char *filename, const pdf_write_options *opts);
+
+/*
+	Snapshot the document to a file. This does not cause the
+	incremental xref to be finalized, so the document in memory
+	remains (essentially) unchanged.
+*/
+void pdf_save_snapshot(fz_context *ctx, pdf_document *doc, const char *filename);
+
+/*
+	Snapshot the document to an output stream. This does not cause
+	the incremental xref to be finalized, so the document in memory
+	remains (essentially) unchanged.
+*/
+void pdf_write_snapshot(fz_context *ctx, pdf_document *doc, fz_output *out);
 
 char *pdf_format_write_options(fz_context *ctx, char *buffer, size_t buffer_len, const pdf_write_options *opts);
 
@@ -604,5 +660,27 @@ char *pdf_format_write_options(fz_context *ctx, char *buffer, size_t buffer_len,
 	impossible.
 */
 int pdf_can_be_saved_incrementally(fz_context *ctx, pdf_document *doc);
+
+/*
+	Write out the journal to an output stream.
+*/
+void pdf_write_journal(fz_context *ctx, pdf_document *doc, fz_output *out);
+
+/*
+	Write out the journal to a file.
+*/
+void pdf_save_journal(fz_context *ctx, pdf_document *doc, const char *filename);
+
+/*
+	Read a journal from a filename. Will do nothing if the journal
+	does not match. Will throw on a corrupted journal.
+*/
+void pdf_load_journal(fz_context *ctx, pdf_document *doc, const char *filename);
+
+/*
+	Read a journal from a stream. Will do nothing if the journal
+	does not match. Will throw on a corrupted journal.
+*/
+void pdf_read_journal(fz_context *ctx, pdf_document *doc, fz_stream *stm);
 
 #endif

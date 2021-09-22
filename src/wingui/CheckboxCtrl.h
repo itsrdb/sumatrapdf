@@ -7,13 +7,13 @@ enum class CheckState {
     Indeterminate = BST_INDETERMINATE,
 };
 
-typedef std::function<void(CheckState)> OnCheckStateChanged;
+using OnCheckStateChanged = std::function<void(CheckState)>;
 
 struct CheckboxCtrl : WindowBase {
     OnCheckStateChanged onCheckStateChanged = nullptr;
 
-    CheckboxCtrl(HWND parent);
-    ~CheckboxCtrl();
+    explicit CheckboxCtrl(HWND parent);
+    ~CheckboxCtrl() override;
     bool Create() override;
 
     Size GetIdealSize() override;

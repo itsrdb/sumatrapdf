@@ -19,12 +19,14 @@ struct Controller;
 struct ControllerCallback;
 struct ChmModel;
 struct DisplayModel;
-struct EbookController;
 struct TabInfo;
 
 struct TreeCtrl;
 struct TooltipCtrl;
 struct DropDownCtrl;
+
+struct Annotation;
+struct ILinkHandler;
 
 /* Describes actions which can be performed by mouse */
 // clang-format off
@@ -37,8 +39,8 @@ enum class MouseAction {
 };
 // clang-format on
 
-extern NotificationGroupId NG_CURSOR_POS_HELPER;
-extern NotificationGroupId NG_RESPONSE_TO_ACTION;
+extern Kind NG_CURSOR_POS_HELPER;
+extern Kind NG_RESPONSE_TO_ACTION;
 
 // clang-format off
 enum PresentationMode {
@@ -60,13 +62,14 @@ struct TouchState {
 /* Describes position, the target (URL or file path) and infotip of a "hyperlink" */
 struct StaticLinkInfo {
     Rect rect;
-    const WCHAR* target{nullptr};
-    const WCHAR* infotip{nullptr};
+    WCHAR* target{nullptr};
+    WCHAR* infotip{nullptr};
 
+    explicit StaticLinkInfo(Rect rect, const WCHAR* target, const WCHAR* infotip = nullptr);
     StaticLinkInfo() = default;
-    explicit StaticLinkInfo(Rect rect, const WCHAR* target, const WCHAR* infotip = nullptr)
-        : rect(rect), target(target), infotip(infotip) {
-    }
+    StaticLinkInfo(const StaticLinkInfo&);
+    StaticLinkInfo& operator=(const StaticLinkInfo& other);
+    ~StaticLinkInfo();
 };
 
 /* Describes information related to one window with (optional) a document
@@ -80,12 +83,11 @@ struct WindowInfo {
     // TODO: error windows currently have
     //       !IsAboutWindow() && !IsDocLoaded()
     //       which doesn't allow distinction between PDF, XPS, etc. errors
-    bool IsAboutWindow() const;
-    bool IsDocLoaded() const;
+    [[nodiscard]] bool IsAboutWindow() const;
+    [[nodiscard]] bool IsDocLoaded() const;
 
-    DisplayModel* AsFixed() const;
-    ChmModel* AsChm() const;
-    EbookController* AsEbook() const;
+    [[nodiscard]] DisplayModel* AsFixed() const;
+    [[nodiscard]] ChmModel* AsChm() const;
 
     // TODO: use currentTab->ctrl instead
     Controller* ctrl{nullptr}; // owned by currentTab
@@ -95,8 +97,8 @@ struct WindowInfo {
 
     HWND hwndFrame{nullptr};
     HWND hwndCanvas{nullptr};
-    HWND hwndToolbar{nullptr};
     HWND hwndReBar{nullptr};
+    HWND hwndToolbar{nullptr};
     HWND hwndFindText{nullptr};
     HWND hwndFindBox{nullptr};
     HWND hwndFindBg{nullptr};
@@ -104,10 +106,10 @@ struct WindowInfo {
     HWND hwndPageBox{nullptr};
     HWND hwndPageBg{nullptr};
     HWND hwndPageTotal{nullptr};
+    HWND hwndTbInfoText{nullptr};
 
     // state related to table of contents (PDF bookmarks etc.)
     HWND hwndTocBox{nullptr};
-    DropDownCtrl* altBookmarks{nullptr};
 
     LabelWithCloseWnd* tocLabelWithClose{nullptr};
     TreeCtrl* tocTreeCtrl{nullptr};
@@ -124,7 +126,7 @@ struct WindowInfo {
     HWND hwndFavBox{nullptr};
     LabelWithCloseWnd* favLabelWithClose{nullptr};
     TreeCtrl* favTreeCtrl{nullptr};
-    Vec<DisplayState*> expandedFavorites;
+    Vec<FileState*> expandedFavorites;
 
     // vertical splitter for resizing left side panel
     SplitterCtrl* sidebarSplitter{nullptr};
@@ -175,7 +177,7 @@ struct WindowInfo {
     SizeF selectionMeasure;
 
     // a list of static links (mainly used for About and Frequently Read pages)
-    Vec<StaticLinkInfo> staticLinks;
+    Vec<StaticLinkInfo*> staticLinks;
 
     bool isFullScreen{false};
     PresentationMode presentation{PM_DISABLED};
@@ -198,7 +200,7 @@ struct WindowInfo {
     HANDLE findThread{nullptr};
     bool findCanceled{false};
 
-    LinkHandler* linkHandler{nullptr};
+    ILinkHandler* linkHandler{nullptr};
     IPageElement* linkOnLastButtonDown{nullptr};
     const WCHAR* urlOnLastButtonDown{nullptr};
     Annotation* annotationOnLastButtonDown{nullptr};
@@ -228,38 +230,25 @@ struct WindowInfo {
     SumatraUIAutomationProvider* uiaProvider{nullptr};
 
     void UpdateCanvasSize();
-    Size GetViewPortSize();
-    void RedrawAll(bool update = false);
-    void RedrawAllIncludingNonClient(bool update = false);
+    Size GetViewPortSize() const;
+    void RedrawAll(bool update = false) const;
+    void RedrawAllIncludingNonClient(bool update = false) const;
 
     void ChangePresentationMode(PresentationMode mode);
 
-    void Focus();
+    void Focus() const;
 
-    void ToggleZoom();
-    void MoveDocBy(int dx, int dy);
+    void ToggleZoom() const;
+    void MoveDocBy(int dx, int dy) const;
 
-    void ShowToolTip(const WCHAR* text, Rect& rc, bool multiline = false);
-    void HideToolTip();
-    NotificationWnd* ShowNotification(const WCHAR* msg, int options = NOS_WITH_TIMEOUT,
-                                      NotificationGroupId groupId = NG_RESPONSE_TO_ACTION);
+    void ShowToolTip(const WCHAR* text, Rect& rc, bool multiline = false) const;
+    void HideToolTip() const;
+    NotificationWnd* ShowNotification(const WCHAR* msg, NotificationOptions opts = NotificationOptions::WithTimeout,
+                                      Kind groupId = NG_RESPONSE_TO_ACTION);
+    NotificationWnd* ShowNotification(std::string_view, NotificationOptions opts = NotificationOptions::WithTimeout,
+                                      Kind groupId = NG_RESPONSE_TO_ACTION);
 
     bool CreateUIAProvider();
-};
-
-struct LinkHandler {
-    WindowInfo* owner{nullptr};
-
-    void ScrollTo(PageDestination* dest);
-    void LaunchFile(const WCHAR* path, PageDestination* link);
-    PageDestination* FindTocItem(TocItem* item, const WCHAR* name, bool partially = false);
-
-    explicit LinkHandler(WindowInfo* win) {
-        owner = win;
-    }
-
-    void GotoLink(PageDestination* dest);
-    void GotoNamedDest(const WCHAR* name);
 };
 
 void UpdateTreeCtrlColors(WindowInfo*);
@@ -268,3 +257,9 @@ void ClearFindBox(WindowInfo*);
 void CreateMovePatternLazy(WindowInfo*);
 void ClearMouseState(WindowInfo*);
 bool IsRightDragging(WindowInfo*);
+WindowInfo* FindWindowInfoByTabInfo(TabInfo*);
+WindowInfo* FindWindowInfoByHwnd(HWND);
+bool WindowInfoStillValid(WindowInfo*);
+WindowInfo* FindWindowInfoByController(Controller*);
+
+extern Vec<WindowInfo*> gWindows;

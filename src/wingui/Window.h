@@ -56,14 +56,14 @@ struct CopyWndEvent {
     ~CopyWndEvent();
 };
 
-typedef std::function<void(WndEvent*)> MsgFilter;
+using MsgFilter = std::function<void(WndEvent*)>;
 
 struct SizeEvent : WndEvent {
     int dx = 0;
     int dy = 0;
 };
 
-typedef std::function<void(SizeEvent*)> SizeHandler;
+using SizeHandler = std::function<void(SizeEvent*)>;
 
 struct ContextMenuEvent : WndEvent {
     // mouse x,y position relative to the window
@@ -72,7 +72,7 @@ struct ContextMenuEvent : WndEvent {
     Point mouseGlobal{};
 };
 
-typedef std::function<void(ContextMenuEvent*)> ContextMenuHandler;
+using ContextMenuHandler = std::function<void(ContextMenuEvent*)>;
 
 struct WindowCloseEvent : WndEvent {
     bool cancel = false;
@@ -83,27 +83,27 @@ struct WmCommandEvent : WndEvent {
     int ev = 0;
 };
 
-typedef std::function<void(WmCommandEvent*)> WmCommandHandler;
+using WmCommandHandler = std::function<void(WmCommandEvent*)>;
 
 struct WmNotifyEvent : WndEvent {
     NMTREEVIEWW* treeView = nullptr;
 };
 
-typedef std::function<void(WmNotifyEvent*)> WmNotifyHandler;
+using WmNotifyHandler = std::function<void(WmNotifyEvent*)>;
 
-typedef std::function<void(WindowCloseEvent*)> CloseHandler;
+using CloseHandler = std::function<void(WindowCloseEvent*)>;
 
 struct WindowDestroyEvent : WndEvent {
     Window* window = nullptr;
 };
 
-typedef std::function<void(WindowDestroyEvent*)> DestroyHandler;
+using DestroyHandler = std::function<void(WindowDestroyEvent*)>;
 
 struct CharEvent : WndEvent {
     int keyCode = 0;
 };
 
-typedef std::function<void(CharEvent*)> CharHandler;
+using CharHandler = std::function<void(CharEvent*)>;
 
 // TODO: extract data from LPARAM
 struct KeyEvent : WndEvent {
@@ -111,7 +111,7 @@ struct KeyEvent : WndEvent {
     int keyVirtCode = 0;
 };
 
-typedef std::function<void(KeyEvent*)> KeyHandler;
+using KeyHandler = std::function<void(KeyEvent*)>;
 
 struct MouseWheelEvent : WndEvent {
     bool isVertical = false;
@@ -121,80 +121,80 @@ struct MouseWheelEvent : WndEvent {
     int y = 0;
 };
 
-typedef std::function<void(MouseWheelEvent*)> MouseWheelHandler;
+using MouseWheelHandler = std::function<void(MouseWheelEvent*)>;
 
 // https://docs.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-dragacceptfiles
 struct DropFilesEvent : WndEvent {
     HDROP hdrop = nullptr;
 };
 
-typedef std::function<void(DropFilesEvent*)> DropFilesHandler;
+using DropFilesHandler = std::function<void(DropFilesEvent*)>;
 
 struct WindowBase;
 
 struct WindowBase : public ILayout {
-    Kind kind = nullptr;
+    Kind kind{nullptr};
 
     Insets insets{};
     Size childSize{};
     Rect lastBounds{};
 
     // data that can be set before calling Create()
-    Visibility visibility = Visibility::Visible;
+    Visibility visibility{Visibility::Visible};
 
     // either a custom class that we registered or
     // a win32 control class. Assumed static so not freed
-    const WCHAR* winClass = nullptr;
+    const WCHAR* winClass{nullptr};
 
-    HWND parent = nullptr;
+    HWND parent{nullptr};
     Point initialPos{-1, -1};
     Size initialSize{0, 0};
     DWORD dwStyle{0};
     DWORD dwExStyle{0};
-    HFONT hfont = nullptr; // TODO: this should be abstract Font description
+    HFONT hfont{nullptr}; // TODO: this should be abstract Font description
 
     // those tweak WNDCLASSEX for RegisterClass() class
-    HICON hIcon = nullptr;
-    HICON hIconSm = nullptr;
-    LPCWSTR lpszMenuName = nullptr;
+    HICON hIcon{nullptr};
+    HICON hIconSm{nullptr};
+    LPCWSTR lpszMenuName{nullptr};
 
-    int ctrlID = 0;
+    int ctrlID{0};
 
     // called at start of windows proc to allow intercepting messages
     MsgFilter msgFilter;
 
     // allow handling WM_CONTEXTMENU. Must be set before Create()
-    ContextMenuHandler onContextMenu = nullptr;
+    ContextMenuHandler onContextMenu{nullptr};
     // allow handling WM_SIZE
-    SizeHandler onSize = nullptr;
+    SizeHandler onSize{nullptr};
     // for WM_COMMAND
-    WmCommandHandler onWmCommand = nullptr;
+    WmCommandHandler onWmCommand{nullptr};
     // for WM_NCDESTROY
-    DestroyHandler onDestroy = nullptr;
+    DestroyHandler onDestroy{nullptr};
     // for WM_CLOSE
-    CloseHandler onClose = nullptr;
+    CloseHandler onClose{nullptr};
     // for WM_KEYDOWN / WM_KEYUP
-    KeyHandler onKeyDownUp = nullptr;
+    KeyHandler onKeyDownUp{nullptr};
     // for WM_CHAR
-    CharHandler onChar = nullptr;
+    CharHandler onChar{nullptr};
     // for WM_MOUSEWHEEL and WM_MOUSEHWHEEL
-    MouseWheelHandler onMouseWheel = nullptr;
+    MouseWheelHandler onMouseWheel{nullptr};
     // for WM_DROPFILES
     // when set after Create() must also call DragAcceptFiles(hwnd, TRUE);
-    DropFilesHandler onDropFiles = nullptr;
+    DropFilesHandler onDropFiles{nullptr};
 
-    COLORREF textColor = ColorUnset;
-    COLORREF backgroundColor = ColorUnset;
-    HBRUSH backgroundColorBrush = nullptr;
+    COLORREF textColor{ColorUnset};
+    COLORREF backgroundColor{ColorUnset};
+    HBRUSH backgroundColorBrush{nullptr};
 
     str::Str text;
 
-    HWND hwnd = nullptr;
-    UINT_PTR subclassId = 0;
+    HWND hwnd{nullptr};
+    UINT_PTR subclassId{0};
 
     WindowBase() = default;
-    WindowBase(HWND p);
-    virtual ~WindowBase();
+    explicit WindowBase(HWND p);
+    ~WindowBase() override;
 
     virtual bool Create();
     virtual Size GetIdealSize();
@@ -207,7 +207,7 @@ struct WindowBase : public ILayout {
     Visibility GetVisibility() override;
     int MinIntrinsicHeight(int width) override;
     int MinIntrinsicWidth(int height) override;
-    Size Layout(const Constraints bc) override;
+    Size Layout(Constraints bc) override;
     void SetBounds(Rect) override;
     void SetInsetsPt(int top, int right = -1, int bottom = -1, int left = -1);
 
@@ -215,34 +215,34 @@ struct WindowBase : public ILayout {
     void Subclass();
     void Unsubclass();
 
-    void SetIsEnabled(bool);
-    bool IsEnabled();
+    void SetIsEnabled(bool) const;
+    bool IsEnabled() const;
 
     void SetIsVisible(bool);
-    bool IsVisible() const;
+    [[nodiscard]] bool IsVisible() const;
 
-    void SuspendRedraw();
-    void ResumeRedraw();
+    void SuspendRedraw() const;
+    void ResumeRedraw() const;
 
-    void SetFocus();
-    bool IsFocused();
+    void SetFocus() const;
+    bool IsFocused() const;
 
     void SetFont(HFONT f);
-    HFONT GetFont() const;
+    [[nodiscard]] HFONT GetFont() const;
 
     void SetIcon(HICON);
-    HICON GetIcon() const;
+    [[nodiscard]] HICON GetIcon() const;
 
     void SetText(const WCHAR* s);
     void SetText(std::string_view);
     std::string_view GetText();
 
-    void SetPos(RECT* r);
-    void SetBounds(const RECT& r);
+    void SetPos(RECT* r) const;
+    // void SetBounds(const RECT& r) const;
     void SetTextColor(COLORREF);
     void SetBackgroundColor(COLORREF);
     void SetColors(COLORREF bg, COLORREF txt);
-    void SetRtl(bool);
+    void SetRtl(bool) const;
 };
 
 void Handle_WM_CONTEXTMENU(WindowBase* w, WndEvent* ev);
@@ -264,6 +264,7 @@ struct Window : WindowBase {
 
 UINT_PTR NextSubclassId();
 int RunMessageLoop(HACCEL accelTable, HWND hwndDialog);
+void RunModalWindow(HWND hwndDialog, HWND hwndParent);
 void PositionCloseTo(WindowBase* w, HWND hwnd);
 int GetNextCtrlID();
 HWND GetCurrentModelessDialog();

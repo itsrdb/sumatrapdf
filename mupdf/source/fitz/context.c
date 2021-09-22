@@ -1,3 +1,25 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #include "mupdf/fitz.h"
 
 #include "context-imp.h"
@@ -137,7 +159,7 @@ fz_drop_context(fz_context *ctx)
 
 	fz_flush_warnings(ctx);
 
-	assert(ctx->error.top == ctx->error.stack);
+	assert(ctx->error.top == ctx->error.stack_base);
 
 	/* Free the context itself */
 	ctx->alloc.free(ctx->alloc.user, ctx);
@@ -146,7 +168,9 @@ fz_drop_context(fz_context *ctx)
 static void
 fz_init_error_context(fz_context *ctx)
 {
-	ctx->error.top = ctx->error.stack;
+#define ALIGN(addr, align)  ((((intptr_t)(addr)) + (align-1)) & ~(align-1))
+	ctx->error.stack_base = (fz_error_stack_slot *)ALIGN(ctx->error.stack, FZ_JMPBUF_ALIGN);
+	ctx->error.top = ctx->error.stack_base;
 	ctx->error.errcode = FZ_ERROR_NONE;
 	ctx->error.message[0] = 0;
 

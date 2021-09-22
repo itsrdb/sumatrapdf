@@ -22,7 +22,7 @@ class FileWriteStream : public ISequentialStream {
     LONG refCount;
 
   public:
-    FileWriteStream(const WCHAR* filePath) : refCount(1) {
+    explicit FileWriteStream(const WCHAR* filePath) : refCount(1) {
         hFile = CreateFileW(filePath, GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL,
                             nullptr);
     }
@@ -31,7 +31,7 @@ class FileWriteStream : public ISequentialStream {
     }
     // IUnknown
     IFACEMETHODIMP QueryInterface(REFIID riid, void** ppv) {
-        static const QITAB qit[] = {QITABENT(FileWriteStream, ISequentialStream), {0}};
+        static const QITAB qit[] = {QITABENT(FileWriteStream, ISequentialStream), {nullptr}};
         return QISearch(this, qit, riid, ppv);
     }
     IFACEMETHODIMP_(ULONG) AddRef() {
@@ -45,7 +45,7 @@ class FileWriteStream : public ISequentialStream {
         return newCount;
     }
     // ISequentialStream
-    IFACEMETHODIMP Read([[maybe_unused]] void* buffer, [[maybe_unused]] ULONG size, [[maybe_unused]] ULONG* read) {
+    IFACEMETHODIMP Read(__unused void* buffer, __unused ULONG size, __unused ULONG* read) {
         return E_NOTIMPL;
     }
     IFACEMETHODIMP Write(const void* data, ULONG size, ULONG* written) {
@@ -78,7 +78,7 @@ bool ZipCreator::WriteData(const void* data, size_t size) {
 }
 
 static u32 zip_compress(void* dst, u32 dstlen, const void* src, u32 srclen) {
-    z_stream stream = {0};
+    z_stream stream = {nullptr};
     stream.next_in = (Bytef*)src;
     stream.avail_in = srclen;
     stream.next_out = (Bytef*)dst;
@@ -192,13 +192,13 @@ bool ZipCreator::AddFile(const WCHAR* filePath, const WCHAR* nameInZip) {
     }
 
     if (!nameInZip) {
-        nameInZip = path::IsAbsolute(filePath) ? path::GetBaseNameNoFree(filePath) : filePath;
+        nameInZip = path::IsAbsolute(filePath) ? path::GetBaseNameTemp(filePath) : filePath;
     }
 
-    AutoFree nameUtf8 = strconv::WstrToUtf8(nameInZip);
-    str::TransChars(nameUtf8.Get(), "\\", "/");
+    auto nameA = ToUtf8Temp(nameInZip);
+    str::TransCharsInPlace(nameA.Get(), "\\", "/");
 
-    return AddFileData(nameUtf8.Get(), fileData.Get(), fileData.size(), dosdatetime);
+    return AddFileData(nameA.Get(), fileData.Get(), fileData.size(), dosdatetime);
 }
 
 // we use the filePath relative to dir as the zip name

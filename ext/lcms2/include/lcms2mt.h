@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------------
 //
 //  Little Color Management System
-//  Copyright (c) 1998-2020 Marti Maria Saguer
+//  Copyright (c) 1998-2021 Marti Maria Saguer
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the "Software"),
@@ -23,7 +23,7 @@
 //
 //---------------------------------------------------------------------------------
 //
-// Version 2.11
+// Version 2.13alpha
 //
 
 #ifndef _lcms2mt_H
@@ -81,12 +81,12 @@ extern "C" {
 #endif
 
 // Version/release
-// Vanilla LCMS2 uses values from 2000-2100. This is
+// Vanilla LCMS2 uses values from 2000-2120. This is
 // used as an unsigned number. We want any attempt to
 // use OUR numbers with a mainline LCMS to fail, so
 // we have to go under 2000-2100. Let's subtract
 // 2000 from the mainline release.
-#define LCMS_VERSION              (2110 - 2000)
+#define LCMS_VERSION              (2120 - 2000)
 
 // We expect any LCMS2MT release to fall within the
 // following range.
@@ -676,10 +676,11 @@ typedef void* cmsHTRANSFORM;
 
 // Format of pixel is defined by one cmsUInt32Number, using bit fields as follows
 //
-//                              2               1            0
-//                         543210 9 8 76543 2 1 0 9 8 7654 321
-//                         EEEEEE A O TTTTT Y F P X S CCCC BBB
+//                        2  2222 1111  1111 11
+//                        4  3210 9876  5432 1098  7654 3210
+//                        E  EEEE EAOT  TTTT YFPX  SCCC CBBB
 //
+//            E: Extra samples
 //            A: Floating point -- With this flag we can differentiate 16 bits as float and as int
 //            O: Optimized -- previous optimization already returns the final 8-bit value
 //            T: Pixeltype
@@ -687,7 +688,6 @@ typedef void* cmsHTRANSFORM;
 //            P: Planar? 0=Chunky, 1=Planar
 //            X: swap 16 bps endianness?
 //            S: Do swap? ie, BGR, KYMC
-//            E: Extra samples
 //            C: Channels (Samples per pixel)
 //            B: bytes per sample
 //            Y: Swap first - changes ABGR to BGRA and KCMY to CMYK
@@ -1661,6 +1661,9 @@ CMSAPI cmsUInt32Number  CMSEXPORT cmsGetSupportedIntents(cmsContext ContextID,
 // Copy alpha channels when transforming
 #define cmsFLAGS_COPY_ALPHA               0x04000000 // Alpha channels are copied on cmsDoTransform()
 
+// Unpremultiply/premultiply by final alpha value when transforming
+#define cmsFLAGS_PREMULT                  0x08000000 // Data is multiplied by final alpha channel on cmsDoTransform()
+
 // Fine-tune control over number of gridpoints
 #define cmsFLAGS_GRIDPOINTS(n)           (((n) & 0xFF) << 16)
 
@@ -1862,6 +1865,8 @@ CMSAPI cmsBool          CMSEXPORT cmsDetectDestinationBlackPoint(cmsContext Cont
 // Estimate total area coverage
 CMSAPI cmsFloat64Number CMSEXPORT cmsDetectTAC(cmsContext ContextID, cmsHPROFILE hProfile);
 
+// Estimate gamma space, alwasys positive. Returns -1 on error.
+CMSAPI cmsFloat64Number CMSEXPORT cmsDetectRGBProfileGamma(cmsContext ContextID, cmsHPROFILE hProfile, cmsFloat64Number thereshold);
 
 // Poor man's gamut mapping
 CMSAPI cmsBool          CMSEXPORT cmsDesaturateLab(cmsContext ContextID, cmsCIELab* Lab,

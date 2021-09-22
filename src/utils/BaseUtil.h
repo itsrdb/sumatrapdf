@@ -69,19 +69,19 @@
 #define COMPILER_MINGW 0
 #endif
 
-#if OS_WIN
 #ifndef UNICODE
 #define UNICODE
-#endif
 #endif
 
 #ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+// Windows headers use _unused
+#define __unused [[maybe_unused]]
+
 #include "BuildConfig.h"
 
-#if OS_WIN
 #define NOMINMAX
 #include <windows.h>
 #include <unknwn.h>
@@ -91,6 +91,7 @@
 #include <windowsx.h>
 #include <winsafer.h>
 #include <wininet.h>
+#include <versionhelpers.h>
 
 // nasty but necessary
 #if defined(min) || defined(max)
@@ -104,7 +105,6 @@
 #undef max
 
 #include <io.h>
-#endif // OS_WIN
 
 // Most common C includes
 #include <stdlib.h>
@@ -136,15 +136,15 @@
 //#include <iostream>
 //#include <locale>
 
-typedef int8_t i8;
-typedef uint8_t u8;
-typedef int16_t i16;
-typedef uint16_t u16;
-typedef int32_t i32;
-typedef uint32_t u32;
-typedef int64_t i64;
-typedef uint64_t u64;
-typedef unsigned int uint;
+using i8 = int8_t;
+using u8 = uint8_t;
+using i16 = int16_t;
+using u16 = uint16_t;
+using i32 = int32_t;
+using u32 = uint32_t;
+using i64 = int64_t;
+using u64 = uint64_t;
+using uint = unsigned int;
 
 // TODO: don't use INT_MAX and UINT_MAX
 #ifndef INT_MAX
@@ -220,53 +220,25 @@ inline void CrashMe() {
 // Just as with assert(), the condition is not guaranteed to be executed
 // in some builds, so it shouldn't contain the actual logic of the code
 
+// TODO: maybe change to NO_INLINE since now I can filter callstack
+// on the server
 inline void CrashIfFunc(bool cond) {
     if (!cond) {
         return;
     }
-#if defined(PRE_RELEASE_VER) || defined(DEBUG)
+    if (IsDebuggerPresent()) {
+        DebugBreak();
+        return;
+    }
+#if defined(PRE_RELEASE_VER) || defined(DEBUG) || defined(ASAN_BUILD)
     CrashMe();
 #endif
 }
-
-// must be provided somewhere else
-// could be a dummy implementation
-// For sumatra, it's in CrashHandler.cpp
-extern void SendCrashReport(const char*);
-
-inline void SendCrashIfFunc(bool cond, [[maybe_unused]] const char* condStr) {
-    if (!cond) {
-        return;
-    }
-#if defined(PRE_RELEASE_VER) || defined(DEBUG)
-    SendCrashReport(condStr);
-#endif
-}
-
-// Sometimes we want to assert only in debug build (not in pre-release)
-#if defined(DEBUG)
-inline void DebugCrashIfFunc(bool cond) {
-    if (!cond) {
-        return;
-    }
-    CrashMe();
-}
-#else
-inline void DebugCrashIfFunc(bool) {
-    // no-op
-}
-#endif
 
 // __analysis_assume is defined by msvc for prefast analysis
 #if !defined(__analysis_assume)
 #define __analysis_assume(x)
 #endif
-
-#define DebugCrashIf(cond)          \
-    do {                            \
-        __analysis_assume(!(cond)); \
-        DebugCrashIfFunc(cond);     \
-    } while (0)
 
 #define CrashAlwaysIf(cond)         \
     do {                            \
@@ -282,15 +254,13 @@ inline void DebugCrashIfFunc(bool) {
         CrashIfFunc(cond);          \
     } while (0)
 
-#define SubmitCrashIf(cond)           \
-    do {                              \
-        __analysis_assume(!(cond));   \
-        SendCrashIfFunc(cond, #cond); \
-    } while (0)
+void _submitDebugReportIfFunc(bool cond, __unused const char* condStr);
 
-#if !OS_WIN
-void ZeroMemory(void* p, size_t len);
-#endif
+#define ReportIf(cond)                         \
+    do {                                       \
+        __analysis_assume(!(cond));            \
+        _submitDebugReportIfFunc(cond, #cond); \
+    } while (0)
 
 void* AllocZero(size_t count, size_t size);
 
@@ -317,7 +287,7 @@ inline void ZeroArray(T& a) {
 
 template <typename T>
 inline T limitValue(T val, T min, T max) {
-    DebugCrashIf(min > max);
+    CrashIf(min > max);
     if (val < min) {
         return min;
     }
@@ -335,7 +305,7 @@ inline bool addOverflows(T val, T n) {
     return val > res;
 }
 
-void* memdup(const void* data, size_t len);
+void* memdup(const void* data, size_t len, size_t extraBytes = 0);
 bool memeq(const void* s1, const void* s2, size_t len);
 
 size_t RoundToPowerOf2(size_t size);
@@ -373,9 +343,9 @@ bool ListRemove(T** root, T* el) {
 // (and potentially others). Needed because e.g. in crash handler
 // we want to use Vec but not use standard malloc()/free() functions
 struct Allocator {
-    Allocator() {
-    }
-    virtual ~Allocator(){};
+    Allocator() = default;
+    virtual ~Allocator() = default;
+    ;
     virtual void* Alloc(size_t size) = 0;
     virtual void* Realloc(void* mem, size_t size) = 0;
     virtual void Free(const void* mem) = 0;
@@ -393,13 +363,7 @@ struct Allocator {
     static void* AllocZero(Allocator* a, size_t size);
     static void Free(Allocator* a, void* p);
     static void* Realloc(Allocator* a, void* mem, size_t size);
-    static void* MemDup(Allocator* a, const void* mem, size_t size, size_t padding = 0);
-    static char* StrDup(Allocator* a, const char* str);
-    static std::string_view AllocString(Allocator* a, std::string_view str);
-
-#if OS_WIN
-    static WCHAR* StrDup(Allocator* a, const WCHAR* str);
-#endif
+    static void* MemDup(Allocator* a, const void* mem, size_t size, size_t extraBytes = 0);
 };
 
 // PoolAllocator is for the cases where we need to allocate pieces of memory
@@ -413,19 +377,15 @@ struct Allocator {
 struct PoolAllocator : Allocator {
     // we'll allocate block of the minBlockSize unless
     // asked for a block of bigger size
-    int minBlockSize = 4096;
-    // alignment of allocations, must be 2^N or <= 1 to disable
-    // We might apply padding so that allocated memory starts at
-    // multiply of allocAlign. This is sometimes needed to satisfy ABI
-    // requirements or to ensure CPU operations (like SSE) are fast
-    int allocAlign = 8;
+    size_t minBlockSize = 4096;
 
     // contains allocated data and index of each allocation
     struct Block {
         struct Block* next;
-        int dataSize; // for debugging, not used
-        int nAllocs;
-        char* curr;
+        size_t dataSize; // size of data in block
+        size_t nAllocs;
+        // curr points to free space
+        char* freeSpace;
         // from the end, we store index of each allocation relative
         // to start of the block. <end> points at the current
         // reverse end of i32 array of indexes
@@ -433,11 +393,12 @@ struct PoolAllocator : Allocator {
         // data follows here
     };
 
-    Block* currBlock = nullptr;
-    Block* firstBlock = nullptr;
-    int nAllocs = 0;
+    Block* currBlock{nullptr};
+    Block* firstBlock{nullptr};
+    int nAllocs{0};
+    CRITICAL_SECTION cs;
 
-    PoolAllocator() = default;
+    PoolAllocator();
 
     // Allocator methods
     ~PoolAllocator() override;
@@ -446,7 +407,7 @@ struct PoolAllocator : Allocator {
     void* Alloc(size_t size) override;
 
     void FreeAll();
-    void Reset();
+    void Reset(bool poisonFreedMemory = false);
     void* At(int i);
 
     // only valid for structs, could alloc objects with
@@ -459,13 +420,12 @@ struct PoolAllocator : Allocator {
     // Iterator for easily traversing allocated memory as array
     // of values of type T. The caller has to enforce the fact
     // that the values stored are indeed values of T
-    // cf. http://www.cprogramming.com/c++11/c++11-ranged-for-loop.html
+    // see http://www.cprogramming.com/c++11/c++11-ranged-for-loop.html
     template <typename T>
-    class Iter {
+    struct Iter {
         PoolAllocator* self;
         int idx;
 
-      public:
         // TODO: can make it more efficient
         Iter(PoolAllocator* a, int startIdx) {
             self = a;
@@ -499,7 +459,7 @@ struct PoolAllocator : Allocator {
 struct HeapAllocator : Allocator {
     HANDLE allocHeap = nullptr;
 
-    HeapAllocator(size_t initialSize = 128 * 1024) {
+    explicit HeapAllocator(size_t initialSize = 128 * 1024) {
         allocHeap = HeapCreate(0, initialSize, 0);
     }
     ~HeapAllocator() override {
@@ -549,10 +509,6 @@ class FixedArray {
     }
 };
 
-static inline std::span<u8> ToSpan(std::string_view d) {
-    return {(u8*)d.data(), d.size()};
-}
-
 /*
 Poor-man's manual dynamic typing.
 Identity of an object is an address of a unique, global string.
@@ -571,12 +527,14 @@ extern Kind kindFoo;
 Kind kindFoo = "foo";
 */
 
-typedef const char* Kind;
+using Kind = const char*;
 inline bool isOfKindHelper(Kind k1, Kind k2) {
     return k1 == k2;
 }
 
 #define IsOfKind(o, wantedKind) (o && isOfKindHelper(o->kind, wantedKind))
+
+extern Kind kindNone; // unknown kind
 
 // from https://pastebin.com/3YvWQa5c
 // In my testing, in debug build defer { } creates somewhat bloated code
@@ -587,7 +545,7 @@ inline bool isOfKindHelper(Kind k1, Kind k2) {
 template <typename T>
 struct ExitScope {
     T lambda;
-    ExitScope(T lambda) : lambda(lambda) {
+    ExitScope(T lambda) : lambda(lambda) { // NOLINT
     }
     ~ExitScope() {
         lambda();
@@ -617,12 +575,14 @@ defer { instance->Release(); };
 */
 
 #include "GeomUtil.h"
+#include "StrSlice.h"
 #include "StrUtil.h"
 #include "StrconvUtil.h"
 #include "Scoped.h"
 #include "Vec.h"
 #include "StringViewUtil.h"
 #include "ColorUtil.h"
+#include "TempAllocator.h"
 
 // lstrcpy is dangerous so forbid using it
 #ifdef lstrcpy

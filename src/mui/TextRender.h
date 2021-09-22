@@ -1,11 +1,11 @@
 /* Copyright 2021 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
-enum TextRenderMethod {
-    TextRenderMethodGdiplus,      // uses MeasureTextAccurate, which is slower than MeasureTextQuick
-    TextRenderMethodGdiplusQuick, // uses MeasureTextQuick
-    TextRenderMethodGdi,
-    TextRenderMethodHdc,
+enum class TextRenderMethod {
+    Gdiplus,      // uses MeasureTextAccurate, which is slower than MeasureTextQuick
+    GdiplusQuick, // uses MeasureTextQuick
+    Gdi,
+    Hdc,
     // TODO: implement TextRenderDirectDraw
     // TextRenderDirectDraw
 };
@@ -33,10 +33,11 @@ class ITextRender {
     virtual void Lock() = 0;
     virtual void Unlock() = 0;
 
-    virtual void Draw(const char* s, size_t sLen, const RectF bb, bool isRtl) = 0;
-    virtual void Draw(const WCHAR* s, size_t sLen, const RectF bb, bool isRtl) = 0;
+    virtual void Draw(const char* s, size_t sLen, RectF bb, bool isRtl) = 0;
+    virtual void Draw(const WCHAR* s, size_t sLen, RectF bb, bool isRtl) = 0;
 
-    virtual ~ITextRender(){};
+    virtual ~ITextRender() = default;
+    ;
 
     TextRenderMethod method;
 };
@@ -50,7 +51,6 @@ class TextRenderGdi : public ITextRender {
     Gdiplus::Graphics* gfx = nullptr;
     Gdiplus::Color textColor;
     Gdiplus::Color textBgColor;
-    WCHAR txtConvBuf[512] = {0};
 
     HDC memHdc = nullptr;
     HGDIOBJ memHdcPrevFont = nullptr;
@@ -85,11 +85,11 @@ class TextRenderGdi : public ITextRender {
     void Lock() override;
     void Unlock() override;
 
-    void Draw(const char* s, size_t sLen, const RectF bb, bool isRtl) override;
-    void Draw(const WCHAR* s, size_t sLen, const RectF bb, bool isRtl) override;
+    void Draw(const char* s, size_t sLen, RectF bb, bool isRtl) override;
+    void Draw(const WCHAR* s, size_t sLen, RectF bb, bool isRtl) override;
 
-    void DrawTransparent(const char* s, size_t sLen, const RectF bb, bool isRtl);
-    void DrawTransparent(const WCHAR* s, size_t sLen, const RectF bb, bool isRtl);
+    void DrawTransparent(const char* s, size_t sLen, RectF bb, bool isRtl);
+    void DrawTransparent(const WCHAR* s, size_t sLen, RectF bb, bool isRtl);
 
     ~TextRenderGdi() override;
 };
@@ -112,7 +112,7 @@ class TextRenderGdiplus : public ITextRender {
 
     void SetFont(CachedFont* font) override;
     void SetTextColor(Gdiplus::Color col) override;
-    void SetTextBgColor([[maybe_unused]] Gdiplus::Color col) override {
+    void SetTextBgColor(__unused Gdiplus::Color col) override {
     }
 
     float GetCurrFontLineSpacing() override;
@@ -125,8 +125,8 @@ class TextRenderGdiplus : public ITextRender {
     void Unlock() override {
     }
 
-    void Draw(const char* s, size_t sLen, const RectF bb, bool isRtl) override;
-    void Draw(const WCHAR* s, size_t sLen, const RectF bb, bool isRtl) override;
+    void Draw(const char* s, size_t sLen, RectF bb, bool isRtl) override;
+    void Draw(const WCHAR* s, size_t sLen, RectF bb, bool isRtl) override;
 
     ~TextRenderGdiplus() override;
 };
@@ -164,13 +164,13 @@ class TextRenderHdc : public ITextRender {
     void Lock() override;
     void Unlock() override;
 
-    void Draw(const char* s, size_t sLen, const RectF bb, bool isRtl) override;
-    void Draw(const WCHAR* s, size_t sLen, const RectF bb, bool isRtl) override;
+    void Draw(const char* s, size_t sLen, RectF bb, bool isRtl) override;
+    void Draw(const WCHAR* s, size_t sLen, RectF bb, bool isRtl) override;
 
     ~TextRenderHdc() override;
 };
 
 ITextRender* CreateTextRender(TextRenderMethod method, Graphics* gfx, int dx, int dy);
 
-size_t StringLenForWidth(ITextRender* textRender, const WCHAR* s, size_t len, float dx);
-float GetSpaceDx(ITextRender* textRender);
+size_t StringLenForWidth(ITextRender* textMeasure, const WCHAR* s, size_t len, float dx);
+float GetSpaceDx(ITextRender* textMeasure);

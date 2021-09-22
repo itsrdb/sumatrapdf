@@ -4,19 +4,18 @@
 #include "utils/BaseUtil.h"
 #include "wingui/TreeModel.h"
 
-static bool VisitTreeItemRec(TreeItem* ti, const TreeItemVisitor& visitor) {
-    bool cont;
-    if (!ti) {
+static bool VisitTreeItemRec(TreeModel* tm, TreeItem ti, const TreeItemVisitor& visitor) {
+    if (ti == TreeModel::kNullItem) {
         return true;
     }
-    cont = visitor(ti);
+    bool cont = visitor(tm, ti);
     if (!cont) {
         return false;
     }
-    int n = ti->ChildCount();
+    int n = tm->ChildCount(ti);
     for (int i = 0; i < n; i++) {
-        auto child = ti->ChildAt(i);
-        cont = VisitTreeItemRec(child, visitor);
+        auto child = tm->ChildAt(ti, i);
+        cont = VisitTreeItemRec(tm, child, visitor);
         if (!cont) {
             return false;
         }
@@ -25,12 +24,6 @@ static bool VisitTreeItemRec(TreeItem* ti, const TreeItemVisitor& visitor) {
 }
 
 bool VisitTreeModelItems(TreeModel* tm, const TreeItemVisitor& visitor) {
-    int n = tm->RootCount();
-    for (int i = 0; i < n; i++) {
-        auto* ti = tm->RootAt(i);
-        if (!VisitTreeItemRec(ti, visitor)) {
-            return false;
-        }
-    }
-    return true;
+    TreeItem root = tm->Root();
+    return VisitTreeItemRec(tm, root, visitor);
 }

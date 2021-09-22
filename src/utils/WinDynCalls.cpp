@@ -2,8 +2,9 @@
 License: Simplified BSD (see COPYING.BSD) */
 
 #include "utils/BaseUtil.h"
-#include "utils/WinDynCalls.h"
+#include "utils/ScopedWin.h"
 #include "utils/WinUtil.h"
+#include "utils/WinDynCalls.h"
 
 #define API_DECLARATION(name) Sig_##name Dyn##name = nullptr;
 
@@ -21,12 +22,12 @@ DBGHELP_API_LIST(API_DECLARATION)
 
 // Loads a DLL explicitly from the system's library collection
 static HMODULE SafeLoadLibrary(const char* dllNameA) {
-    AutoFreeWstr dllName = strconv::Utf8ToWstr(dllNameA);
     WCHAR dllPath[MAX_PATH];
     uint res = GetSystemDirectoryW(dllPath, dimof(dllPath));
     if (!res || res >= dimof(dllPath)) {
         return nullptr;
     }
+    auto dllName = ToWstrTemp(dllNameA);
     BOOL ok = PathAppendW(dllPath, dllName);
     if (!ok) {
         return nullptr;
@@ -106,10 +107,7 @@ BOOL SetGestureConfig(HWND hwnd, DWORD dwReserved, UINT cIDs, PGESTURECONFIG pGe
 namespace theme {
 
 bool IsAppThemed() {
-    if (DynIsAppThemed && DynIsAppThemed()) {
-        return true;
-    }
-    return false;
+    return DynIsAppThemed && DynIsAppThemed();
 }
 
 HTHEME OpenThemeData(HWND hwnd, LPCWSTR pszClassList) {

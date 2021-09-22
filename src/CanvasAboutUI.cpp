@@ -8,7 +8,6 @@
 #include "utils/Timer.h"
 #include "utils/UITask.h"
 #include "utils/WinUtil.h"
-#include "AppColors.h"
 #include "utils/ScopedWin.h"
 
 #include "wingui/WinGui.h"
@@ -18,16 +17,13 @@
 #include "wingui/TreeCtrl.h"
 #include "wingui/FrameRateWnd.h"
 
-#include "Annotation.h"
-#include "EngineBase.h"
-#include "EngineCreate.h"
-#include "Doc.h"
-
+#include "AppColors.h"
 #include "DisplayMode.h"
-#include "SettingsStructs.h"
 #include "Controller.h"
+#include "EngineBase.h"
+#include "EngineAll.h"
+#include "SettingsStructs.h"
 #include "DisplayModel.h"
-#include "EbookController.h"
 #include "Theme.h"
 #include "GlobalPrefs.h"
 #include "RenderCache.h"
@@ -59,7 +55,7 @@ static void OnPaintAbout(WindowInfo* win) {
 
     auto txtCol = GetAppColor(AppColor::MainWindowText);
     auto bgCol = GetAppColor(AppColor::MainWindowBg);
-    if (HasPermission(Perm_SavePreferences | Perm_DiskAccess) && gGlobalPrefs->rememberOpenedFiles &&
+    if (HasPermission(Perm::SavePreferences | Perm::DiskAccess) && gGlobalPrefs->rememberOpenedFiles &&
         gGlobalPrefs->showStartPage) {
         DrawStartPage(win, win->buffer->GetDC(), gFileHistory, txtCol, bgCol);
     } else {
@@ -73,12 +69,12 @@ static void OnPaintAbout(WindowInfo* win) {
     }
 }
 
-static void OnMouseLeftButtonDownAbout(WindowInfo* win, int x, int y, [[maybe_unused]] WPARAM key) {
+static void OnMouseLeftButtonDownAbout(WindowInfo* win, int x, int y, WPARAM) {
     // lf("Left button clicked on %d %d", x, y);
 
     // remember a link under so that on mouse up we only activate
     // link if mouse up is on the same link as mouse down
-    win->urlOnLastButtonDown = GetStaticLink(win->staticLinks, x, y);
+    win->urlOnLastButtonDown = GetStaticLink(win->staticLinks, x, y, nullptr);
 }
 
 static bool IsLink(const WCHAR* url) {
@@ -94,21 +90,21 @@ static bool IsLink(const WCHAR* url) {
     return false;
 }
 
-static void OnMouseLeftButtonUpAbout(WindowInfo* win, int x, int y, [[maybe_unused]] WPARAM key) {
+static void OnMouseLeftButtonUpAbout(WindowInfo* win, int x, int y, WPARAM) {
     SetFocus(win->hwndFrame);
 
-    const WCHAR* url = GetStaticLink(win->staticLinks, x, y);
+    const WCHAR* url = GetStaticLink(win->staticLinks, x, y, nullptr);
     const WCHAR* prevUrl = win->urlOnLastButtonDown;
     win->urlOnLastButtonDown = nullptr;
     if (!url || url != prevUrl) {
         return;
     }
-    if (str::Eq(url, SLINK_OPEN_FILE)) {
+    if (str::Eq(url, kLinkOpenFile)) {
         HwndSendCommand(win->hwndFrame, CmdOpen);
-    } else if (str::Eq(url, SLINK_LIST_HIDE)) {
+    } else if (str::Eq(url, kLinkHideList)) {
         gGlobalPrefs->showStartPage = false;
         win->RedrawAll(true);
-    } else if (str::Eq(url, SLINK_LIST_SHOW)) {
+    } else if (str::Eq(url, kLinkShowList)) {
         gGlobalPrefs->showStartPage = true;
         win->RedrawAll(true);
     } else if (IsLink(url)) {
@@ -120,13 +116,13 @@ static void OnMouseLeftButtonUpAbout(WindowInfo* win, int x, int y, [[maybe_unus
     }
 }
 
-static void OnMouseRightButtonDownAbout(WindowInfo* win, int x, int y, [[maybe_unused]] WPARAM key) {
+static void OnMouseRightButtonDownAbout(WindowInfo* win, int x, int y, WPARAM) {
     // lf("Right button clicked on %d %d", x, y);
     SetFocus(win->hwndFrame);
     win->dragStart = Point(x, y);
 }
 
-static void OnMouseRightButtonUpAbout(WindowInfo* win, int x, int y, [[maybe_unused]] WPARAM key) {
+static void OnMouseRightButtonUpAbout(WindowInfo* win, int x, int y, WPARAM) {
     int isDrag = IsDrag(x, win->dragStart.x, y, win->dragStart.y);
     if (isDrag) {
         return;
@@ -137,9 +133,9 @@ static void OnMouseRightButtonUpAbout(WindowInfo* win, int x, int y, [[maybe_unu
 static LRESULT OnSetCursorAbout(WindowInfo* win, HWND hwnd) {
     Point pt;
     if (GetCursorPosInHwnd(hwnd, pt)) {
-        StaticLinkInfo linkInfo;
+        StaticLinkInfo* linkInfo;
         if (GetStaticLink(win->staticLinks, pt.x, pt.y, &linkInfo)) {
-            win->ShowToolTip(linkInfo.infotip, linkInfo.rect);
+            win->ShowToolTip(linkInfo->infotip, linkInfo->rect);
             SetCursorCached(IDC_HAND);
         } else {
             win->HideToolTip();

@@ -32,6 +32,7 @@ Notes on targets:
 ### Asan notes
 
 Docs:
+* https://docs.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-160
 * https://devblogs.microsoft.com/cppblog/asan-for-windows-x64-and-debug-build-support/
 * https://devblogs.microsoft.com/cppblog/addresssanitizer-asan-for-windows-with-msvc/
 
@@ -43,7 +44,7 @@ Flags:
 Can be set with env variable:
 * `ASAN_OPTIONS=halt_on_error=0:allocator_may_return_null=1:verbosity=2:check_malloc_usable_size=false:print_suppressions=true:suppressions="C:\Users\kjk\src\sumatrapdf\asan.supp"`
 
-In Visual Studio, this is in  `Debugging`, `Environment` section.
+In Visual Studio, this is in `Debugging`, `Environment` section.
 
 Note:
 * as of VS 16.6.2 `ASAN_OPTIONS=detect_leaks=1` (i.e. memory leaks) doesn't work.

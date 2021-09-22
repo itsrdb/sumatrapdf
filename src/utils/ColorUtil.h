@@ -1,6 +1,8 @@
 /* Copyright 2021 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
+// note: include BaseUtil.h instead of including directly
+
 // a "unset" state for COLORREF value. technically all colors are valid
 // this one is hopefully not used in practice
 // can't use constexpr because they'll end up in multiple .lib and conflict
@@ -8,22 +10,30 @@
 // ColorNoChange indicates that we shouldn't change the color
 #define ColorNoChange ((COLORREF)(0xfdffffff))
 
-COLORREF MkRgb(u8 r, u8 g, u8 b);
+// PdfColor is aarrggbb, where 0xff alpha is opaque and 0x0 alpha is transparent
+// this is different than COLORREF, which ggrrbb and no alpha
+using PdfColor = uint64_t;
+
+struct ParsedColor {
+    bool wasParsed{false};
+    bool parsedOk{false};
+    COLORREF col{0};
+    PdfColor pdfCol{0};
+};
+
 COLORREF MkGray(u8 x);
-COLORREF MkRgba(u8 r, u8 g, u8 b, u8 a);
-void UnpackRgb(COLORREF, u8& r, u8& g, u8& b);
-void UnpackRgba(COLORREF, u8& r, u8& g, u8& b, u8& a);
+COLORREF MkColor(u8 r, u8 g, u8 b, u8 a = 0);
+void UnpackColor(COLORREF, u8& r, u8& g, u8& b);
+void UnpackColor(COLORREF, u8& r, u8& g, u8& b, u8& a);
 
-COLORREF ColorSetRed(COLORREF c, u8 red);
-COLORREF ColorSetGreen(COLORREF c, u8 green);
-COLORREF ColorSetBlue(COLORREF c, u8 blue);
-COLORREF ColorSetAlpha(COLORREF c, u8 alpha);
+void ParseColor(ParsedColor& parsed, const char* txt);
+bool ParseColor(COLORREF* destColor, const char* s);
+COLORREF ParseColor(const char* s, COLORREF defCol = 0);
+char* SerializeColor(COLORREF);
 
-bool ParseColor(COLORREF* destColor, const WCHAR* txt);
-bool ParseColor(COLORREF* destColor, const char* txt);
-bool ParseColor(COLORREF* destColor, std::string_view sv);
-void SerializeColorRgb(COLORREF, str::Str&);
-void SerializeColor(COLORREF, str::Str&);
+PdfColor MkPdfColor(u8 r, u8 g, u8 b, u8 a = 0xff); // 0xff is opaque
+void UnpackPdfColor(PdfColor, u8& r, u8& g, u8& b, u8& a);
+void SerializePdfColor(PdfColor c, str::Str& out);
 
 COLORREF AdjustLightness(COLORREF c, float factor);
 COLORREF AdjustLightness2(COLORREF c, float units);
@@ -42,13 +52,3 @@ u8 GetRed(COLORREF rgb);
 u8 GetGreen(COLORREF rgb);
 u8 GetBlue(COLORREF rgb);
 u8 GetAlpha(COLORREF rgb);
-
-// disabled because not compatible with wdl / lice
-#if 0
-#undef GetRValue
-#define GetRValue UseGetRValueSafeInstead
-#undef GetGValue
-#define GetGValue UseGetGValueSafeInstead
-#undef GetBValue
-#define GetBValue UseGetBValueSafeInstead
-#endif

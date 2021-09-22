@@ -3,23 +3,45 @@
 
 #include "utils/BaseUtil.h"
 #include "utils/Dpi.h"
-#include <mlang.h>
-
 #include "utils/BitManip.h"
-#include "utils/ScopedWin.h"
 #include "utils/FileUtil.h"
 #include "utils/WinDynCalls.h"
+#include "utils/ScopedWin.h"
 #include "utils/WinUtil.h"
-// TODO: move function that need Cmd to ResourceIds.h
-#include "Commands.h"
+
+#include <mlang.h>
 
 #include "utils/Log.h"
-#include "utils/LogDbg.h"
 
 static HFONT gDefaultGuiFont = nullptr;
 static HFONT gDefaultGuiFontBold = nullptr;
 static HFONT gDefaultGuiFontItalic = nullptr;
 static HFONT gDefaultGuiFontBoldItalic = nullptr;
+
+RenderedBitmap::~RenderedBitmap() {
+    if (IsValidHandle(hbmp)) {
+        DeleteObject(hbmp);
+    }
+}
+
+RenderedBitmap* RenderedBitmap::Clone() const {
+    HBITMAP hbmp2 = (HBITMAP)CopyImage(hbmp, IMAGE_BITMAP, size.dx, size.dy, 0);
+    return new RenderedBitmap(hbmp2, size);
+}
+
+// render the bitmap into the target rectangle (streching and skewing as requird)
+bool RenderedBitmap::StretchDIBits(HDC hdc, Rect target) const {
+    return BlitHBITMAP(hbmp, hdc, target);
+}
+
+// callers must not delete this (use Clone if you have to modify it)
+HBITMAP RenderedBitmap::GetBitmap() const {
+    return hbmp;
+}
+
+Size RenderedBitmap::Size() const {
+    return size;
+}
 
 int RectDx(const RECT& r) {
     return r.right - r.left;
@@ -104,7 +126,7 @@ void MoveWindow(HWND hwnd, RECT* r) {
     MoveWindow(hwnd, r->left, r->top, RectDx(*r), RectDy(*r), TRUE);
 }
 
-void GetOsVersion(OSVERSIONINFOEX& ver) {
+bool GetOsVersion(OSVERSIONINFOEX& ver) {
     ZeroMemory(&ver, sizeof(ver));
     ver.dwOSVersionInfoSize = sizeof(ver);
 #pragma warning(push)
@@ -115,30 +137,60 @@ void GetOsVersion(OSVERSIONINFOEX& ver) {
     // unless the OS's GUID has been explicitly added to the compatibility manifest
     BOOL ok = GetVersionEx((OSVERSIONINFO*)&ver); // NOLINT
 #pragma warning(pop)
-    CrashIf(!ok);
+    return !!ok;
 }
 
-// For more versions see OsNameFromVer() in CrashHandler.cpp
-bool IsWin10() {
-    OSVERSIONINFOEX ver;
-    GetOsVersion(ver);
-    return ver.dwMajorVersion == 10;
+const char* OsNameFromVerTemp(const OSVERSIONINFOEX& ver) {
+    if (VER_PLATFORM_WIN32_NT != ver.dwPlatformId) {
+        return "9x";
+    }
+    if (ver.dwMajorVersion == 6 && ver.dwMinorVersion == 3) {
+        return "8.1"; // or Server 2012 R2
+    }
+    if (ver.dwMajorVersion == 6 && ver.dwMinorVersion == 2) {
+        return "8"; // or Server 2012
+    }
+    if (ver.dwMajorVersion == 6 && ver.dwMinorVersion == 1) {
+        return "7"; // or Server 2008 R2
+    }
+    if (ver.dwMajorVersion == 6 && ver.dwMinorVersion == 0) {
+        return "Vista"; // or Server 2008
+    }
+    if (ver.dwMajorVersion == 5 && ver.dwMinorVersion == 2) {
+        return "Server 2003";
+    }
+    if (ver.dwMajorVersion == 5 && ver.dwMinorVersion == 1) {
+        return "XP";
+    }
+    if (ver.dwMajorVersion == 5 && ver.dwMinorVersion == 0) {
+        return "2000";
+    }
+    if (ver.dwMajorVersion == 10) {
+        // ver.dwMinorVersion seems to always be 0
+        return "10";
+    }
+
+    // either a newer or an older NT version, neither of which we support
+    static char osVerStr[32];
+    wsprintfA(osVerStr, "NT %u.%u", ver.dwMajorVersion, ver.dwMinorVersion);
+    return osVerStr;
 }
 
-bool IsWin7() {
-    OSVERSIONINFOEX ver;
-    GetOsVersion(ver);
-    return ver.dwMajorVersion == 6 && ver.dwMinorVersion == 1;
-}
-
-/* Vista is major: 6, minor: 0 */
-bool IsVistaOrGreater() {
-    OSVERSIONINFOEX osver = {0};
-    ULONGLONG condMask = 0;
-    osver.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-    osver.dwMajorVersion = 6;
-    VER_SET_CONDITION(condMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
-    return VerifyVersionInfo(&osver, VER_MAJORVERSION, condMask);
+const char* GetWindowsVerTemp() {
+    OSVERSIONINFOEX ver = {0};
+    ver.dwOSVersionInfoSize = sizeof(ver);
+#pragma warning(push)
+#pragma warning(disable : 4996)  // 'GetVersionEx': was declared deprecated
+#pragma warning(disable : 28159) // Consider using 'IsWindows*' instead of 'GetVersionExW'
+    // see: https://msdn.microsoft.com/en-us/library/windows/desktop/dn424972(v=vs.85).aspx
+    // starting with Windows 8.1, GetVersionEx will report a wrong version number
+    // unless the OS's GUID has been explicitly added to the compatibility manifest
+    BOOL ok = GetVersionExW((OSVERSIONINFO*)&ver); // NOLINT
+#pragma warning(pop)
+    if (!ok) {
+        return "uknown";
+    }
+    return OsNameFromVerTemp(ver);
 }
 
 bool IsRunningInWow64() {
@@ -234,7 +286,7 @@ TryAgainWOW64:
             val = AllocArray<WCHAR>(valLen / sizeof(WCHAR) + 1);
             res = RegQueryValueEx(hKey, valName, nullptr, nullptr, (LPBYTE)val, &valLen);
             if (ERROR_SUCCESS != res) {
-                str::ReplacePtr(&val, nullptr);
+                str::ReplaceWithCopy(&val, nullptr);
             }
         }
         RegCloseKey(hKey);
@@ -260,7 +312,7 @@ char* ReadRegStrUtf8(HKEY keySub, const WCHAR* keyName, const WCHAR* valName) {
     }
     auto s = strconv::WstrToUtf8(ws);
     str::Free(ws);
-    return (char*)s.data();
+    return s;
 }
 
 WCHAR* ReadRegStr2(const WCHAR* keyName, const WCHAR* valName) {
@@ -328,16 +380,16 @@ bool DeleteRegKey(HKEY keySub, const WCHAR* keyName, bool resetACLFirst) {
     return ERROR_SUCCESS == res || ERROR_FILE_NOT_FOUND == res;
 }
 
-WCHAR* GetSpecialFolder(int csidl, bool createIfMissing) {
+TempWstr GetSpecialFolderTemp(int csidl, bool createIfMissing) {
     if (createIfMissing) {
         csidl = csidl | CSIDL_FLAG_CREATE;
     }
     WCHAR path[MAX_PATH] = {0};
     HRESULT res = SHGetFolderPath(nullptr, csidl, nullptr, 0, path);
     if (S_OK != res) {
-        return nullptr;
+        return TempWstr(); // TODO: why {} doesn't work?
     }
-    return str::Dup(path);
+    return str::DupTemp(path);
 }
 
 void DisableDataExecution() {
@@ -355,55 +407,124 @@ void DisableDataExecution() {
     }
 }
 
-// Code from http://www.halcyon.com/~ast/dload/guicon.htm
-// See https://github.com/benvanik/xenia/issues/228 for the VS2015 fix
-void RedirectIOToConsole() {
-    CONSOLE_SCREEN_BUFFER_INFO coninfo;
+enum class ConsoleRedirectStatus {
+    NotRedirected,
+    RedirectedToExistingConsole,
+    RedirectedToAllocatedConsole,
+};
 
-    AllocConsole();
+static ConsoleRedirectStatus gConsoleRedirectStatus{ConsoleRedirectStatus::NotRedirected};
 
-    // make buffer big enough to allow scrolling
-    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &coninfo);
-    coninfo.dwSize.Y = 500;
-    SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), coninfo.dwSize);
-
-// redirect STDIN, STDOUT and STDERR to the console
-#if _MSC_VER < 1900
-    int hConHandle = _open_osfhandle((intptr_t)GetStdHandle(STD_OUTPUT_HANDLE), _O_TEXT);
-    *stdout = *_fdopen(hConHandle, "w");
-
-    hConHandle = _open_osfhandle((intptr_t)GetStdHandle(STD_ERROR_HANDLE), _O_TEXT);
-    *stderr = *_fdopen(hConHandle, "w");
-
-    hConHandle = _open_osfhandle((intptr_t)GetStdHandle(STD_INPUT_HANDLE), _O_TEXT);
-    *stdin = *_fdopen(hConHandle, "r");
-#else
-    FILE* con;
-    freopen_s(&con, "CONOUT$", "w", stdout);
-    freopen_s(&con, "CONOUT$", "w", stderr);
+// https://www.tillett.info/2013/05/13/how-to-create-a-windows-program-that-works-as-both-as-a-gui-and-console-application/
+static void redirectIOToConsole() {
+    FILE* con{nullptr};
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (h != INVALID_HANDLE_VALUE) {
+        freopen_s(&con, "CONOUT$", "w", stdout);
+        // make them unbuffered
+        setvbuf(stdin, nullptr, _IONBF, 0);
+    }
+    h = GetStdHandle(STD_ERROR_HANDLE);
+    if (h != INVALID_HANDLE_VALUE) {
+        freopen_s(&con, "CONOUT$", "w", stderr);
+        setvbuf(stderr, nullptr, _IONBF, 0);
+    }
+#if 0 // probably don't need stdin
     freopen_s(&con, "CONIN$", "r", stdin);
-#endif
-
-    // make them unbuffered
-    setvbuf(stdin, nullptr, _IONBF, 0);
     setvbuf(stdout, nullptr, _IONBF, 0);
-    setvbuf(stderr, nullptr, _IONBF, 0);
+#endif
+}
+
+bool RedirectIOToExistingConsole() {
+    if (gConsoleRedirectStatus != ConsoleRedirectStatus::NotRedirected) {
+        return true;
+    }
+    BOOL ok = AttachConsole(ATTACH_PARENT_PROCESS);
+    if (!ok) {
+        return false;
+    }
+    gConsoleRedirectStatus = ConsoleRedirectStatus::RedirectedToExistingConsole;
+    redirectIOToConsole();
+    return true;
+}
+// returns true if had to allocate new console (i.e. show console window)
+// false if redirected to existing console, which means it was launched from a shell
+// TODO: also detect redirected i/o as described in
+// https://github.com/apenwarr/fixconsole/blob/master/fixconsole_windows.go
+bool RedirectIOToConsole() {
+    if (gConsoleRedirectStatus != ConsoleRedirectStatus::NotRedirected) {
+        return gConsoleRedirectStatus == ConsoleRedirectStatus::RedirectedToAllocatedConsole;
+    }
+
+    // first we try to attach to the console of the parent process
+    // which could be a cmd shell. If that succeeds, we'll print to
+    // shell's console like non-gui program
+    // if that fails, assume we were not launched from a shell and
+    // will allocate a console of our own
+    // TODO: this is not perfect because after Sumatra finishes,
+    // the cursor is not at end of text. Could be unsolvable
+    gConsoleRedirectStatus = ConsoleRedirectStatus::RedirectedToExistingConsole;
+    BOOL ok = AttachConsole(ATTACH_PARENT_PROCESS);
+    if (!ok) {
+        AllocConsole();
+        gConsoleRedirectStatus = ConsoleRedirectStatus::RedirectedToAllocatedConsole;
+        // make buffer big enough to allow scrolling
+        CONSOLE_SCREEN_BUFFER_INFO coninfo;
+        GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &coninfo);
+        coninfo.dwSize.Y = 500;
+        SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), coninfo.dwSize);
+    }
+    redirectIOToConsole();
+    return gConsoleRedirectStatus == ConsoleRedirectStatus::RedirectedToAllocatedConsole;
+}
+
+static void SendEnterKeyToConsole() {
+    INPUT ip;
+    // Set up a generic keyboard event.
+    ip.type = INPUT_KEYBOARD;
+    ip.ki.wScan = 0; // hardware scan code for key
+    ip.ki.time = 0;
+    ip.ki.dwExtraInfo = 0;
+
+    // Send the "Enter" key
+    ip.ki.wVk = 0x0D;  // virtual-key code for the "Enter" key
+    ip.ki.dwFlags = 0; // 0 for key press
+    SendInput(1, &ip, sizeof(INPUT));
+
+    // Release the "Enter" key
+    ip.ki.dwFlags = KEYEVENTF_KEYUP; // KEYEVENTF_KEYUP for key release
+    SendInput(1, &ip, sizeof(INPUT));
+}
+
+void HandleRedirectedConsoleOnShutdown() {
+    switch (gConsoleRedirectStatus) {
+        case ConsoleRedirectStatus::NotRedirected:
+            return;
+        case ConsoleRedirectStatus::RedirectedToAllocatedConsole:
+            // wait for user to press any key to close the console window
+            system("pause");
+            break;
+        case ConsoleRedirectStatus::RedirectedToExistingConsole:
+            // simulate releasing console. the cursor still doesn't show up
+            // at the end of output, but it's better than nothing
+            SendEnterKeyToConsole();
+            break;
+    }
 }
 
 /* Return the full exe path of my own executable.
    Caller needs to free() the result. */
-WCHAR* GetExePath() {
+TempWstr GetExePathTemp() {
     WCHAR buf[MAX_PATH] = {0};
-    GetModuleFileName(nullptr, buf, dimof(buf));
-    // TODO: is normalization needed here at all?
-    return path::Normalize(buf);
+    GetModuleFileNameW(nullptr, buf, dimof(buf) - 1);
+    return str::DupTemp(buf);
 }
 
 /* Return directory where this executable is located.
 Caller needs to free()
 */
 WCHAR* GetExeDir() {
-    AutoFreeWstr path = GetExePath();
+    auto path = GetExePathTemp();
     WCHAR* dir = path::GetDir(path);
     return dir;
 }
@@ -440,10 +561,9 @@ WCHAR* GetCurrentDir() {
     return buf;
 }
 
-void ChangeCurrDirToSystem32() {
-    auto sysDir = GetSystem32Dir();
-    SetCurrentDirectoryW(sysDir);
-    free(sysDir);
+void ChangeCurrDirToDocuments() {
+    WCHAR* dir = GetSpecialFolderTemp(CSIDL_MYDOCUMENTS);
+    SetCurrentDirectoryW(dir);
 }
 
 static ULARGE_INTEGER FileTimeToLargeInteger(const FILETIME& ft) {
@@ -563,7 +683,7 @@ IDataObject* GetDataObjectForFile(const WCHAR* filePath, HWND hwnd) {
 bool IsKeyPressed(int key) {
     SHORT state = GetKeyState(key);
     SHORT isDown = state & 0x8000;
-    return isDown ? true : false;
+    return isDown != 0;
 }
 
 bool IsShiftPressed() {
@@ -596,7 +716,7 @@ DWORD GetFileVersion(const WCHAR* path) {
 }
 
 bool LaunchFile(const WCHAR* path, const WCHAR* params, const WCHAR* verb, bool hidden) {
-    if (!path) {
+    if (str::IsEmpty(path)) {
         return false;
     }
 
@@ -607,15 +727,26 @@ bool LaunchFile(const WCHAR* path, const WCHAR* params, const WCHAR* verb, bool 
     sei.lpFile = path;
     sei.lpParameters = params;
     sei.nShow = hidden ? SW_HIDE : SW_SHOWNORMAL;
-    return !!ShellExecuteExW(&sei);
+    BOOL ok = ShellExecuteExW(&sei);
+    if (!ok) {
+        DWORD err = GetLastError();
+        logf(L"LaunchFile: ShellExecuteExW path: '%s' params: '%s' verb: '%s'\n", path, params, verb);
+        LogLastError(err);
+        return false;
+    }
+    return true;
 }
 
 bool LaunchBrowser(const WCHAR* url) {
     return LaunchFile(url, nullptr, L"open");
 }
 
+bool LaunchBrowser(const char* url) {
+    return LaunchFile(ToWstrTemp(url), nullptr, L"open");
+}
+
 HANDLE LaunchProcess(const WCHAR* cmdLine, const WCHAR* currDir, DWORD flags) {
-    PROCESS_INFORMATION pi = {0};
+    PROCESS_INFORMATION pi = {nullptr};
     STARTUPINFOW si = {0};
     si.cb = sizeof(si);
 
@@ -644,7 +775,7 @@ bool CreateProcessHelper(const WCHAR* exe, const WCHAR* args) {
 // https://social.msdn.microsoft.com/Forums/vstudio/en-US/f64ff4cb-d21b-4d72-b513-fb8eb39f4a3a/how-to-determine-if-a-user-that-created-a-process-doesnt-belong-to-administrators-group?forum=windowssecurity
 bool IsProcessRunningElevated() {
     BOOL isAdmin = FALSE;
-    PSID administratorsGroup = NULL;
+    PSID administratorsGroup = nullptr;
 
     // Allocate and initialize a SID of the administrators group
     SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
@@ -687,8 +818,8 @@ bool LaunchElevated(const WCHAR* path, const WCHAR* cmdline) {
 
 /* Ensure that the rectangle is at least partially in the work area on a
    monitor. The rectangle is shifted into the work area if necessary. */
-Rect ShiftRectToWorkArea(Rect rect, bool bFully) {
-    Rect monitor = GetWorkAreaRect(rect);
+Rect ShiftRectToWorkArea(Rect rect, HWND hwnd, bool bFully) {
+    Rect monitor = GetWorkAreaRect(rect, hwnd);
 
     if (rect.y + rect.dy <= monitor.y || bFully && rect.y < monitor.y) {
         /* Rectangle is too far above work area */
@@ -729,9 +860,12 @@ void LimitWindowSizeToScreen(HWND hwnd, SIZE& size) {
 }
 
 // returns available area of the screen i.e. screen minus taskbar area
-Rect GetWorkAreaRect(Rect rect) {
+Rect GetWorkAreaRect(Rect rect, HWND hwnd) {
     RECT tmpRect = ToRECT(rect);
     HMONITOR hmon = MonitorFromRect(&tmpRect, MONITOR_DEFAULTTONEAREST);
+    if (hwnd) {
+        hmon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY);
+    }
     MONITORINFO mi = {0};
     mi.cbSize = sizeof mi;
     BOOL ok = GetMonitorInfo(hmon, &mi);
@@ -752,8 +886,7 @@ Rect GetFullscreenRect(HWND hwnd) {
     return Rect(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
 }
 
-static BOOL CALLBACK GetMonitorRectProc([[maybe_unused]] HMONITOR hMonitor, [[maybe_unused]] HDC hdc, LPRECT rcMonitor,
-                                        LPARAM data) {
+static BOOL CALLBACK GetMonitorRectProc(__unused HMONITOR hMonitor, __unused HDC hdc, LPRECT rcMonitor, LPARAM data) {
     Rect* rcAll = (Rect*)data;
     *rcAll = rcAll->Union(Rect::FromRECT(*rcMonitor));
     return TRUE;
@@ -794,9 +927,11 @@ void DrawCenteredText(HDC hdc, const RECT& r, const WCHAR* txt, bool isRTL) {
     DrawCenteredText(hdc, rc, txt, isRTL);
 }
 
-/* Return size of a text <txt> in a given <hwnd>, taking into account its font */
+// Return size of a text <txt> in a given <hwnd>, taking into account its font
 Size TextSizeInHwnd(HWND hwnd, const WCHAR* txt, HFONT font) {
-    SIZE sz{};
+    if (!txt || !*txt) {
+        return Size{};
+    }
     size_t txtLen = str::Len(txt);
     HDC dc = GetWindowDC(hwnd);
     /* GetWindowDC() returns dc with default state, so we have to first set
@@ -805,6 +940,7 @@ Size TextSizeInHwnd(HWND hwnd, const WCHAR* txt, HFONT font) {
         font = (HFONT)SendMessageW(hwnd, WM_GETFONT, 0, 0);
     }
     HGDIOBJ prev = SelectObject(dc, font);
+    SIZE sz{};
     GetTextExtentPoint32W(dc, txt, (int)txtLen, &sz);
     SelectObject(dc, prev);
     ReleaseDC(hwnd, dc);
@@ -875,9 +1011,9 @@ void CenterDialog(HWND hDlg, HWND hParent) {
     rcDialog.Offset(rcOwner.x + (rcRect.x - rcDialog.x + rcRect.dx - rcDialog.dx) / 2,
                     rcOwner.y + (rcRect.y - rcDialog.y + rcRect.dy - rcDialog.dy) / 2);
     // ensure that the dialog is fully visible on one monitor
-    rcDialog = ShiftRectToWorkArea(rcDialog, true);
+    rcDialog = ShiftRectToWorkArea(rcDialog, hDlg, true);
 
-    SetWindowPos(hDlg, 0, rcDialog.x, rcDialog.y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+    SetWindowPos(hDlg, nullptr, rcDialog.x, rcDialog.y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
 }
 
 /* Get the name of default printer or nullptr if not exists.
@@ -1102,7 +1238,7 @@ HDC DoubleBuffer::GetDC() const {
     return hdcCanvas;
 }
 
-void DoubleBuffer::Flush(HDC hdc) {
+void DoubleBuffer::Flush(HDC hdc) const {
     CrashIf(hdc == hdcBuffer);
     if (hdcBuffer) {
         BitBlt(hdc, rect.x, rect.y, rect.dx, rect.dy, hdcBuffer, 0, 0, SRCCOPY);
@@ -1138,7 +1274,7 @@ void DeferWinPosHelper::MoveWindow(HWND hWnd, int x, int y, int cx, int cy, BOOL
     if (!bRepaint) {
         uFlags |= SWP_NOREDRAW;
     }
-    this->SetWindowPos(hWnd, 0, x, y, cx, cy, uFlags);
+    this->SetWindowPos(hWnd, nullptr, x, y, cx, cy, uFlags);
 }
 
 void DeferWinPosHelper::MoveWindow(HWND hWnd, Rect r) {
@@ -1150,18 +1286,18 @@ namespace menu {
 
 void SetChecked(HMENU m, int id, bool isChecked) {
     CrashIf(id < 0);
-    CheckMenuItem(m, (uint)id, MF_BYCOMMAND | (isChecked ? MF_CHECKED : MF_UNCHECKED));
+    CheckMenuItem(m, (UINT)id, MF_BYCOMMAND | (isChecked ? MF_CHECKED : MF_UNCHECKED));
 }
 
 bool SetEnabled(HMENU m, int id, bool isEnabled) {
     CrashIf(id < 0);
-    BOOL ret = EnableMenuItem(m, (uint)id, MF_BYCOMMAND | (isEnabled ? MF_ENABLED : MF_GRAYED));
+    BOOL ret = EnableMenuItem(m, (UINT)id, MF_BYCOMMAND | (isEnabled ? MF_ENABLED : MF_GRAYED));
     return ret != -1;
 }
 
 void Remove(HMENU m, int id) {
     CrashIf(id < 0);
-    RemoveMenu(m, (uint)id, MF_BYCOMMAND);
+    RemoveMenu(m, (UINT)id, MF_BYCOMMAND);
 }
 
 void Empty(HMENU m) {
@@ -1179,7 +1315,11 @@ void SetText(HMENU m, int id, const WCHAR* s) {
     mii.dwTypeData = (WCHAR*)s;
     mii.cch = (uint)str::Len(s);
     BOOL ok = SetMenuItemInfoW(m, id, FALSE, &mii);
-    CrashIf(!ok);
+    if (!ok) {
+        logf(L"SetText(): id=%d, s='%s'\n", id, s ? s : L"(null)");
+        LogLastError();
+        ReportIf(true);
+    }
 }
 
 /* Make a string safe to be displayed as a menu item
@@ -1218,7 +1358,7 @@ HFONT CreateSimpleFont(HDC hdc, const WCHAR* fontName, int fontSize) {
     return CreateFontIndirectW(&lf);
 }
 
-IStream* CreateStreamFromData(std::span<u8> d) {
+IStream* CreateStreamFromData(ByteSlice d) {
     if (d.empty()) {
         return nullptr;
     }
@@ -1278,7 +1418,7 @@ static HRESULT GetDataFromStream(IStream* stream, void** data, ULONG* len) {
     return S_OK;
 }
 
-std::span<u8> GetDataFromStream(IStream* stream, HRESULT* resOpt) {
+ByteSlice GetDataFromStream(IStream* stream, HRESULT* resOpt) {
     void* data = nullptr;
     ULONG size = 0;
     HRESULT res = GetDataFromStream(stream, &data, &size);
@@ -1292,7 +1432,7 @@ std::span<u8> GetDataFromStream(IStream* stream, HRESULT* resOpt) {
     return {(u8*)data, (size_t)size};
 }
 
-std::span<u8> GetStreamOrFileData(IStream* stream, const WCHAR* filePath) {
+ByteSlice GetStreamOrFileData(IStream* stream, const WCHAR* filePath) {
     if (stream) {
         return GetDataFromStream(stream, nullptr);
     }
@@ -1360,7 +1500,6 @@ WCHAR* NormalizeString(const WCHAR* str, int /* NORM_FORM */ form) {
     return res.StealData();
 }
 
-// http://support.microsoft.com/default.aspx?scid=kb;en-us;207132
 bool RegisterOrUnregisterServerDLL(const WCHAR* dllPath, bool install, const WCHAR* args) {
     if (FAILED(OleInitialize(nullptr))) {
         return false;
@@ -1432,28 +1571,15 @@ void ToForeground(HWND hwnd) {
 
 /* return text of window or edit control, nullptr in case of an error.
 caller needs to free() the result */
-WCHAR* GetText(HWND hwnd) {
-    size_t cchTxtLen = GetTextLen(hwnd);
-    WCHAR* txt = AllocArray<WCHAR>(cchTxtLen + 1);
+TempWstr GetTextTemp(HWND hwnd) {
+    size_t cch = GetTextLen(hwnd);
+    size_t nBytes = (cch + 2) * sizeof(WCHAR);
+    WCHAR* txt = (WCHAR*)Allocator::AllocZero(GetTempAllocator(), nBytes);
     if (nullptr == txt) {
-        return nullptr;
+        return TempWstr();
     }
-    SendMessageW(hwnd, WM_GETTEXT, cchTxtLen + 1, (LPARAM)txt);
-    txt[cchTxtLen] = 0;
-    return txt;
-}
-
-str::Str GetTextUtf8(HWND hwnd) {
-    size_t cchTxtLen = GetTextLen(hwnd);
-    WCHAR* txt = AllocArray<WCHAR>(cchTxtLen + 1);
-    if (nullptr == txt) {
-        return str::Str();
-    }
-    SendMessageW(hwnd, WM_GETTEXT, cchTxtLen + 1, (LPARAM)txt);
-    txt[cchTxtLen] = 0;
-    AutoFreeStr od = strconv::WstrToUtf8(txt, cchTxtLen);
-    free(txt);
-    return {od.AsView()};
+    SendMessageW(hwnd, WM_GETTEXT, cch + 1, (LPARAM)txt);
+    return TempWstr(txt, cch);
 }
 
 size_t GetTextLen(HWND hwnd) {
@@ -1587,10 +1713,10 @@ void UpdateBitmapColors(HBITMAP hbmp, COLORREF textColor, COLORREF bgColor) {
 
     // color order in DIB is blue-green-red-alpha
     byte rt, gt, bt;
-    UnpackRgb(textColor, rt, gt, bt);
+    UnpackColor(textColor, rt, gt, bt);
     int base[4] = {bt, gt, rt, 0};
     byte rb, gb, bb;
-    UnpackRgb(bgColor, rb, gb, bb);
+    UnpackColor(bgColor, rb, gb, bb);
     int diff[4] = {(int)bb - base[0], (int)gb - base[1], (int)rb - base[2], 255};
 
     DIBSECTION info = {0};
@@ -1670,7 +1796,7 @@ void UpdateBitmapColors(HBITMAP hbmp, COLORREF textColor, COLORREF bgColor) {
 // create data for a .bmp file from this bitmap (if saved to disk, the HBITMAP
 // can be deserialized with LoadImage(nullptr, ..., LD_LOADFROMFILE) and its
 // dimensions determined again with GetBitmapSize(...))
-std::span<u8> SerializeBitmap(HBITMAP hbmp) {
+ByteSlice SerializeBitmap(HBITMAP hbmp) {
     Size size = GetBitmapSize(hbmp);
     DWORD bmpHeaderLen = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFO);
     DWORD bmpBytes = ((size.dx * 3 + 3) / 4) * 4 * size.dy + bmpHeaderLen;
@@ -1771,15 +1897,19 @@ double GetProcessRunningTime() {
     return timeInMs;
 }
 
+bool IsValidHandle(HANDLE h) {
+    return !(h == nullptr || h == INVALID_HANDLE_VALUE);
+}
+
 // This is just to satisfy /analyze. CloseHandle(nullptr) works perfectly fine
 // but /analyze complains anyway
-BOOL SafeCloseHandle(HANDLE* h) {
+bool SafeCloseHandle(HANDLE* h) {
     if (!*h) {
-        return TRUE;
+        return true;
     }
     BOOL ok = CloseHandle(*h);
     *h = nullptr;
-    return ok;
+    return !!ok;
 }
 
 // based on http://mdb-blog.blogspot.com/2013/01/nsis-lunch-program-as-user-from-uac.html
@@ -1873,7 +2003,7 @@ void VariantInitBstr(VARIANT& urlVar, const WCHAR* s) {
     urlVar.bstrVal = SysAllocString(s);
 }
 
-std::span<u8> LoadDataResource(int resId) {
+ByteSlice LoadDataResource(int resId) {
     HRSRC resSrc = FindResource(nullptr, MAKEINTRESOURCE(resId), RT_RCDATA);
     CrashIf(!resSrc);
     if (!resSrc) {
@@ -1890,16 +2020,15 @@ std::span<u8> LoadDataResource(int resId) {
     if (!resData) {
         return {};
     }
-    char* s = str::DupN(resData, size);
+    char* s = str::Dup(resData, size);
     UnlockResource(res);
     return {(u8*)s, size};
 }
 
-static HDDEDATA CALLBACK DdeCallback([[maybe_unused]] UINT uType, [[maybe_unused]] UINT uFmt,
-                                     [[maybe_unused]] HCONV hconv, [[maybe_unused]] HSZ hsz1, [[maybe_unused]] HSZ hsz2,
-                                     [[maybe_unused]] HDDEDATA hdata, [[maybe_unused]] ULONG_PTR dwData1,
-                                     [[maybe_unused]] ULONG_PTR dwData2) {
-    return 0;
+static HDDEDATA CALLBACK DdeCallback(__unused UINT uType, __unused UINT uFmt, __unused HCONV hconv, __unused HSZ hsz1,
+                                     __unused HSZ hsz2, __unused HDDEDATA hdata, __unused ULONG_PTR dwData1,
+                                     __unused ULONG_PTR dwData2) {
+    return nullptr;
 }
 
 bool DDEExecute(const WCHAR* server, const WCHAR* topic, const WCHAR* command) {
@@ -1935,7 +2064,7 @@ bool DDEExecute(const WCHAR* server, const WCHAR* topic, const WCHAR* command) {
     }
 
     cbLen = ((DWORD)str::Len(command) + 1) * sizeof(WCHAR);
-    answer = DdeClientTransaction((BYTE*)command, cbLen, hconv, 0, CF_UNICODETEXT, XTYP_EXECUTE, 10000, nullptr);
+    answer = DdeClientTransaction((BYTE*)command, cbLen, hconv, nullptr, CF_UNICODETEXT, XTYP_EXECUTE, 10000, nullptr);
     if (answer) {
         DdeFreeDataHandle(answer);
         ok = true;
@@ -2013,7 +2142,7 @@ static const char* GetCursorName(LPWSTR cursorId) {
 static void LogCursor(LPWSTR cursorId) {
     static int n = 0;
     const char* name = GetCursorName(cursorId);
-    dbglogf("SetCursor %s 0x%x %d\n", name, (int)(intptr_t)cursorId, n);
+    logf("SetCursor %s 0x%x %d\n", name, (int)(intptr_t)cursorId, n);
     n++;
 }
 #else
@@ -2050,7 +2179,7 @@ void DeleteCachedCursors() {
         HCURSOR cur = cachedCursors[i];
         if (cur) {
             DestroyCursor(cur);
-            cachedCursors[i] = NULL;
+            cachedCursors[i] = nullptr;
         }
     }
 }
@@ -2171,7 +2300,7 @@ void HwndSetText(HWND hwnd, std::string_view sv) {
         SendMessageW(hwnd, WM_SETTEXT, 0, (LPARAM)L"");
         return;
     }
-    AutoFreeWstr ws = strconv::Utf8ToWstr(sv);
+    auto ws = ToWstrTemp(sv);
     SendMessageW(hwnd, WM_SETTEXT, 0, (LPARAM)ws.Get());
 }
 
@@ -2244,8 +2373,18 @@ void HwndPositionToTheRightOf(HWND hwnd, HWND hwndRelative) {
     if (dyDiff > 0) {
         rHwnd.y += dyDiff / 2;
     }
-    Rect r = ShiftRectToWorkArea(rHwnd, true);
-    SetWindowPos(hwnd, 0, r.x, r.y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+    Rect r = ShiftRectToWorkArea(rHwnd, hwnd, true);
+    SetWindowPos(hwnd, nullptr, r.x, r.y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+}
+
+void HwndPositionInCenterOf(HWND hwnd, HWND hwndRelative) {
+    Rect rHwndRelative = WindowRect(hwndRelative);
+    Rect rHwnd = WindowRect(hwnd);
+    int x = rHwndRelative.x + (rHwndRelative.dx / 2) - (rHwnd.dx / 2);
+    int y = rHwndRelative.y + (rHwndRelative.dy / 2) - (rHwnd.dy / 2);
+
+    Rect r = ShiftRectToWorkArea(Rect{x, y, rHwnd.dx, rHwnd.dy}, hwnd, true);
+    SetWindowPos(hwnd, nullptr, r.x, r.y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
 }
 
 void HwndSendCommand(HWND hwnd, int cmdId) {

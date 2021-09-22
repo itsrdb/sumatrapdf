@@ -14,19 +14,19 @@ typedef struct {
     const FieldMetadata* fields;
 } StructMetadata;
 
-typedef enum {
-    TYPE_BOOL,
-    TYPE_I16,
-    TYPE_U16,
-    TYPE_I32,
-    TYPE_U32,
-    TYPE_U64,
-    TYPE_FLOAT,
-    TYPE_COLOR,
-    TYPE_STR,
-    TYPE_WSTR,
-    TYPE_STRUCT_PTR,
-    TYPE_ARRAY,
+typedef enum : u16 {
+    TYPE_BOOL = 0,
+    TYPE_I16 = 1,
+    TYPE_U16 = 2,
+    TYPE_I32 = 3,
+    TYPE_U32 = 4,
+    TYPE_U64 = 5,
+    TYPE_FLOAT = 6,
+    TYPE_COLOR = 7,
+    TYPE_STR = 8,
+    TYPE_WSTR = 9,
+    TYPE_STRUCT_PTR = 10,
+    TYPE_ARRAY = 11,
     // do && with TYPE_MASK to get just the type, no flags
     TYPE_MASK = 0xFF,
     // a flag, if set the value is not to be serialized
@@ -46,9 +46,9 @@ struct FieldMetadata {
     uintptr_t defValOrDefinition;
 };
 
-std::string_view Serialize(const u8* data, const StructMetadata* def);
+std::string_view Serialize(const u8* rootStruct, const StructMetadata* def);
 u8* Deserialize(struct TxtNode* root, const StructMetadata* def);
-u8* Deserialize(const std::string_view str, const StructMetadata* def);
-void FreeStruct(u8* data, const StructMetadata* def);
+u8* Deserialize(std::string_view str, const StructMetadata* def);
+void FreeStruct(u8* structStart, const StructMetadata* def);
 
 } // namespace sertxt

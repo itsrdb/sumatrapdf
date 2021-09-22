@@ -32,7 +32,7 @@ struct ISzAllocatorAlloc : ISzAlloc {
         Allocator::Free(a->allocator, address);
     }
 
-    ISzAllocatorAlloc(Allocator* allocator) {
+    explicit ISzAllocatorAlloc(Allocator* allocator) {
         this->Alloc = _Alloc;
         this->Free = _Free;
         this->allocator = allocator;
@@ -266,9 +266,9 @@ static bool ExtractFileByIdx(SimpleArchive* archive, int idx, const char* dstDir
     }
 
     bool ok = false;
-    char* filePath = path::JoinUtf(dstDir, fi->name, allocator);
+    char* filePath = path::Join(dstDir, fi->name, allocator);
     if (filePath) {
-        std::span<u8> d = {(u8*)uncompressed, fi->uncompressedSize};
+        ByteSlice d = {(u8*)uncompressed, fi->uncompressedSize};
         ok = file::WriteFile(filePath, d);
     }
 

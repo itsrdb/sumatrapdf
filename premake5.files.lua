@@ -8,13 +8,37 @@ function files_in_dir(dir, files_in_dir)
   files(paths)
 end
 
+function logview_files()
+  files_in_dir("src/utils", {
+    "BaseUtil.*",
+    "TempAllocator.*",
+    "StrUtil.*",
+    "StrconvUtil.*",
+  })
+  files {
+    "src/tools/logview.cpp",
+  }
+end
+
+function preview_test_files()
+  files_in_dir("src/utils", {
+    "BaseUtil.*",
+    "TempAllocator.*",
+    "StrUtil.*",
+    "StrconvUtil.*",
+  })
+  files {
+    "src/tools/preview_test.cpp",
+  }
+end
+
 function makelzsa_files()
   files_in_dir("src/utils", {
     "BaseUtil.*",
     "ByteOrderDecoder.*",
     "ByteWriter.*",
     "ColorUtil.*",
-    "CmdLineParser.*",
+    "CmdLineArgsIter.*",
     "Dpi.*",
     "FileUtil.*",
     "GeomUtil.*",
@@ -22,7 +46,7 @@ function makelzsa_files()
     "StrconvUtil.*",
     "StringViewUtil.*",
     "StrUtil.*",
-    "StrUtil_win.*",
+    "TempAllocator.*",
     "Log.*",
     "WinDynCalls.*",
     "WinUtil.*",
@@ -38,6 +62,43 @@ function zlib_files()
     "adler32.c", "compress.c", "crc32.c", "deflate.c", "inffast.c",
     "inflate.c", "inftrees.c", "trees.c", "zutil.c", "gzlib.c",
     "gzread.c", "gzwrite.c", "gzclose.c",
+  })
+end
+
+function zlib_ng_files()
+  files_in_dir("ext/zlib-ng", {
+    "adler32.c", 
+    "chunkset.c",
+    "compare258.c",
+    "compress.c",
+    "crc32.c",
+    "crc32_comb.c",
+    "deflate.c",
+    "deflate_fast.c",
+    "deflate_huff.c",
+    "deflate_medium.c",
+    "deflate_quick.c",
+    "deflate_rle.c",
+    "deflate_slow.c",
+    "deflate_stored.c",
+    "functable.c",
+    "gzlib.c",
+    "gzread.c",
+    "gzwrite.c",
+    "infback.c",
+    "inffast.c",
+    "inflate.c",
+    "inftrees.c",
+    "insert_string.c",
+    "insert_string_roll.c",
+    "slide_hash.c",
+    "trees.c",
+    "uncompr.c",
+    "zutil.c",
+  })
+
+  files_in_dir("ext/zlib-ng/arch/x86", {
+    "*.c",
   })
 end
 
@@ -205,7 +266,7 @@ function openjpeg_files()
     "mqc.c",
     "openjpeg.c",
     "opj_clock.c",
-    "opj_malloc.c",
+    --"opj_malloc.c",
     "phix_manager.c",
     "pi.c",
     "ppix_manager.c",
@@ -217,6 +278,32 @@ function openjpeg_files()
     "thix_manager.c",
     "thread.c",
     "tpix_manager.c",
+    "*.h",
+  })
+end
+
+function extract_files()
+  files_in_dir("ext/extract/src", {
+    "alloc.*",
+    "astring.*",
+    "buffer.*",
+    "document.*",
+    "docx.*",
+    "docx_template.*",
+    "extract.*",
+    "html.*",
+    "join.*",
+    "mem.*",
+    "memento.*",
+    "odt_template.*",
+    "odt.*",
+    "outf.*",
+    "sys.*",
+    "text.*",
+    "xml.*",
+    "zip.*",
+  })
+  files_in_dir("ext/extract/include", {
     "*.h",
   })
 end
@@ -280,7 +367,7 @@ function libjpeg_turbo_files()
     })
     files {"ext/libjpeg-turbo/simd/jsimd_i386.c"}
 
-  filter {'platforms:x64 or x64_asan or x64_ramicro'}
+  filter {'platforms:x64 or x64_asan'}
     files_in_dir("ext/libjpeg-turbo/simd", {
       "jfsseflt-64.asm", "jccolss2-64.asm", "jdcolss2-64.asm", "jcgrass2-64.asm",
     	"jcsamss2-64.asm", "jdsamss2-64.asm", "jdmerss2-64.asm", "jcqnts2i-64.asm",
@@ -406,19 +493,17 @@ function sumatrapdf_files()
     "CanvasAboutUI.*",
     "ChmModel.*",
     "Commands.*",
+    "Controller.h",
     "CrashHandler.*",
     "DisplayModel.*",
     "DisplayMode.*",
-    "Doc.*",
-    "EbookController.*",
-    "EbookControls.*",
     "EditAnnotations.*",
     "ExternalViewers.*",
     "Favorites.*",
     "FileHistory.*",
     "FileThumbnails.*",
     "Flags.*",
-    "GetDocumentOutlines.*",
+    "FzImgReader.*",
     "GlobalPrefs.*",
     "Installer.h",
     "Installer.cpp",
@@ -426,16 +511,14 @@ function sumatrapdf_files()
     "Uninstaller.cpp",
     "MemLeakDetect.*",
     "Menu.*",
-    "MuiEbookPageDef.*",
     "Notifications.*",
-    "PagesLayoutDef.*",
-    "ParseBKM.*",
     "PdfSync.*",
     "Print.*",
     "ProgressUpdateUI.*",
     "RenderCache.*",
     "resource.h",
     "SaveAsPdf.*",
+    "Scratch.*",
     "SearchAndDDE.*",
     "Selection.*",
     "SettingsStructs.*",
@@ -456,21 +539,36 @@ function sumatrapdf_files()
     "TextSearch.*",
     "TextSelection.*",
     "Theme.*",
-    "TocEditor.*",
-    "TocEditTitle.*",
     "Toolbar.*",
     "Translations.*",
-    "Trans_sumatra_txt.cpp",
+    "TranslationsInfo.cpp",
+    "UpdateCheck.*",
     "Version.h",
     "WindowInfo.*",
 
-    "Tests.cpp",
-    "regress/Regress.*",
-    "*.txt",
+    "ext/versions.txt",
+    "docs/*.txt",
   })
-  test_app_files()
+  filter {"configurations:Debug"}
+    files_in_dir("src", {
+      "Tests.cpp",
+      "regress/Regress.*",  
+    })
+    files_in_dir("src/testcode", {
+      "test-app.h",
+      "TestApp.cpp",
+      "TestTab.cpp",
+      "TestLayout.cpp",
+      --"TestLice.cpp",
+    })
+    files_in_dir("src/utils/tests", {
+      "*.cpp",
+    })
+    files_in_dir("src/utils", {
+        "UtAssert.*",
+    })
+  filter {}
 end
-
 
 function uia_files()
   files_in_dir("src/uia", {
@@ -492,7 +590,7 @@ function utils_files()
     "ByteOrderDecoder.*",
     "ByteReader.*",
     "ByteWriter.*",
-    "CmdLineParser.*",
+    "CmdLineArgsIter.*",
     "ColorUtil.*",
     "CryptoUtil.*",
     "CssParser.*",
@@ -513,7 +611,6 @@ function utils_files()
     "HttpUtil.*",
     "JsonParser.*",
     "Log.*",
-    "LogDbg.*",
     "LzmaSimpleArchive.*",
     "MinHook.*",
     "PEB.h",
@@ -528,7 +625,7 @@ function utils_files()
     "StringViewUtil.*",
     "StrSlice.*",
     "StrUtil.*",
-    "StrUtil_win.cpp",
+    "TempAllocator.*",
     "ThreadUtil.*",
     "TgaReader.*",
     "TrivialHtmlParser.*",
@@ -539,6 +636,7 @@ function utils_files()
     "WebpReader.*",
     "WinDynCalls.*",
     "WinUtil.*",
+    "windrawlib.*",
     "ZipUtil.*",
   })
 
@@ -550,20 +648,7 @@ end
 
 function mui_files()
   files_in_dir("src/mui", {
-    "MuiBase.*",
     "Mui.*",
-    "MuiCss.*",
-    "MuiLayout.*",
-    "MuiPainter.*",
-    "MuiControl.*",
-    "MuiButton.*",
-    "MuiScrollBar.*",
-    "MuiEventMgr.*",
-    "MuiHwndWrapper.*",
-    "MuiGrid.*",
-    "SvgPath.*",
-    "MuiDefs.*",
-    "MuiFromText.*",
     "TextRender.*",
   })
 end
@@ -571,16 +656,30 @@ end
 function engines_files()
   files_in_dir("src", {
     "Annotation.*",
-    "Engine*",
-    "ChmDoc.*",
+    "EngineBase.*",
+    "EngineCreate.*",
+    "EngineDjVu.*",
+    "EngineEbook.*",
+    "EngineImages.*",
+    "EngineMulti.*",
+    "EngineMupdf.*",
+    "EngineMupdfImpl.*",
+    "EnginePs.*",
+    "EngineAll.h",
+    "ChmFile.*",
     "EbookDoc.*",
     "EbookFormatter.*",
     "HtmlFormatter.*",
     "MobiDoc.*",
-    "ParseBKM.*",
     "PdfCreator.*",
+    "PalmDbReader.*",
+  })
+end
 
-    "utils/PalmDbReader.*",
+function chm_files()
+  files_in_dir("ext/CHMLib/src", {
+    "chm_lib.c",
+    "lzx.c" ,
   })
 end
 
@@ -592,7 +691,7 @@ function mupdf_files()
 
   files { "ext/mupdf_load_system_font.c" }
 
-  filter {"platforms:x64 or x64_asan or x64_ramicro"}
+  filter {"platforms:x64 or x64_asan"}
     files {
       "mupdf/fonts_64.asm",
     }
@@ -676,7 +775,8 @@ function mupdf_files()
     "load-jbig2.c",
     "load-jpeg.c",
     "load-jpx.c",
-    "load-jxr.c",
+    -- "load-jxr.c",
+    "load-jxr-win.c",
     "load-png.c",
     "load-pnm.c",
     "load-tiff.c",
@@ -687,6 +787,7 @@ function mupdf_files()
     "outline.c",
     "output.c",
     "output-cbz.c",
+    "output-docx.c",
     "output-pcl.c",
     "output-pclm.c",
     "output-pdfocr.c",
@@ -786,6 +887,7 @@ function mupdf_files()
     "pdf-write.c",
     "pdf-xobject.c",
     "pdf-xref.c",
+    "*.h",
   })
 
   files_in_dir("mupdf/source/svg", {
@@ -808,6 +910,9 @@ function mupdf_files()
     "xps-tile.c",
     "xps-util.c",
     "xps-zip.c",
+  })
+  files_in_dir("mupdf/source/reflow", {
+    "*.c",
   })
   files {
     "mupdf/include/mupdf/fitz/*.h",
@@ -878,7 +983,6 @@ function efi_files()
     "src/utils/BitManip.h",
     "src/utils/Dict*",
     "src/utils/StrUtil.*",
-    "src/utils/StrUtil_win.cpp",
   }
 end
 
@@ -887,7 +991,7 @@ function test_util_files()
     "BaseUtil.*",
     "BitManip.*",
     "ByteOrderDecoder.*",
-    "CmdLineParser.*",
+    "CmdLineArgsIter.*",
     "ColorUtil.*",
     "CryptoUtil.*",
     "CssParser.*",
@@ -906,11 +1010,10 @@ function test_util_files()
     "StrFormat.*",
     "StringViewUtil.*",
     "StrUtil.*",
-    "StrUtil_win.cpp",
     "SquareTreeParser.*",
     "TrivialHtmlParser.*",
+    "TempAllocator.*",
     "UtAssert.*",
-    --"VarintGob*",
     "Vec.*",
     "WinUtil.*",
     "WinDynCalls.*",
@@ -924,8 +1027,7 @@ function test_util_files()
     "Flags.*",
     "SumatraConfig.*",
     "SettingsStructs.*",
-    "UnitTests.cpp",
-    "mui/SvgPath*",
+    "SumatraUnitTests.cpp",
     "tools/test_util.cpp"
   })
 end
@@ -933,8 +1035,8 @@ end
 function engine_dump_files()
   files_in_dir("src", {
     "EngineDump.cpp",
-    "SumatraConfig.*",
-    "mui/MiniMui.*",
+    "SumatraConfig.*",    
+    "mui/Mui.*",
     "mui/TextRender.*"
   })
 end
@@ -948,23 +1050,23 @@ function pdf_preview_files()
 
   files_in_dir("src", {
     "utils/LogDbg.*",
-    "utils/PalmDbReader.*",
-    "mui/MiniMui.*",
+    "mui/Mui.*",
     "mui/TextRender.*",
-    "MUPDF_Exports.cpp",
-    "Annotation.*",
-    "EngineBase.*",
-    "EngineFzUtil.*",
-    "EnginePdf.*",
-    "EngineXps.*",
-    "ChmDoc.*",
+    "ChmFile.*",
     "EbookDoc.*",
+    "EbookFormatter.*",
+    "EngineBase.*",
     "EngineEbook.*",
     "EngineDjVu.*",
     "EngineImages.*",
-    "EbookFormatter.*",
+    "EngineMupdf.*",
+    "EngineMupdfImpl.*",
+    "EngineAll.h",
+    "FzImgReader.*",
     "HtmlFormatter.*",
     "MobiDoc.*",
+    "MUPDF_Exports.cpp",
+    "PalmDbReader.*",
     "PdfCreator.*",
     "SumatraConfig.*",
   })
@@ -979,38 +1081,31 @@ function pdf_filter_files()
   })
   files_in_dir("src", {
     "utils/LogDbg.*",
-    "utils/PalmDbReader.*",
     "MUPDF_Exports.cpp",
-    "Annotation.*",
     "EngineBase.*",
-    "EngineFzUtil.*",
-    "EnginePdf.*",
-    "EngineXps.*"
+    "EngineAll.h",
+    "EngineMupdf.*",
+    "EngineMupdfImpl.*",
+    "PalmDbReader.*",
+    "MobiDoc.*",
+    "EbookDoc.*",
   })
 
   filter {"configurations:Debug"}
     files_in_dir("src/ifilter", {
-      "CTeXFilter.*",
-      "CEpubFilter.*",
+      "TeXFilter.*",
+      "EpubFilter.*",
     })
     files {
       "src/EbookDoc.*",
       "src/MobiDoc.*",
-      "src/utils/PalmDbReader.*",
+      "src/PalmDbReader.*",
     }
   filter {}
 end
 
-function test_app_files()
-  files_in_dir("src/testcode", {
-    "test-app.h",
-    "TestApp.cpp",
-    "TestTab.cpp",
-    "TestLayout.cpp",
-    "TestLice.cpp",
-  })
-end
 
+--[[
 function wdl_files()
   files_in_dir("ext/WDL", {
     "projectcontext.cpp",
@@ -1066,6 +1161,7 @@ function wdl_files()
     "wndsize.*",
   })
 end
+--]]
 
 function gumbo_files()
   files_in_dir("ext/gumbo-parser/src", {

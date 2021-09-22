@@ -9,16 +9,17 @@ extern "C" {
 #include "utils/BaseUtil.h"
 #include "utils/ScopedWin.h"
 #include "utils/GdiPlusUtil.h"
-#include "utils/Log.h"
+#include "utils/WinUtil.h"
 
 #include "wingui/TreeModel.h"
-
-#include "Annotation.h"
+#include "DisplayMode.h"
+#include "Controller.h"
 #include "EngineBase.h"
-#include "EngineFzUtil.h"
+#include "Annotation.h"
+#include "EngineMupdfImpl.h"
 #include "PdfCreator.h"
 
-// using namespace Gdiplus;
+#include "utils/Log.h"
 
 using Gdiplus::ARGB;
 using Gdiplus::Bitmap;
@@ -167,7 +168,7 @@ pdf_obj* add_image_res(fz_context* ctx, pdf_document* doc, pdf_obj* resources, c
 }
 
 // based on create_page in pdfcreate.c
-bool PdfCreator::AddPageFromFzImage(fz_image* image, float imgDpi) {
+bool PdfCreator::AddPageFromFzImage(fz_image* image, float imgDpi) const {
     CrashIf(!ctx || !doc);
     if (!ctx || !doc) {
         return false;
@@ -241,9 +242,9 @@ bool PdfCreator::AddPageFromGdiplusBitmap(Gdiplus::Bitmap* bmp, float imgDpi) {
     return ok;
 }
 
-bool PdfCreator::AddPageFromImageData(const char* data, size_t len, float imgDpi) {
+bool PdfCreator::AddPageFromImageData(ByteSlice data, float imgDpi) const {
     CrashIf(!ctx || !doc);
-    if (!ctx || !doc || !data || len == 0) {
+    if (!ctx || !doc || data.empty()) {
         return false;
     }
 
@@ -251,7 +252,7 @@ bool PdfCreator::AddPageFromImageData(const char* data, size_t len, float imgDpi
     fz_var(img);
 
     fz_try(ctx) {
-        fz_buffer* buf = fz_new_buffer_from_copied_data(ctx, (u8*)data, len);
+        fz_buffer* buf = fz_new_buffer_from_copied_data(ctx, data.data(), data.size());
         img = fz_new_image_from_buffer(ctx, buf);
     }
     fz_catch(ctx) {
@@ -265,12 +266,12 @@ bool PdfCreator::AddPageFromImageData(const char* data, size_t len, float imgDpi
     return ok;
 }
 
-bool PdfCreator::SetProperty(DocumentProperty prop, const WCHAR* value) {
+bool PdfCreator::SetProperty(DocumentProperty prop, const WCHAR* value) const {
     if (!ctx || !doc) {
         return false;
     }
 
-    // adapted from EnginePdf::GetProperty
+    // adapted from EngineMupdf::GetProperty
     static struct {
         DocumentProperty prop;
         const char* name;
@@ -293,7 +294,7 @@ bool PdfCreator::SetProperty(DocumentProperty prop, const WCHAR* value) {
         return false;
     }
 
-    AutoFree val = strconv::WstrToUtf8(value);
+    auto val = ToUtf8Temp(value);
 
     pdf_obj* obj = nullptr;
     fz_var(obj);
@@ -327,7 +328,7 @@ static DocumentProperty propsToCopy[] = {
 };
 // clang-format on
 
-bool PdfCreator::CopyProperties(EngineBase* engine) {
+bool PdfCreator::CopyProperties(EngineBase* engine) const {
     bool ok;
     for (int i = 0; i < dimof(propsToCopy); i++) {
         AutoFreeWstr value = engine->GetProperty(propsToCopy[i]);
@@ -361,7 +362,7 @@ const pdf_write_options pdf_default_write_options2 = {
     "", /* upwd_utf8[128] */
 };
 
-bool PdfCreator::SaveToFile(const char* filePath) {
+bool PdfCreator::SaveToFile(const char* filePath) const {
     if (!ctx || !doc) {
         return false;
     }

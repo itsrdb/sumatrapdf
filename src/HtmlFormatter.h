@@ -1,50 +1,23 @@
 /* Copyright 2021 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
-// using namespace Gdiplus;
-
 using Gdiplus::ARGB;
 using Gdiplus::Bitmap;
-using Gdiplus::Brush;
 using Gdiplus::Color;
-using Gdiplus::CombineModeReplace;
-using Gdiplus::CompositingQualityHighQuality;
-using Gdiplus::Font;
 using Gdiplus::FontFamily;
-using Gdiplus::FontStyle;
 using Gdiplus::FontStyleBold;
 using Gdiplus::FontStyleItalic;
 using Gdiplus::FontStyleRegular;
 using Gdiplus::FontStyleStrikeout;
 using Gdiplus::FontStyleUnderline;
-using Gdiplus::FrameDimensionPage;
-using Gdiplus::FrameDimensionTime;
-using Gdiplus::Graphics;
-using Gdiplus::GraphicsPath;
-using Gdiplus::Image;
-using Gdiplus::ImageAttributes;
-using Gdiplus::InterpolationModeHighQualityBicubic;
-using Gdiplus::LinearGradientBrush;
-using Gdiplus::LinearGradientMode;
-using Gdiplus::LinearGradientModeVertical;
 using Gdiplus::Matrix;
 using Gdiplus::MatrixOrderAppend;
 using Gdiplus::Ok;
-using Gdiplus::OutOfMemory;
 using Gdiplus::Pen;
-using Gdiplus::PenAlignmentInset;
-using Gdiplus::PropertyItem;
-using Gdiplus::Region;
-using Gdiplus::SmoothingModeAntiAlias;
 using Gdiplus::SolidBrush;
 using Gdiplus::Status;
-using Gdiplus::StringAlignmentCenter;
-using Gdiplus::StringFormat;
-using Gdiplus::StringFormatFlagsDirectionRightToLeft;
-using Gdiplus::TextRenderingHintClearTypeGridFit;
 using Gdiplus::UnitPixel;
 using Gdiplus::Win32Error;
-using Gdiplus::WrapModeTileFlipXY;
 
 // Layout information for a given page is a list of
 // draw instructions that define what to draw and where.
@@ -78,25 +51,27 @@ struct DrawInstr {
     DrawInstrType type{DrawInstrType::Unknown};
     union {
         // info specific to a given instruction
-        // InstrString, InstrLinkStart, InstrAnchor, InstrRtlString
+        // InstrString, InstrLinkStart, InstrAnchor, InstrRtlString, InstrImage
         struct {
             const char* s;
             size_t len;
         } str{nullptr, 0};
         mui::CachedFont* font; // InstrSetFont
-        ImageData img;         // InstrImage
     };
     RectF bbox{}; // common to most instructions
 
-    DrawInstr() {
-    }
+    DrawInstr() = default;
 
     explicit DrawInstr(DrawInstrType t, RectF bbox = {}) : type(t), bbox(bbox) {
+    }
+    ByteSlice GetImage() {
+        CrashIf(type != DrawInstrType::Image);
+        return {(u8*)str.s, str.len};
     }
 
     // helper constructors for instructions that need additional arguments
     static DrawInstr Str(const char* s, size_t len, RectF bbox, bool rtl = false);
-    static DrawInstr Image(char* data, size_t len, RectF bbox);
+    static DrawInstr Image(ByteSlice, RectF bbox);
     static DrawInstr SetFont(mui::CachedFont* font);
     static DrawInstr FixedSpace(float dx);
     static DrawInstr LinkStart(const char* s, size_t len);
@@ -153,7 +128,7 @@ struct HtmlFormatterArgs {
         fontName.SetCopy(s);
     }
 
-    const WCHAR* GetFontName() {
+    const WCHAR* GetFontName() const {
         return fontName;
     }
 
@@ -165,9 +140,9 @@ struct HtmlFormatterArgs {
        used to allocate this text. */
     Allocator* textAllocator{nullptr};
 
-    mui::TextRenderMethod textRenderMethod = mui::TextRenderMethodGdiplus;
+    mui::TextRenderMethod textRenderMethod = mui::TextRenderMethod::Gdiplus;
 
-    std::span<u8> htmlStr;
+    ByteSlice htmlStr;
 
     // we start parsing from htmlStr + reparseIdx
     int reparseIdx{0};
@@ -199,23 +174,23 @@ class HtmlFormatter {
     void HandleText(HtmlToken* t);
     void HandleText(const char* s, size_t sLen);
     // blank convenience methods to override
-    virtual void HandleTagImg([[maybe_unused]] HtmlToken* t) {
+    virtual void HandleTagImg(__unused HtmlToken* t) {
     }
-    virtual void HandleTagPagebreak([[maybe_unused]] HtmlToken* t) {
+    virtual void HandleTagPagebreak(__unused HtmlToken* t) {
     }
-    virtual void HandleTagLink([[maybe_unused]] HtmlToken* t) {
+    virtual void HandleTagLink(__unused HtmlToken* t) {
     }
 
     float CurrLineDx();
     float CurrLineDy();
-    float NewLineX();
+    float NewLineX() const;
     void LayoutLeftStartingAt(float offX);
     void JustifyLineBoth();
     void JustifyCurrLine(AlignAttr align);
     bool FlushCurrLine(bool isParagraphBreak);
     void UpdateLinkBboxes(HtmlPage* page);
 
-    bool EmitImage(ImageData* img);
+    bool EmitImage(ByteSlice* img);
     void EmitHr();
     void EmitTextRun(const char* s, const char* end);
     void EmitElasticSpace();
@@ -301,8 +276,6 @@ class HtmlFormatter {
     // number of pages generated so far, approximate. Only used
     // for detection of cover image duplicates in mobi formatting
     int pageCount{0};
-
-    WCHAR buf[512]{};
 
   public:
     explicit HtmlFormatter(HtmlFormatterArgs* args);

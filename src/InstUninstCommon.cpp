@@ -12,10 +12,9 @@
 #include "utils/FileUtil.h"
 #include "utils/Timer.h"
 #include "utils/WinUtil.h"
-#include "utils/CmdLineParser.h"
+#include "utils/CmdLineArgsIter.h"
 #include "utils/Dpi.h"
 #include "utils/FrameTimeoutCalculator.h"
-#include "utils/Log.h"
 #include "utils/ByteOrderDecoder.h"
 #include "utils/LzmaSimpleArchive.h"
 #include "utils/RegistryPaths.h"
@@ -30,7 +29,7 @@
 #include "CrashHandler.h"
 #include "Translations.h"
 
-#include "ifilter/PdfFilter.h"
+#include "ifilter/PdfFilterClsid.h"
 #include "previewer/PdfPreview.h"
 
 #include "SumatraConfig.h"
@@ -42,49 +41,24 @@
 #include "Version.h"
 #include "Installer.h"
 
+#include "utils/Log.h"
+
 // define to 1 to enable shadow effect, to 0 to disable
 #define DRAW_TEXT_SHADOW 1
 #define DRAW_MSG_TEXT_SHADOW 0
 
 #define TEN_SECONDS_IN_MS 10 * 1000
 
-// using namespace Gdiplus;
-
-using Gdiplus::ARGB;
 using Gdiplus::Bitmap;
-using Gdiplus::Brush;
 using Gdiplus::Color;
-using Gdiplus::CombineModeReplace;
 using Gdiplus::CompositingQualityHighQuality;
 using Gdiplus::Font;
-using Gdiplus::FontFamily;
-using Gdiplus::FontStyle;
-using Gdiplus::FontStyleBold;
-using Gdiplus::FontStyleItalic;
 using Gdiplus::FontStyleRegular;
-using Gdiplus::FontStyleStrikeout;
-using Gdiplus::FontStyleUnderline;
-using Gdiplus::FrameDimensionPage;
-using Gdiplus::FrameDimensionTime;
 using Gdiplus::Graphics;
-using Gdiplus::GraphicsPath;
 using Gdiplus::Image;
-using Gdiplus::ImageAttributes;
-using Gdiplus::InterpolationModeHighQualityBicubic;
-using Gdiplus::LinearGradientBrush;
-using Gdiplus::LinearGradientMode;
-using Gdiplus::LinearGradientModeVertical;
-using Gdiplus::Matrix;
 using Gdiplus::MatrixOrderAppend;
-using Gdiplus::Ok;
-using Gdiplus::OutOfMemory;
-using Gdiplus::Pen;
-using Gdiplus::PenAlignmentInset;
-using Gdiplus::PropertyItem;
-using Gdiplus::Region;
 using Gdiplus::SmoothingModeAntiAlias;
 using Gdiplus::SolidBrush;
-using Gdiplus::Status;
 using Gdiplus::StringAlignmentCenter;
 using Gdiplus::StringFormat;
 using Gdiplus::StringFormatFlagsDirectionRightToLeft;
@@ -132,13 +106,9 @@ const WCHAR* gSupportedExtsSumatra[] = {
     L".fb2", L".fb2z", L".prc",  L".tif", L".tiff", L".jp2",  L".png",
     L".jpg",  L".jpeg", L".tga", L".gif",  nullptr
 };
-const WCHAR* gSupportedExtsRaMicro[] = { L".pdf", nullptr };
 // clang-format on
 
 const WCHAR** GetSupportedExts() {
-    if (gIsRaMicroBuild) {
-        return gSupportedExtsRaMicro;
-    }
     return gSupportedExtsSumatra;
 }
 
@@ -174,7 +144,7 @@ void InitInstallerUninstaller() {
 }
 
 WCHAR* GetExistingInstallationDir() {
-    AutoFreeWstr REG_PATH_UNINST = GetRegPathUninst(GetAppName());
+    AutoFreeWstr REG_PATH_UNINST = GetRegPathUninst(GetAppNameTemp());
     AutoFreeWstr dir = ReadRegStr2(REG_PATH_UNINST, L"InstallLocation");
     if (!dir) {
         return nullptr;
@@ -196,7 +166,7 @@ WCHAR* GetExistingInstallationFilePath(const WCHAR* name) {
     return path::Join(dir, name);
 }
 
-WCHAR* GetInstallDirNoFree() {
+WCHAR* GetInstallDirTemp() {
     return gCli->installDir;
 }
 
@@ -205,16 +175,16 @@ WCHAR* GetInstallationFilePath(const WCHAR* name) {
 }
 
 WCHAR* GetInstalledExePath() {
-    WCHAR* dir = GetInstallDirNoFree();
-    return path::Join(dir, GetExeName());
+    WCHAR* dir = GetInstallDirTemp();
+    return path::Join(dir, GetExeNameTemp());
 }
 
 WCHAR* GetShortcutPath(int csidl) {
-    AutoFreeWstr dir = GetSpecialFolder(csidl, false);
-    if (!dir) {
+    TempWstr dir = GetSpecialFolderTemp(csidl, false);
+    if (!dir.Get()) {
         return nullptr;
     }
-    const WCHAR* appName = GetAppName();
+    const WCHAR* appName = GetAppNameTemp();
     AutoFreeWstr lnkName = str::Join(appName, L".lnk");
     return path::Join(dir, lnkName);
 }
@@ -422,7 +392,8 @@ static bool KillProcWithIdAndModule(DWORD processId, const WCHAR* modulePath, bo
 // modulePath
 // returns -1 on error, 0 if no matching processes
 int KillProcessesWithModule(const WCHAR* modulePath, bool waitUntilTerminated) {
-    logf("KillProcessesWithModule: '%s'\n", modulePath);
+    auto modulePathA = ToUtf8Temp(modulePath);
+    logf("KillProcessesWithModule: '%s'\n", modulePathA.Get());
     AutoCloseHandle hProcSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (INVALID_HANDLE_VALUE == hProcSnapshot) {
         return -1;
@@ -530,11 +501,11 @@ static const WCHAR* readableProcessNames[] = {
 // clang-format on
 
 static const WCHAR* ReadableProcName(const WCHAR* procPath) {
-    const WCHAR* exeName = GetExeName();
-    const WCHAR* appName = GetAppName();
+    const WCHAR* exeName = GetExeNameTemp();
+    const WCHAR* appName = GetAppNameTemp();
     readableProcessNames[0] = exeName;
     readableProcessNames[1] = appName;
-    const WCHAR* procName = path::GetBaseNameNoFree(procPath);
+    const WCHAR* procName = path::GetBaseNameTemp(procPath);
     for (size_t i = 0; i < dimof(readableProcessNames); i += 2) {
         if (str::EqI(procName, readableProcessNames[i])) {
             return readableProcessNames[i + 1];

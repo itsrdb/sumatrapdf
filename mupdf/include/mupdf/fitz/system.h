@@ -1,3 +1,25 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #ifndef MUPDF_FITZ_SYSTEM_H
 #define MUPDF_FITZ_SYSTEM_H
 
@@ -16,6 +38,8 @@
 #include <stdarg.h> /* needed for va_list vararg functions */
 #include <setjmp.h> /* needed for the try/catch macros */
 #include <stdio.h> /* useful for debug printfs */
+
+#include "export.h"
 
 #if defined(_MSC_VER) && (_MSC_VER < 1700) /* MSVC older than VS2012 */
 typedef signed char int8_t;
@@ -159,17 +183,24 @@ void fz_free_argv(int argc, char **argv);
 #endif
 
 /* inline is standard in C++. For some compilers we can enable it within
- * C too. */
+ * C too. Some compilers think they know better than we do about when
+ * to actually honour inline (particularly for large functions); use
+ * fz_forceinline to kick them into really inlining. */
 
 #ifndef __cplusplus
 #if defined (__STDC_VERSION_) && (__STDC_VERSION__ >= 199901L) /* C99 */
 #elif defined(_MSC_VER) && (_MSC_VER >= 1500) /* MSVC 9 or newer */
 #define inline __inline
+#define fz_forceinline __forceinline
 #elif defined(__GNUC__) && (__GNUC__ >= 3) /* GCC 3 or newer */
 #define inline __inline
 #else /* Unknown or ancient */
 #define inline
 #endif
+#endif
+
+#ifndef fz_forceinline
+#define fz_forceinline inline
 #endif
 
 /* restrict is standard in C99, but not in all C++ compilers. */

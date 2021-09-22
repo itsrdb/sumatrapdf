@@ -2,6 +2,7 @@
    License: Simplified BSD (see COPYING.BSD) */
 
 #include "utils/BaseUtil.h"
+#include "utils/ScopedWin.h"
 #include "utils/WinUtil.h"
 #include "utils/Dpi.h"
 
@@ -14,14 +15,13 @@
 
 Kind kindListBox = "listbox";
 
-ListBoxModelStrings::~ListBoxModelStrings() {
-}
+ListBoxModelStrings::~ListBoxModelStrings() = default;
 
 int ListBoxModelStrings::ItemsCount() {
     return strings.Size();
 }
 
-Size ListBoxModelStrings::Draw([[maybe_unused]] bool measure) {
+Size ListBoxModelStrings::Draw(__unused bool measure) {
     CrashIf(true);
     return Size{};
 }
@@ -39,15 +39,14 @@ ListBoxCtrl::ListBoxCtrl(HWND p) : WindowBase(p), idealSize({DpiScale(p, 120), D
     ctrlID = 0;
 }
 
-ListBoxCtrl::~ListBoxCtrl() {
-}
+ListBoxCtrl::~ListBoxCtrl() = default;
 
 static void FillWithItems(ListBoxCtrl* w, ListBoxModel* model) {
     HWND hwnd = w->hwnd;
     ListBox_ResetContent(hwnd);
     for (int i = 0; i < model->ItemsCount(); i++) {
         auto sv = model->Item(i);
-        AutoFreeWstr ws = strconv::Utf8ToWstr(sv);
+        auto ws = ToWstrTemp(sv);
         ListBox_AddString(hwnd, ws.Get());
     }
 }
@@ -128,10 +127,7 @@ bool ListBoxCtrl::SetCurrentSelection(int n) {
         return false;
     }
     LRESULT res = ListBox_SetCurSel(hwnd, n);
-    if (res == LB_ERR) {
-        return false;
-    }
-    return true;
+    return res != LB_ERR;
 }
 
 void ListBoxCtrl::SetModel(ListBoxModel* model) {

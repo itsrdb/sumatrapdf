@@ -34,6 +34,10 @@ Cmd* enum (e.g. CmdOpen) and a human-readable name (not used yet).
     V(CmdViewShowHideScrollbars, "View: Toogle Scrollbars")               \
     V(CmdViewShowHideMenuBar, "View: Toggle Menu Bar")                    \
     V(CmdCopySelection, "Copy Selection")                                 \
+    V(CmdTranslateSelectionWithGoogle, "Translate Selection with Google") \
+    V(CmdTranslateSelectionWithDeepL, "Translate Selection With DeepL")   \
+    V(CmdSearchSelectionWithGoogle, "Search Selection with Google")       \
+    V(CmdSearchSelectionWithBing, "Search Selection with Bing")           \
     V(CmdSelectAll, "Select All")                                         \
     V(CmdNewWindow, "Open New Window")                                    \
     V(CmdDuplicateInNewWindow, "Open Document In New Window")             \
@@ -55,6 +59,7 @@ Cmd* enum (e.g. CmdOpen) and a human-readable name (not used yet).
     V(CmdFindPrevSel, "Find: Previous Selection")                         \
     V(CmdSaveAnnotations, "Save Annotations")                             \
     V(CmdEditAnnotations, "Edit Annotations")                             \
+    V(CmdSelectAnnotation, "Select Annotation in Editor")                 \
     V(CmdZoomFitPage, "Zoom: Fit Page")                                   \
     V(CmdZoomActualSize, "Zoom: Actual Size")                             \
     V(CmdZoomFitWidth, "Zoom: Fit Width")                                 \
@@ -98,10 +103,6 @@ Cmd* enum (e.g. CmdOpen) and a human-readable name (not used yet).
     V(CmdTocEditorAddPdfSibling, "Add PDF Sibling")                       \
     V(CmdExpandAll, "Expand All")                                         \
     V(CmdCollapseAll, "Collapse All")                                     \
-    V(CmdExportBookmarks, "Export Bookmarks")                             \
-    V(CmdSortTagSmallFirst, "Sort By Tag, Small First")                   \
-    V(CmdSortTagBigFirst, "Sort By Tag, Big First")                       \
-    V(CmdSortColor, "Sort By Color")                                      \
     V(CmdSaveEmbeddedFile, "Save Embedded File...")                       \
     V(CmdOpenEmbeddedPDF, "Open Embedded PDF")                            \
     V(CmdOptions, "Options...")                                           \
@@ -119,13 +120,10 @@ Cmd* enum (e.g. CmdOpen) and a human-readable name (not used yet).
     V(CmdFavoriteHide, "Favorites: Hide")                                 \
     V(CmdDebugShowLinks, "Deubg: Show Links")                             \
     V(CmdDebugCrashMe, "Debug: Crash Me")                                 \
-    V(CmdDebugEbookUI, "Debug: Toggle Ebook UI")                          \
     V(CmdDebugAnnotations, "Debug: Annotations")                          \
     V(CmdDebugDownloadSymbols, "Debug: Download Symbols")                 \
     V(CmdDebugTestApp, "Debug: Test App")                                 \
     V(CmdDebugShowNotif, "Debug: Show Notification")                      \
-    V(CmdDebugMui, "Debug: Mui")                                          \
-    V(CmdNewBookmarks, "New Bookmarks")                                   \
     V(CmdCreateAnnotText, "Create Text Annotation")                       \
     V(CmdCreateAnnotLink, "Create Link Annotation")                       \
     V(CmdCreateAnnotFreeText, "Create  Free Text Annotation")             \
@@ -166,21 +164,24 @@ enum {
     // at some number higher than 0
     CmdFirst = 200,
     CmdSeparator = CmdFirst,
-    CmdSeparatorEmbed,
 
     COMMANDS(DEF_CMD)
 
     /* range for "external viewers" setting */
     CmdOpenWithExternalFirst,
-    CmdOpenWithExternalLast = CmdOpenWithExternalFirst + 20,
+    CmdOpenWithExternalLast = CmdOpenWithExternalFirst + 32,
+
+    /* range for "SelectionHandlers" setting */
+    CmdSelectionHandlerFirst,
+    CmdSelectionHandlerLast = CmdSelectionHandlerFirst + 32,
 
     /* range for file history */
     CmdFileHistoryFirst,
-    CmdFileHistoryLast = CmdFileHistoryFirst + 20,
+    CmdFileHistoryLast = CmdFileHistoryFirst + 32,
 
     /* range for favorites */
     CmdFavoriteFirst,
-    CmdFavoriteLast = CmdFavoriteFirst + 200,
+    CmdFavoriteLast = CmdFavoriteFirst + 256,
 
     /* range for themes. We don't have themes yet. */
     CmdThemeFirst,

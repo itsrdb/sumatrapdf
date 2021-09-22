@@ -1,9 +1,8 @@
 package main
 
 import (
+	"os"
 	"strings"
-
-	"github.com/kjk/u"
 )
 
 func getGitLinearVersionMust() int {
@@ -12,14 +11,14 @@ func getGitLinearVersionMust() int {
 	// we add 1000 to create a version that is larger than the svn version
 	// from the time we used svn
 	n := len(lines) + 1000
-	u.PanicIf(n < 10000, "getGitLinearVersion: n is %d (should be > 10000)", n)
+	panicIf(n < 10000, "getGitLinearVersion: n is %d (should be > 10000)", n)
 	return n
 }
 
 func getGitSha1Must() string {
 	out := runExeMust("git", "rev-parse", "HEAD")
 	s := strings.TrimSpace(string(out))
-	u.PanicIf(len(s) != 40, "getGitSha1Must(): %s doesn't look like sha1\n", s)
+	panicIf(len(s) != 40, "getGitSha1Must(): %s doesn't look like sha1\n", s)
 	return s
 }
 
@@ -32,13 +31,6 @@ func isGitClean() bool {
 	return len(s) == 0
 }
 
-func verifyGitCleanMust() {
-	if flgNoCleanCheck {
-		return
-	}
-	u.PanicIf(!isGitClean(), "git has unsaved changes\n")
-}
-
 /*
 Given result of git btranch that looks like:
 
@@ -48,7 +40,8 @@ master
 Return active branch marked with "*" ('rel3.1working' in this case) or empty
 string if no current branch.
 */
-func getCurrentBranch(d []byte) string {
+func getCurrentBranchMust() string {
+	d := runExeMust("git", "branch")
 	// "(HEAD detached at b5adf8738)" is what we get on GitHub CI
 	s := string(d)
 	if strings.Contains(s, "(HEAD detached") {
@@ -68,22 +61,33 @@ func getCurrentBranch(d []byte) string {
 // i.e. we allow 3.1.1 and 3.1.2 from branch 3.1 but not from 3.0 or 3.2
 func verifyOnReleaseBranchMust() {
 	// 'git branch' return branch name in format: '* master'
-	out := runExeMust("git", "branch")
-	currBranch := getCurrentBranch(out)
+	currBranch := getCurrentBranchMust()
 	prefix := "rel"
 	suffix := "working"
-	u.PanicIf(!strings.HasPrefix(currBranch, prefix), "running on branch '%s' which is not 'rel${ver}working' branch\n", currBranch)
-	u.PanicIf(!strings.HasSuffix(currBranch, suffix), "running on branch '%s' which is not 'rel${ver}working' branch\n", currBranch)
+	panicIf(!strings.HasPrefix(currBranch, prefix), "running on branch '%s' which is not 'rel${ver}working' branch\n", currBranch)
+	panicIf(!strings.HasSuffix(currBranch, suffix), "running on branch '%s' which is not 'rel${ver}working' branch\n", currBranch)
 
 	ver := currBranch[len(prefix):]
 	ver = ver[:len(ver)-len(suffix)]
 
-	u.PanicIf(!strings.HasPrefix(sumatraVersion, ver), "version mismatch, sumatra: '%s', branch: '%s'\n", sumatraVersion, ver)
+	panicIf(!strings.HasPrefix(sumatraVersion, ver), "version mismatch, sumatra: '%s', branch: '%s'\n", sumatraVersion, ver)
 }
 
-func verifyOnMasterBranchMust() {
-	// 'git branch' return branch name in format: '* master'
-	out := runExeMust("git", "branch")
-	currBranch := getCurrentBranch(out)
-	u.PanicIf(currBranch != "master", "not on master branch. out: '%s', currBranch: '%s'\n", string(out), currBranch)
+// we should only sign and upload to s3 if this is my repo and a push event
+// or building locally
+// don't sign if it's a fork or pull requests
+func isGithubMyMasterBranch() bool {
+	// https://help.github.com/en/actions/automating-your-workflow-with-github-actions/using-environment-variables
+	repo := os.Getenv("GITHUB_REPOSITORY")
+	if repo != "sumatrapdfreader/sumatrapdf" {
+		return false
+	}
+	ref := os.Getenv("GITHUB_REF")
+	if ref != "refs/heads/master" {
+		logf("GITHUB_REF: '%s'\n", ref)
+		return false
+	}
+	event := os.Getenv("GITHUB_EVENT_NAME")
+	// other event is "pull_request"
+	return event == "push" || event == "repository_dispatch"
 }

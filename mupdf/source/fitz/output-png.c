@@ -1,3 +1,25 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #include "mupdf/fitz.h"
 
 #include "z-imp.h"
@@ -41,6 +63,7 @@ fz_save_pixmap_as_png(fz_context *ctx, fz_pixmap *pixmap, const char *filename)
 		writer = fz_new_png_band_writer(ctx, out);
 		fz_write_header(ctx, writer, pixmap->w, pixmap->h, pixmap->n, pixmap->alpha, pixmap->xres, pixmap->yres, 0, pixmap->colorspace, pixmap->seps);
 		fz_write_band(ctx, writer, pixmap->stride, pixmap->h, pixmap->samples);
+		fz_close_band_writer(ctx, writer);
 		fz_close_output(ctx, out);
 	}
 	fz_always(ctx)
@@ -68,6 +91,7 @@ fz_write_pixmap_as_png(fz_context *ctx, fz_output *out, const fz_pixmap *pixmap)
 	{
 		fz_write_header(ctx, writer, pixmap->w, pixmap->h, pixmap->n, pixmap->alpha, pixmap->xres, pixmap->yres, 0, pixmap->colorspace, pixmap->seps);
 		fz_write_band(ctx, writer, pixmap->stride, pixmap->h, pixmap->samples);
+		fz_close_band_writer(ctx, writer);
 	}
 	fz_always(ctx)
 	{

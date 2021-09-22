@@ -30,7 +30,7 @@
     <ClInclude Include="..\src\utils\ByteWriter.h">
       <Filter>utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\utils\CmdLineParser.h">
+    <ClInclude Include="..\src\utils\CmdLineArgsIter.h">
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="..\src\utils\ColorUtil.h">
@@ -58,9 +58,6 @@
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="..\src\utils\FileWatcher.h">
-      <Filter>utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\utils\FzImgReader.h">
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="..\src\utils\GdiPlusUtil.h">
@@ -91,9 +88,6 @@
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="..\src\utils\Log.h">
-      <Filter>utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\utils\LogDbg.h">
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="..\src\utils\LzmaSimpleArchive.h">
@@ -138,6 +132,9 @@
     <ClInclude Include="..\src\utils\StringViewUtil.h">
       <Filter>utils</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\utils\TempAllocator.h">
+      <Filter>utils</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\utils\TgaReader.h">
       <Filter>utils</Filter>
     </ClInclude>
@@ -169,6 +166,9 @@
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="..\src\utils\ZipUtil.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\windrawlib.h">
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="..\src\wingui\ButtonCtrl.h">
@@ -251,7 +251,7 @@
     <ClCompile Include="..\src\utils\ByteWriter.cpp">
       <Filter>utils</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\utils\CmdLineParser.cpp">
+    <ClCompile Include="..\src\utils\CmdLineArgsIter.cpp">
       <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="..\src\utils\ColorUtil.cpp">
@@ -279,9 +279,6 @@
       <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="..\src\utils\FileWatcher.cpp">
-      <Filter>utils</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\utils\FzImgReader.cpp">
       <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="..\src\utils\GdiPlusUtil.cpp">
@@ -314,9 +311,6 @@
     <ClCompile Include="..\src\utils\Log.cpp">
       <Filter>utils</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\utils\LogDbg.cpp">
-      <Filter>utils</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\utils\LzmaSimpleArchive.cpp">
       <Filter>utils</Filter>
     </ClCompile>
@@ -344,13 +338,13 @@
     <ClCompile Include="..\src\utils\StrUtil.cpp">
       <Filter>utils</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\utils\StrUtil_win.cpp">
-      <Filter>utils</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\utils\StrconvUtil.cpp">
       <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="..\src\utils\StringViewUtil.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\utils\TempAllocator.cpp">
       <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="..\src\utils\TgaReader.cpp">
@@ -378,6 +372,9 @@
       <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="..\src\utils\ZipUtil.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\utils\windrawlib.cpp">
       <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="..\src\wingui\ButtonCtrl.cpp">

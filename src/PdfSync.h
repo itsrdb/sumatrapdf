@@ -23,8 +23,7 @@ class EngineBase;
 class Synchronizer {
   public:
     explicit Synchronizer(const WCHAR* syncfilepath);
-    virtual ~Synchronizer() {
-    }
+    virtual ~Synchronizer() = default;
 
     // Inverse-search:
     //  - pageNo: page number in the PDF (starting from 1)
@@ -48,7 +47,7 @@ class Synchronizer {
     struct _stat syncfileTimestamp; // time stamp of sync file when index was last built
 
   protected:
-    bool IsIndexDiscarded() const;
+    [[nodiscard]] bool IsIndexDiscarded() const;
     int RebuildIndex();
     WCHAR* PrependDir(const WCHAR* filename) const;
 

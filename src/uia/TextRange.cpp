@@ -4,16 +4,15 @@
 #include "utils/BaseUtil.h"
 #include "utils/ScopedWin.h"
 #include "utils/WinDynCalls.h"
+#include "utils/WinUtil.h"
 
 #include "wingui/TreeModel.h"
-
-#include "Annotation.h"
+#include "DisplayMode.h"
+#include "Controller.h"
 #include "EngineBase.h"
 #include "uia/TextRange.h"
-#include "DisplayMode.h"
 #include "SettingsStructs.h"
-#include "Controller.h"
-#include "EngineCreate.h"
+#include "EngineAll.h"
 #include "DisplayModel.h"
 #include "uia/DocumentProvider.h"
 #include "uia/Constants.h"
@@ -209,7 +208,7 @@ int SumatraUIAutomationTextRange::FindNextLineEndpoint(int pageno, int idx, bool
 
 // IUnknown
 HRESULT STDMETHODCALLTYPE SumatraUIAutomationTextRange::QueryInterface(REFIID riid, void** ppv) {
-    static const QITAB qit[] = {QITABENT(SumatraUIAutomationTextRange, ITextRangeProvider), {0}};
+    static const QITAB qit[] = {QITABENT(SumatraUIAutomationTextRange, ITextRangeProvider), {nullptr}};
     return QISearch(this, qit, riid, ppv);
 }
 
@@ -353,9 +352,8 @@ HRESULT STDMETHODCALLTYPE SumatraUIAutomationTextRange::ExpandToEnclosingUnit(en
     }
 }
 
-HRESULT STDMETHODCALLTYPE SumatraUIAutomationTextRange::FindAttribute([[maybe_unused]] TEXTATTRIBUTEID attr,
-                                                                      [[maybe_unused]] VARIANT val,
-                                                                      [[maybe_unused]] BOOL backward,
+HRESULT STDMETHODCALLTYPE SumatraUIAutomationTextRange::FindAttribute(__unused TEXTATTRIBUTEID attr,
+                                                                      __unused VARIANT val, __unused BOOL backward,
                                                                       ITextRangeProvider** found) {
     if (found == nullptr) {
         return E_POINTER;
@@ -369,10 +367,8 @@ HRESULT STDMETHODCALLTYPE SumatraUIAutomationTextRange::FindAttribute([[maybe_un
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE SumatraUIAutomationTextRange::FindText([[maybe_unused]] BSTR text,
-                                                                 [[maybe_unused]] BOOL backward,
-                                                                 [[maybe_unused]] BOOL ignoreCase,
-                                                                 ITextRangeProvider** found) {
+HRESULT STDMETHODCALLTYPE SumatraUIAutomationTextRange::FindText(__unused BSTR text, __unused BOOL backward,
+                                                                 __unused BOOL ignoreCase, ITextRangeProvider** found) {
     if (found == nullptr) {
         return E_POINTER;
     }
@@ -384,7 +380,7 @@ HRESULT STDMETHODCALLTYPE SumatraUIAutomationTextRange::FindText([[maybe_unused]
     return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE SumatraUIAutomationTextRange::GetAttributeValue([[maybe_unused]] TEXTATTRIBUTEID attr,
+HRESULT STDMETHODCALLTYPE SumatraUIAutomationTextRange::GetAttributeValue(__unused TEXTATTRIBUTEID attr,
                                                                           VARIANT* value) {
     if (value == nullptr) {
         return E_POINTER;

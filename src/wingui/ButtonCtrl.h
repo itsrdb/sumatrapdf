@@ -1,13 +1,13 @@
 /* Copyright 2021 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
-typedef std::function<void()> ClickedHandler;
+using ClickedHandler = std::function<void()>;
 
 struct ButtonCtrl : WindowBase {
     ClickedHandler onClicked = nullptr;
     bool isDefault = false;
 
-    ButtonCtrl(HWND parent);
+    explicit ButtonCtrl(HWND parent);
     ~ButtonCtrl() override;
     bool Create() override;
 

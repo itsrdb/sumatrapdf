@@ -2,19 +2,18 @@
    License: GPLv3 */
 
 #include "utils/BaseUtil.h"
+#include "utils/WinUtil.h"
 #include <UIAutomationCore.h>
 #include <UIAutomationCoreApi.h>
 #include <OleAcc.h>
 #include "utils/ScopedWin.h"
 
 #include "wingui/TreeModel.h"
-
-#include "Annotation.h"
-#include "EngineBase.h"
 #include "DisplayMode.h"
-#include "SettingsStructs.h"
 #include "Controller.h"
-#include "EngineCreate.h"
+#include "EngineBase.h"
+#include "SettingsStructs.h"
+#include "EngineAll.h"
 #include "DisplayModel.h"
 #include "uia/PageProvider.h"
 #include "uia/Constants.h"
@@ -35,8 +34,7 @@ SumatraUIAutomationPageProvider::SumatraUIAutomationPageProvider(int pageNum, HW
     // root->AddRef(); Don't add refs to our parent & owner.
 }
 
-SumatraUIAutomationPageProvider::~SumatraUIAutomationPageProvider() {
-}
+SumatraUIAutomationPageProvider::~SumatraUIAutomationPageProvider() = default;
 
 int SumatraUIAutomationPageProvider::GetPageNum() const {
     return pageNum;
@@ -54,7 +52,7 @@ HRESULT STDMETHODCALLTYPE SumatraUIAutomationPageProvider::QueryInterface(REFIID
     static const QITAB qit[] = {QITABENT(SumatraUIAutomationPageProvider, IRawElementProviderSimple),
                                 QITABENT(SumatraUIAutomationPageProvider, IRawElementProviderFragment),
                                 QITABENT(SumatraUIAutomationPageProvider, IValueProvider),
-                                {0}};
+                                {nullptr}};
     return QISearch(this, qit, riid, ppv);
 }
 
@@ -222,7 +220,7 @@ HRESULT STDMETHODCALLTYPE SumatraUIAutomationPageProvider::get_ProviderOptions(P
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE SumatraUIAutomationPageProvider::SetValue([[maybe_unused]] LPCWSTR val) {
+HRESULT STDMETHODCALLTYPE SumatraUIAutomationPageProvider::SetValue(__unused LPCWSTR val) {
     return E_ACCESSDENIED;
 }
 

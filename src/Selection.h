@@ -12,8 +12,11 @@ struct SelectionOnPage {
     int pageNo; // page this selection is on
     RectF rect; // position of selection rectangle on page (in page coordinates)
 
+    SelectionOnPage(const SelectionOnPage&) = default;
+    SelectionOnPage& operator=(const SelectionOnPage&) = default;
+
     // position of selection rectangle in the view port
-    Rect GetRect(DisplayModel* dm);
+    Rect GetRect(DisplayModel* dm) const;
 
     static Vec<SelectionOnPage>* FromRectangle(DisplayModel* dm, Rect rect);
     static Vec<SelectionOnPage>* FromTextSelect(TextSel* textSel);
@@ -31,4 +34,4 @@ bool NeedsSelectionEdgeAutoscroll(WindowInfo* win, int x, int y);
 void OnSelectionEdgeAutoscroll(WindowInfo* win, int x, int y);
 void OnSelectionStart(WindowInfo* win, int x, int y, WPARAM key);
 void OnSelectionStop(WindowInfo* win, int x, int y, bool aborted);
-WCHAR* GetSelectedText(WindowInfo* win, const WCHAR* lineSep, bool& isTextOnlySelectionOut);
+WCHAR* GetSelectedText(TabInfo* tab, const WCHAR* lineSep, bool& isTextOnlySelectionOut);

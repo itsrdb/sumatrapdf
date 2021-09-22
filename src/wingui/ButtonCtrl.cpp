@@ -4,6 +4,7 @@
 // https://docs.microsoft.com/en-us/windows/win32/controls/buttons
 
 #include "utils/BaseUtil.h"
+#include "utils/ScopedWin.h"
 #include "utils/WinUtil.h"
 
 #include "wingui/WinGui.h"
@@ -19,8 +20,7 @@ ButtonCtrl::ButtonCtrl(HWND p) : WindowBase(p) {
     kind = kindButton;
 }
 
-ButtonCtrl::~ButtonCtrl() {
-}
+ButtonCtrl::~ButtonCtrl() = default;
 
 static void Handle_WM_COMMAND(void* user, WndEvent* ev) {
     auto w = (ButtonCtrl*)user;

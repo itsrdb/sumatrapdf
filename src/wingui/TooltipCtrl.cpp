@@ -2,6 +2,7 @@
    License: Simplified BSD (see COPYING.BSD) */
 
 #include "utils/BaseUtil.h"
+#include "utils/ScopedWin.h"
 #include "utils/WinUtil.h"
 
 #include "wingui/WinGui.h"
@@ -53,9 +54,8 @@ static void SetMaxWidthForText(HWND hwnd, const WCHAR* text, bool multiline) {
 }
 
 void TooltipCtrl::Show(std::string_view s, Rect& rc, bool multiline) {
-    WCHAR* ws = strconv::Utf8ToWstr(s);
+    auto ws = ToWstrTemp(s);
     Show(ws, rc, multiline);
-    free(ws);
 }
 
 void TooltipCtrl::Show(const WCHAR* text, Rect& rc, bool multiline) {

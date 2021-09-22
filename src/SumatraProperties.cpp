@@ -6,14 +6,13 @@
 #include "utils/FileUtil.h"
 #include "utils/WinUtil.h"
 
+#include "AppTools.h"
 #include "wingui/TreeModel.h"
-
-#include "Annotation.h"
-#include "EngineBase.h"
-#include "EngineCreate.h"
 #include "DisplayMode.h"
-#include "SettingsStructs.h"
 #include "Controller.h"
+#include "EngineBase.h"
+#include "EngineAll.h"
+#include "SettingsStructs.h"
 #include "DisplayModel.h"
 #include "AppColors.h"
 #include "ProgressUpdateUI.h"
@@ -22,6 +21,7 @@
 #include "WindowInfo.h"
 #include "resource.h"
 #include "Commands.h"
+#include "SumatraAbout.h"
 #include "SumatraProperties.h"
 #include "Translations.h"
 
@@ -29,10 +29,6 @@
 #define PROPERTIES_RECT_PADDING 8
 #define PROPERTIES_TXT_DY_PADDING 2
 #define PROPERTIES_WIN_TITLE _TR("Document Properties")
-
-constexpr double KB = 1024;
-constexpr double MB = 1024 * 1024;
-constexpr double GB = 1024 * 1024 * 1024;
 
 class PropertyEl {
   public:
@@ -55,8 +51,7 @@ class PropertyEl {
 
 class PropertiesLayout : public Vec<PropertyEl*> {
   public:
-    PropertiesLayout() {
-    }
+    PropertiesLayout() = default;
     ~PropertiesLayout() {
         DeleteVecMembers(*this);
     }
@@ -186,71 +181,81 @@ static void ConvDateToDisplay(WCHAR** s, bool (*DateParse)(const WCHAR* date, SY
     }
 }
 
-// Format the file size in a short form that rounds to the largest size unit
-// e.g. "3.48 GB", "12.38 MB", "23 KB"
-// Caller needs to free the result.
-static WCHAR* FormatSizeSuccint(size_t size) {
-    const WCHAR* unit = nullptr;
-    double s = (double)size;
+struct PaperSizeDesc {
+    float minDx, maxDx;
+    float minDy, maxDy;
+    PaperFormat paperFormat;
+};
 
-    if (s > GB) {
-        s = s / GB;
-        unit = _TR("GB");
-    } else if (s > MB) {
-        s = s / MB;
-        unit = _TR("MB");
-    } else {
-        s = s / KB;
-        unit = _TR("KB");
+// clang-format off
+static PaperSizeDesc paperSizes[] = {
+    // common ISO 216 formats (metric)
+    {
+        16.53f, 16.55f,
+        23.38f, 23.40f,
+        PaperFormat::A2,
+    },
+    {
+        11.68f, 11.70f,
+        16.53f, 16.55f,
+        PaperFormat::A3,
+    },
+    {
+        8.26f, 8.28f,
+        11.68f, 11.70f,
+        PaperFormat::A4,
+    },
+    {
+        5.82f, 5.85f,
+        8.26f, 8.28f,
+        PaperFormat::A5,
+    },
+    {
+        4.08f, 4.10f,
+        5.82f, 5.85f,
+        PaperFormat::A6,
+    },
+    // common US/ANSI formats (imperial)
+    {
+        8.49f, 8.51f,
+        10.99f, 11.01f,
+        PaperFormat::Letter,
+    },
+    {
+        8.49f, 8.51f,
+        13.99f, 14.01f,
+        PaperFormat::Legal,
+    },
+    {
+        10.99f, 11.01f,
+        16.99f, 17.01f,
+        PaperFormat::Tabloid,
+    },
+    {
+        5.49f, 5.51f,
+        8.49f, 8.51f,
+        PaperFormat::Statement,
     }
+};
+// clang-format on
 
-    AutoFreeWstr sizestr = str::FormatFloatWithThousandSep(s);
-    if (!unit) {
-        return sizestr.StealData();
-    }
-    return str::Format(L"%s %s", sizestr.Get(), unit);
-}
-
-// format file size in a readable way e.g. 1348258 is shown
-// as "1.29 MB (1,348,258 Bytes)"
-// Caller needs to free the result
-static WCHAR* FormatFileSize(size_t size) {
-    AutoFreeWstr n1(FormatSizeSuccint(size));
-    AutoFreeWstr n2(str::FormatNumWithThousandSep(size));
-
-    return str::Format(L"%s (%s %s)", n1.Get(), n2.Get(), _TR("Bytes"));
+static bool fInRange(float x, float min, float max) {
+    return x >= min && x <= max;
 }
 
 PaperFormat GetPaperFormat(SizeF size) {
-    SizeF sizeP = size.dx < size.dy ? size : SizeF(size.dy, size.dx);
-    // common ISO 216 formats (metric)
-    if (limitValue(sizeP.dx, 16.53f, 16.55f) == sizeP.dx && limitValue(sizeP.dy, 23.38f, 23.40f) == sizeP.dy) {
-        return PaperFormat::A2;
+    float dx = size.dx;
+    float dy = size.dy;
+    if (dx < dy) {
+        std::swap(dx, dy);
     }
-    if (limitValue(sizeP.dx, 11.68f, 11.70f) == sizeP.dx && limitValue(sizeP.dy, 16.53f, 16.55f) == sizeP.dy) {
-        return PaperFormat::A3;
-    }
-    if (limitValue(sizeP.dx, 8.26f, 8.28f) == sizeP.dx && limitValue(sizeP.dy, 11.68f, 11.70f) == sizeP.dy) {
-        return PaperFormat::A4;
-    }
-    if (limitValue(sizeP.dx, 5.82f, 5.85f) == sizeP.dx && limitValue(sizeP.dy, 8.26f, 8.28f) == sizeP.dy) {
-        return PaperFormat::A5;
-    }
-    if (limitValue(sizeP.dx, 4.08f, 4.10f) == sizeP.dx && limitValue(sizeP.dy, 5.82f, 5.85f) == sizeP.dy) {
-        return PaperFormat::A6;
-    }
-    // common US/ANSI formats (imperial)
-    if (limitValue(sizeP.dx, 8.49f, 8.51f) == sizeP.dx && limitValue(sizeP.dy, 10.99f, 11.01f) == sizeP.dy) {
-        return PaperFormat::Letter;
-    }
-    if (limitValue(sizeP.dx, 8.49f, 8.51f) == sizeP.dx && limitValue(sizeP.dy, 13.99f, 14.01f) == sizeP.dy) {
-        return PaperFormat::Legal;
-    }
-    if (limitValue(sizeP.dx, 10.99f, 11.01f) == sizeP.dx && limitValue(sizeP.dy, 16.99f, 17.01f) == sizeP.dy) {
-        return PaperFormat::Tabloid;
-    }
-    if (limitValue(sizeP.dx, 5.49f, 5.51f) == sizeP.dx && limitValue(sizeP.dy, 8.49f, 8.51f) == sizeP.dy) {
-        return PaperFormat::Statement;
+    size_t n = dimof(paperSizes);
+    for (size_t i = 0; i < n; i++) {
+        auto&& desc = paperSizes[i];
+        bool ok = fInRange(dx, desc.minDx, desc.maxDx) && fInRange(dy, desc.minDy, desc.maxDy);
+        if (ok) {
+            return desc.paperFormat;
+        }
     }
     return PaperFormat::Other;
 }
@@ -361,8 +366,8 @@ static WCHAR* FormatPermissions(Controller* ctrl) {
 }
 
 static void UpdatePropertiesLayout(PropertiesLayout* layoutData, HDC hdc, Rect* rect) {
-    AutoDeleteFont fontLeftTxt(CreateSimpleFont(hdc, LEFT_TXT_FONT, LEFT_TXT_FONT_SIZE));
-    AutoDeleteFont fontRightTxt(CreateSimpleFont(hdc, RIGHT_TXT_FONT, RIGHT_TXT_FONT_SIZE));
+    AutoDeleteFont fontLeftTxt(CreateSimpleFont(hdc, kLeftTextFont, kLeftTextFontSize));
+    AutoDeleteFont fontRightTxt(CreateSimpleFont(hdc, kRightTextFont, kRightTextFontSize));
     HGDIOBJ origFont = SelectObject(hdc, fontLeftTxt);
 
     /* calculate text dimensions for the left side */
@@ -372,7 +377,7 @@ static void UpdatePropertiesLayout(PropertiesLayout* layoutData, HDC hdc, Rect* 
         PropertyEl* el = layoutData->at(i);
         const WCHAR* txt = el->leftTxt;
         RECT rc = {0};
-        DrawText(hdc, txt, -1, &rc, DT_NOPREFIX | DT_CALCRECT);
+        DrawTextW(hdc, txt, -1, &rc, DT_NOPREFIX | DT_CALCRECT);
         el->leftPos.dx = rc.right - rc.left;
         // el->leftPos.dy is set below to be equal to el->rightPos.dy
 
@@ -390,7 +395,7 @@ static void UpdatePropertiesLayout(PropertiesLayout* layoutData, HDC hdc, Rect* 
         PropertyEl* el = layoutData->at(i);
         const WCHAR* txt = el->rightTxt;
         RECT rc = {0};
-        DrawText(hdc, txt, -1, &rc, DT_NOPREFIX | DT_CALCRECT);
+        DrawTextW(hdc, txt, -1, &rc, DT_NOPREFIX | DT_CALCRECT);
         el->rightPos.dx = rc.right - rc.left;
         el->leftPos.dy = el->rightPos.dy = rc.bottom - rc.top;
         textDy += el->rightPos.dy;
@@ -427,9 +432,12 @@ static void UpdatePropertiesLayout(PropertiesLayout* layoutData, HDC hdc, Rect* 
 
 static bool CreatePropertiesWindow(HWND hParent, PropertiesLayout* layoutData) {
     CrashIf(layoutData->hwnd);
-    HWND hwnd = CreateWindow(PROPERTIES_CLASS_NAME, PROPERTIES_WIN_TITLE, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
-                             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr,
-                             GetModuleHandle(nullptr), nullptr);
+    auto h = GetModuleHandleW(nullptr);
+    DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
+    auto clsName = PROPERTIES_CLASS_NAME;
+    auto title = PROPERTIES_WIN_TITLE;
+    HWND hwnd = CreateWindowW(clsName, title, dwStyle, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+                              nullptr, nullptr, h, nullptr);
     if (!hwnd) {
         return false;
     }
@@ -449,7 +457,7 @@ static bool CreatePropertiesWindow(HWND hParent, PropertiesLayout* layoutData) {
     // (as long as they fit into the current monitor's work area)
     Rect wRc = WindowRect(hwnd);
     Rect cRc = ClientRect(hwnd);
-    Rect work = GetWorkAreaRect(WindowRect(hParent));
+    Rect work = GetWorkAreaRect(WindowRect(hParent), hwnd);
     wRc.dx = std::min(rc.dx + wRc.dx - cRc.dx, work.dx);
     wRc.dy = std::min(rc.dy + wRc.dy - cRc.dy, work.dy);
     MoveWindow(hwnd, wRc.x, wRc.y, wRc.dx, wRc.dy, FALSE);
@@ -459,10 +467,10 @@ static bool CreatePropertiesWindow(HWND hParent, PropertiesLayout* layoutData) {
     return true;
 }
 
-static void GetProps(Controller* ctrl, PropertiesLayout* layoutData, [[maybe_unused]] bool extended) {
+static void GetProps(Controller* ctrl, PropertiesLayout* layoutData, bool extended) {
     CrashIf(!ctrl);
 
-    WCHAR* str = str::Dup(gPluginMode ? gPluginURL : ctrl->FilePath());
+    WCHAR* str = str::Dup(gPluginMode ? gPluginURL : ctrl->GetFilePath());
     layoutData->AddProperty(_TR("File:"), str, true);
 
     str = ctrl->GetProperty(DocumentProperty::Title);
@@ -479,7 +487,7 @@ static void GetProps(Controller* ctrl, PropertiesLayout* layoutData, [[maybe_unu
 
     DisplayModel* dm = ctrl->AsFixed();
     str = ctrl->GetProperty(DocumentProperty::CreationDate);
-    if (str && dm && kindEnginePdf == dm->engineType) {
+    if (str && dm && kindEngineMupdf == dm->engineType) {
         ConvDateToDisplay(&str, PdfDateParse);
     } else {
         ConvDateToDisplay(&str, IsoDateParse);
@@ -487,7 +495,7 @@ static void GetProps(Controller* ctrl, PropertiesLayout* layoutData, [[maybe_unu
     layoutData->AddProperty(_TR("Created:"), str);
 
     str = ctrl->GetProperty(DocumentProperty::ModificationDate);
-    if (str && dm && kindEnginePdf == dm->engineType) {
+    if (str && dm && kindEngineMupdf == dm->engineType) {
         ConvDateToDisplay(&str, PdfDateParse);
     } else {
         ConvDateToDisplay(&str, IsoDateParse);
@@ -506,7 +514,7 @@ static void GetProps(Controller* ctrl, PropertiesLayout* layoutData, [[maybe_unu
     str = FormatPdfFileStructure(ctrl);
     layoutData->AddProperty(_TR("PDF Optimizations:"), str);
 
-    AutoFreeStr path = strconv::WstrToUtf8(ctrl->FilePath());
+    auto path = ToUtf8Temp(ctrl->GetFilePath());
     i64 fileSize = file::GetSize(path.AsView());
     if (-1 == fileSize && dm) {
         EngineBase* engine = dm->GetEngine();
@@ -520,15 +528,12 @@ static void GetProps(Controller* ctrl, PropertiesLayout* layoutData, [[maybe_unu
         layoutData->AddProperty(_TR("File Size:"), str);
     }
 
-    // TODO: display page count per current layout for ebooks?
-    if (!ctrl->AsEbook()) {
-        str = str::Format(L"%d", ctrl->PageCount());
-        layoutData->AddProperty(_TR("Number of Pages:"), str);
-    }
+    str = str::Format(L"%d", ctrl->PageCount());
+    layoutData->AddProperty(_TR("Number of Pages:"), str);
 
     if (dm) {
         str = FormatPageSize(dm->GetEngine(), ctrl->CurrentPageNo(), dm->GetRotation());
-        if (IsUIRightToLeft() && IsVistaOrGreater()) {
+        if (IsUIRightToLeft() && IsWindowsVistaOrGreater()) {
             // ensure that the size remains ungarbled left-to-right
             // (note: XP doesn't know about \u202A...\u202C)
             WCHAR* tmp = str;
@@ -541,7 +546,6 @@ static void GetProps(Controller* ctrl, PropertiesLayout* layoutData, [[maybe_unu
     str = FormatPermissions(ctrl);
     layoutData->AddProperty(_TR("Denied Permissions:"), str);
 
-#if defined(DEBUG) || defined(ENABLE_EXTENDED_PROPERTIES)
     if (extended) {
         // TODO: FontList extraction can take a while
         str = ctrl->GetProperty(DocumentProperty::FontList);
@@ -551,7 +555,6 @@ static void GetProps(Controller* ctrl, PropertiesLayout* layoutData, [[maybe_unu
         }
         layoutData->AddProperty(_TR("Fonts:"), str);
     }
-#endif
 }
 
 static void ShowProperties(HWND parent, Controller* ctrl, bool extended = false) {
@@ -580,8 +583,8 @@ void OnMenuProperties(WindowInfo* win) {
 static void DrawProperties(HWND hwnd, HDC hdc) {
     PropertiesLayout* layoutData = FindPropertyWindowByHwnd(hwnd);
 
-    AutoDeleteFont fontLeftTxt(CreateSimpleFont(hdc, LEFT_TXT_FONT, LEFT_TXT_FONT_SIZE));
-    AutoDeleteFont fontRightTxt(CreateSimpleFont(hdc, RIGHT_TXT_FONT, RIGHT_TXT_FONT_SIZE));
+    AutoDeleteFont fontLeftTxt(CreateSimpleFont(hdc, kLeftTextFont, kLeftTextFontSize));
+    AutoDeleteFont fontRightTxt(CreateSimpleFont(hdc, kRightTextFont, kRightTextFontSize));
 
     HGDIOBJ origFont = SelectObject(hdc, fontLeftTxt); /* Just to remember the orig font */
 
@@ -602,7 +605,7 @@ static void DrawProperties(HWND hwnd, HDC hdc) {
         PropertyEl* el = layoutData->at(i);
         const WCHAR* txt = el->leftTxt;
         rTmp = ToRECT(el->leftPos);
-        DrawText(hdc, txt, -1, &rTmp, DT_RIGHT | DT_NOPREFIX);
+        DrawTextW(hdc, txt, -1, &rTmp, DT_RIGHT | DT_NOPREFIX);
     }
 
     /* render text on the right */
@@ -616,7 +619,7 @@ static void DrawProperties(HWND hwnd, HDC hdc) {
         }
         rTmp = ToRECT(rc);
         uint format = DT_LEFT | DT_NOPREFIX | (el->isPath ? DT_PATH_ELLIPSIS : DT_WORD_ELLIPSIS);
-        DrawText(hdc, txt, -1, &rTmp, format);
+        DrawTextW(hdc, txt, -1, &rTmp, format);
     }
 
     SelectObject(hdc, origFont);
@@ -655,7 +658,6 @@ static void PropertiesOnCommand(HWND hwnd, WPARAM wp) {
             break;
 
         case CmdProperties:
-#if defined(DEBUG) || defined(ENABLE_EXTENDED_PROPERTIES)
             // make a repeated Ctrl+D display some extended properties
             // TODO: expose this through a UI button or similar
             PropertiesLayout* pl = FindPropertyWindowByHwnd(hwnd);
@@ -666,7 +668,6 @@ static void PropertiesOnCommand(HWND hwnd, WPARAM wp) {
                     ShowProperties(win->hwndFrame, win->ctrl, true);
                 }
             }
-#endif
             break;
     }
 }

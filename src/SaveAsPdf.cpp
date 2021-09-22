@@ -8,23 +8,22 @@ extern "C" {
 
 #include "utils/BaseUtil.h"
 #include "utils/BitManip.h"
-#include "utils/Log.h"
 #include "utils/FileUtil.h"
 #include "utils/ScopedWin.h"
 #include "utils/WinUtil.h"
 #include "utils/Dpi.h"
 
-#include "wingui/TreeModel.h"
-
 #include "resource.h"
 #include "Commands.h"
-#include "Translations.h"
-
-#include "Annotation.h"
+#include "wingui/TreeModel.h"
+#include "DisplayMode.h"
+#include "Controller.h"
 #include "EngineBase.h"
-#include "EngineCreate.h"
-
+#include "Translations.h"
+#include "EngineAll.h"
 #include "SaveAsPdf.h"
+
+#include "utils/Log.h"
 
 // based on pdfmerge.c in mupdf
 
@@ -72,7 +71,7 @@ struct PdfMerger {
     ~PdfMerger();
     bool MergeAndSave(TocItem*, char* dstPath);
     bool MergePdfFile(std::string_view);
-    void MergePdfPage(int page_from, int page_to, pdf_graft_map* graft_map);
+    void MergePdfPage(int page_from, int page_to, pdf_graft_map* graft_map) const;
 };
 
 PdfMerger::~PdfMerger() {
@@ -81,7 +80,7 @@ PdfMerger::~PdfMerger() {
     fz_drop_context(ctx);
 }
 
-void PdfMerger::MergePdfPage(int page_from, int page_to, pdf_graft_map* graft_map) {
+void PdfMerger::MergePdfPage(int page_from, int page_to, pdf_graft_map* graft_map) const {
     pdf_obj* page_ref = nullptr;
     pdf_obj* page_dict = nullptr;
     pdf_obj* obj = nullptr;

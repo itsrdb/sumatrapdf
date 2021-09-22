@@ -1,3 +1,25 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #include "gl-app.h"
 
 #include <string.h>
@@ -450,6 +472,7 @@ void ui_init(int w, int h, const char *title)
 
 void ui_finish(void)
 {
+	pdf_drop_annot(ctx, ui.selected_annot);
 	glDeleteLists(ui.overlay_list, 1);
 	ui_finish_fonts();
 	glutExit();
@@ -696,8 +719,8 @@ void ui_panel_begin(int w, int h, int padx, int pady, int opaque)
 		glColorHex(UI_COLOR_PANEL);
 		glRectf(area.x0, area.y0, area.x1, area.y1);
 	}
-	area.x0 += padx; area.y0 += padx;
-	area.x1 -= pady; area.y1 -= pady;
+	area.x0 += padx; area.y0 += pady;
+	area.x1 -= padx; area.y1 -= pady;
 	ui_pack_push(area);
 }
 
@@ -1002,6 +1025,16 @@ void ui_tree_begin(struct list *list, int count, int req_w, int req_h, int is_tr
 	if (ui.hot == list)
 		list->scroll_y -= ui.scroll_y * ui.lineheight * 3;
 
+	/* keyboard keys */
+	if (ui.hot == list && ui.key == KEY_HOME)
+		list->scroll_y = 0;
+	if (ui.hot == list && ui.key == KEY_END)
+		list->scroll_y = max_scroll_y;
+	if (ui.hot == list && ui.key == KEY_PAGE_UP)
+		list->scroll_y -= ((area.y1 - area.y0) / ui.lineheight) * ui.lineheight;
+	if (ui.hot == list && ui.key == KEY_PAGE_DOWN)
+		list->scroll_y += ((area.y1 - area.y0) / ui.lineheight) * ui.lineheight;
+
 	/* clamp scrolling to client area */
 	if (list->scroll_y >= max_scroll_y)
 		list->scroll_y = max_scroll_y;
@@ -1253,4 +1286,10 @@ int ui_select_aux(const void *id, const char *current, const char *options[], in
 		ui_popup_end();
 	}
 	return choice;
+}
+
+void ui_select_annot(pdf_annot *annot)
+{
+	pdf_drop_annot(ctx, ui.selected_annot);
+	ui.selected_annot = annot;
 }

@@ -3,7 +3,10 @@
 
 bool HasBeenInstalled();
 bool IsRunningInPortableMode();
-WCHAR* AppGenDataFilename(const WCHAR* pFilename);
+bool IsDllBuild();
+
+WCHAR* AppGenDataFilename(const WCHAR* fileName);
+char* AppGenDataFilenameTemp(const char* fileName);
 void SetAppDataPath(const WCHAR* path);
 
 void DoAssociateExeWithPdfExtension(HKEY hkey);
@@ -19,3 +22,6 @@ void SaveCallstackLogs();
 #if 0
 WCHAR* PathForFileInAppDataDir(const WCHAR* fileName);
 #endif
+
+WCHAR* FormatFileSize(i64);
+WCHAR* FormatFileSizeNoTrans(i64);

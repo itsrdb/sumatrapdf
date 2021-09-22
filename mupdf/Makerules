@@ -15,11 +15,6 @@ ifeq ($(tesseract),yes)
   build_suffix += -tesseract
 endif
 
-ifeq ($(extract),yes)
-  USE_EXTRACT := yes
-  build_suffix += -extract
-endif
-
 ifeq ($(tofu),yes)
   build_suffix += -tofu
   XCFLAGS += -DTOFU
@@ -44,6 +39,7 @@ else
   LDREMOVEUNREACH := -Wl,--gc-sections
   ifeq ($(OS),MINGW)
     SO := dll
+    EXE := .exe
   else
     SO := so
   endif
@@ -149,6 +145,16 @@ else ifeq ($(OS),MACOS)
   AR = xcrun ar
   LD = xcrun ld
   RANLIB = xcrun ranlib
+
+  ifeq (, $(shell which pkg-config))
+    $(warning "No pkg-config found, install it for proper integration of libcrypto")
+  else
+    HAVE_LIBCRYPTO := $(shell pkg-config --exists 'libcrypto >= 1.1.0' && echo yes)
+    ifeq ($(HAVE_LIBCRYPTO),yes)
+	  LIBCRYPTO_CFLAGS := $(shell pkg-config --cflags libcrypto) -DHAVE_LIBCRYPTO
+	  LIBCRYPTO_LIBS := $(shell pkg-config --libs libcrypto)
+    endif
+  endif
 
 else ifeq ($(OS),Linux)
   HAVE_OBJCOPY := yes

@@ -11,6 +11,8 @@
 #include "wingui/Window.h"
 #include "wingui/TabsCtrl.h"
 
+#include "utils/Log.h"
+
 #define COL_BLACK RGB(0x00, 0x00, 0x00)
 #define COL_WHITE RGB(0xff, 0xff, 0xff)
 #define COL_RED RGB(0xff, 0x00, 0x00)
@@ -37,7 +39,7 @@ enum class Tab {
 };
 
 static str::WStr wstrFromUtf8(const str::Str& str) {
-    AutoFreeWstr s = strconv::Utf8ToWstr(str.Get());
+    auto s = ToWstrTemp(str.AsView());
     return str::WStr(s.AsView());
 }
 
@@ -61,7 +63,7 @@ class TabItemInfo {
 
 class TabsCtrlPrivate {
   public:
-    TabsCtrlPrivate(HWND hwnd) {
+    explicit TabsCtrlPrivate(HWND hwnd) {
         this->hwnd = hwnd;
     }
     ~TabsCtrlPrivate() {
@@ -97,8 +99,8 @@ static HWND CreateTooltipForRect(HWND parent, const WCHAR* s, RECT& r) {
     HMODULE h = GetModuleHandleW(nullptr);
     DWORD dwStyleEx = WS_EX_TOPMOST;
     DWORD dwStyle = WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP;
-    HWND hwnd = CreateWindowExW(dwStyleEx, TOOLTIPS_CLASSW, NULL, dwStyle, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-                                CW_USEDEFAULT, parent, NULL, h, NULL);
+    HWND hwnd = CreateWindowExW(dwStyleEx, TOOLTIPS_CLASSW, nullptr, dwStyle, CW_USEDEFAULT, CW_USEDEFAULT,
+                                CW_USEDEFAULT, CW_USEDEFAULT, parent, nullptr, h, nullptr);
 
     SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
@@ -163,8 +165,8 @@ void LayoutTabs(TabsCtrl* ctrl) {
     TriggerRepaint(priv->hwnd);
 }
 
-static LRESULT CALLBACK TabsParentProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, [[maybe_unused]] UINT_PTR uIdSubclass,
-                                       [[maybe_unused]] DWORD_PTR dwRefData) {
+static LRESULT CALLBACK TabsParentProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, __unused UINT_PTR uIdSubclass,
+                                       __unused DWORD_PTR dwRefData) {
     // TabsCtrl *w = (TabsCtrl *)dwRefData;
     // CrashIf(GetParent(ctrl->hwnd) != (HWND)lp);
 
@@ -328,7 +330,7 @@ static void OnLeftButtonUp(TabsCtrl* ctrl) {
     }
 }
 
-static LRESULT CALLBACK TabsProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, [[maybe_unused]] UINT_PTR uIdSubclass,
+static LRESULT CALLBACK TabsProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, __unused UINT_PTR uIdSubclass,
                                  DWORD_PTR dwRefData) {
     TabsCtrl* ctrl = (TabsCtrl*)dwRefData;
     TabsCtrlPrivate* priv = ctrl->priv;
@@ -494,14 +496,19 @@ TabsCtrl2::TabsCtrl2(HWND p) : WindowBase(p) {
     kind = kindTabs;
 }
 
-TabsCtrl2::~TabsCtrl2() {
-}
+TabsCtrl2::~TabsCtrl2() = default;
 
 static void Handle_WM_NOTIFY(void* user, WndEvent* ev) {
     CrashIf(ev->msg != WM_NOTIFY);
     TabsCtrl2* w = (TabsCtrl2*)user;
     ev->w = w; // TODO: is this needed?
     CrashIf(GetParent(w->hwnd) != (HWND)ev->hwnd);
+    LPNMHDR hdr = (LPNMHDR)ev->lp;
+    if (hdr->code == TTN_GETDISPINFOA) {
+        logf("Handle_WM_NOTIFY TTN_GETDISPINFOA\n");
+    } else if (hdr->code == TTN_GETDISPINFOW) {
+        logf("Handle_WM_NOTIFY TTN_GETDISPINFOW\n");
+    }
 }
 
 bool TabsCtrl2::Create() {
@@ -515,7 +522,18 @@ bool TabsCtrl2::Create() {
 
     void* user = this;
     RegisterHandlerForMessage(hwnd, WM_NOTIFY, Handle_WM_NOTIFY, user);
-
+    if (createToolTipsHwnd) {
+        HWND ttHwnd = GetToolTipsHwnd();
+        TOOLINFO ti{0};
+        ti.cbSize = sizeof(ti);
+        ti.hwnd = hwnd;
+        ti.uId = 0;
+        ti.uFlags = TTF_SUBCLASS;
+        ti.lpszText = (WCHAR*)L"placeholder tooltip";
+        SetRectEmpty(&ti.rect);
+        RECT r = ti.rect;
+        SendMessage(ttHwnd, TTM_ADDTOOL, 0, (LPARAM)&ti);
+    }
     return true;
 }
 
@@ -558,7 +576,7 @@ int TabsCtrl2::InsertTab(int idx, std::string_view sv) {
 
     TCITEMW item{0};
     item.mask = TCIF_TEXT;
-    AutoFreeWstr s = strconv::Utf8ToWstr(sv);
+    auto s = ToWstrTemp(sv);
     item.pszText = s.Get();
     int insertedIdx = TabCtrl_InsertItem(hwnd, idx, &item);
     return insertedIdx;
@@ -592,13 +610,12 @@ void TabsCtrl2::SetTabText(int idx, std::string_view sv) {
 
     TCITEMW item{0};
     item.mask = TCIF_TEXT;
-    AutoFreeWstr s = strconv::Utf8ToWstr(sv);
+    auto s = ToWstrTemp(sv);
     item.pszText = s.Get();
     TabCtrl_SetItem(hwnd, idx, &item);
 }
 
 // result is valid until next call to GetTabText()
-// TODO:
 WCHAR* TabsCtrl2::GetTabText(int idx) {
     CrashIf(idx < 0);
     CrashIf(idx >= GetTabCount());
@@ -633,5 +650,80 @@ void TabsCtrl2::SetToolTipsHwnd(HWND hwndTooltip) {
 
 HWND TabsCtrl2::GetToolTipsHwnd() {
     HWND res = TabCtrl_GetToolTips(hwnd);
+    return res;
+}
+
+// TODO: this is a nasty implementation
+// should probably TTM_ADDTOOL for each tab item
+// we could re-calculate it in SetItemSize()
+void TabsCtrl2::MaybeUpdateTooltip() {
+    // logf("MaybeUpdateTooltip() start\n");
+    HWND ttHwnd = GetToolTipsHwnd();
+    if (!ttHwnd) {
+        return;
+    }
+
+    {
+        TOOLINFO ti{0};
+        ti.cbSize = sizeof(ti);
+        ti.hwnd = hwnd;
+        ti.uId = 0;
+        SendMessage(ttHwnd, TTM_DELTOOL, 0, (LPARAM)&ti);
+    }
+
+    {
+        TOOLINFO ti{0};
+        ti.cbSize = sizeof(ti);
+        ti.hwnd = hwnd;
+        ti.uFlags = TTF_SUBCLASS;
+        // ti.lpszText = LPSTR_TEXTCALLBACK;
+        ti.lpszText = currTooltipText.Get();
+        ti.uId = 0;
+        GetClientRect(hwnd, &ti.rect);
+        SendMessage(ttHwnd, TTM_ADDTOOL, 0, (LPARAM)&ti);
+    }
+}
+
+void TabsCtrl2::MaybeUpdateTooltipText(int idx) {
+    HWND ttHwnd = GetToolTipsHwnd();
+    if (!ttHwnd) {
+        return;
+    }
+    const WCHAR* tooltip = GetTooltip(idx);
+    if (!tooltip) {
+        // TODO: remove tooltip
+        return;
+    }
+    currTooltipText.Set(tooltip);
+#if 1
+    MaybeUpdateTooltip();
+#else
+    // TODO: why this doesn't work?
+    TOOLINFO ti{0};
+    ti.cbSize = sizeof(ti);
+    ti.hwnd = hwnd;
+    ti.uFlags = TTF_SUBCLASS;
+    ti.lpszText = currTooltipText.Get();
+    ti.uId = 0;
+    GetClientRect(hwnd, &ti.rect);
+    SendMessage(ttHwnd, TTM_UPDATETIPTEXT, 0, (LPARAM)&ti);
+#endif
+    // SendMessage(ttHwnd, TTM_UPDATE, 0, 0);
+
+    SendMessage(ttHwnd, TTM_POP, 0, 0);
+    SendMessage(ttHwnd, TTM_POPUP, 0, 0);
+    // logf(L"MaybeUpdateTooltipText: %s\n", tooltip);
+}
+
+void TabsCtrl2::SetTooltip(int idx, std::wstring_view sv) {
+    WCHAR* s = str::Dup(sv);
+    tooltips.InsertAt(idx, s);
+}
+
+const WCHAR* TabsCtrl2::GetTooltip(int idx) {
+    if (idx >= tooltips.isize()) {
+        return nullptr;
+    }
+    WCHAR* res = tooltips.at(idx);
     return res;
 }

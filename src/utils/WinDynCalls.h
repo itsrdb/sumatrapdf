@@ -45,7 +45,8 @@ The intent is to standardize how we do it.
 /* enable "NX" execution prevention for XP, 2003
  * cf. http://www.uninformed.org/?v=2&a=4 */
 typedef HRESULT(WINAPI* Sig_NtSetInformationProcess)(HANDLE ProcessHandle, UINT ProcessInformationClass,
-                                                     PVOID ProcessInformation, ULONG ProcessInformationLength);
+                                                     PVOID ProcessInformation,
+                                                     ULONG ProcessInformationLength); // NOLINT
 
 #define NTDLL_API_LIST(V) V(NtSetInformationProcess)
 
@@ -67,6 +68,7 @@ NORMALIZ_API_LIST(API_DECLARATION)
     V(SetDllDirectoryW)         \
     V(SetDefaultDllDirectories) \
     V(RtlCaptureContext)        \
+    V(RtlCaptureStackBackTrace) \
     V(SetProcessMitigationPolicy)
 
 KERNEL32_API_LIST(API_DECLARATION2)
@@ -110,7 +112,6 @@ DWMAPI_API_LIST(API_DECLARATION2)
 #define DBGHELP_API_LIST(V)     \
     V(MiniDumpWriteDump)        \
     V(SymInitializeW)           \
-    V(SymInitialize)            \
     V(SymCleanup)               \
     V(SymGetOptions)            \
     V(SymSetOptions)            \

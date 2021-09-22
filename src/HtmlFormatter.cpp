@@ -6,13 +6,15 @@
 #include "utils/HtmlParserLookup.h"
 #include "utils/CssParser.h"
 #include "utils/HtmlPullParser.h"
-#include "utils/Log.h"
 #include "mui/Mui.h"
 #include "utils/Timer.h"
 
-// rendering engines
 #include "EbookBase.h"
+#include "FzImgReader.h"
+
 #include "HtmlFormatter.h"
+
+#include "utils/Log.h"
 
 /*
 Given size of a page, we format html into a set of pages. We handle only a small
@@ -63,10 +65,7 @@ other base element(s) with less functionality and less overhead).
 */
 
 bool ValidReparseIdx(ptrdiff_t idx, HtmlPullParser* parser) {
-    if ((idx < 0) || (idx > (int)parser->Len())) {
-        return false;
-    }
-    return true;
+    return !((idx < 0) || (idx > (int)parser->Len()));
 }
 
 DrawInstr DrawInstr::Str(const char* s, size_t len, RectF bbox, bool rtl) {
@@ -88,10 +87,10 @@ DrawInstr DrawInstr::FixedSpace(float dx) {
     return di;
 }
 
-DrawInstr DrawInstr::Image(char* data, size_t len, RectF bbox) {
+DrawInstr DrawInstr::Image(ByteSlice img, RectF bbox) {
     DrawInstr di(DrawInstrType::Image);
-    di.img.data = data;
-    di.img.len = len;
+    di.str.s = (const char*)img.data();
+    di.str.len = img.size();
     di.bbox = bbox;
     return di;
 }
@@ -230,10 +229,7 @@ void HtmlFormatter::SetFontBasedOn(mui::CachedFont* font, FontStyle fs, float fo
 }
 
 bool ValidStyleForChangeFontStyle(FontStyle fs) {
-    if ((FontStyleBold == fs) || (FontStyleItalic == fs) || (FontStyleUnderline == fs) || (FontStyleStrikeout == fs)) {
-        return true;
-    }
-    return false;
+    return (FontStyleBold == fs) || (FontStyleItalic == fs) || (FontStyleUnderline == fs) || (FontStyleStrikeout == fs);
 }
 
 // change the current font by adding (if addStyle is true) or removing
@@ -309,7 +305,7 @@ float HtmlFormatter::CurrLineDy() {
 
 // return the width of the left margin (used for paragraph
 // indentation inside lists)
-float HtmlFormatter::NewLineX() {
+float HtmlFormatter::NewLineX() const {
     // TODO: indent based on font size instead?
     float x = 15.f * listDepth;
     if (x < pageDx - 20.f) {
@@ -593,9 +589,9 @@ static bool HasPreviousLineSingleImage(Vec<DrawInstr>& instrs) {
     return imageY != -1;
 }
 
-bool HtmlFormatter::EmitImage(ImageData* img) {
-    CrashIf(!img->data);
-    Size imgSize = BitmapSizeFromData(img->AsSpan());
+bool HtmlFormatter::EmitImage(ByteSlice* img) {
+    CrashIf(img->empty());
+    Size imgSize = BitmapSizeFromData(*img);
     if (imgSize.IsEmpty()) {
         return false;
     }
@@ -628,7 +624,7 @@ bool HtmlFormatter::EmitImage(ImageData* img) {
     }
 
     RectF bbox(PointF(currX, 0), newSize);
-    AppendInstr(DrawInstr::Image(img->data, img->len, bbox));
+    AppendInstr(DrawInstr::Image(*img, bbox));
     currX += bbox.dx;
 
     return true;
@@ -700,10 +696,7 @@ static bool CanBreakWordOnChar(WCHAR c) {
     // https://github.com/sumatrapdfreader/sumatrapdf/pull/1057
     // There are other  ranges, but far less common
     // https://stackoverflow.com/questions/1366068/whats-the-complete-range-for-chinese-characters-in-unicode
-    if (c >= 0x2E80 && c <= 0xA4CF) {
-        return true;
-    }
-    return false;
+    return c >= 0x2E80 && c <= 0xA4CF;
 }
 
 // a text run is a string of consecutive text with uniform style
@@ -724,9 +717,11 @@ void HtmlFormatter::EmitTextRun(const char* s, const char* end) {
             currReparseIdx = s - htmlParser->Start();
         }
 
-        size_t strLen = strconv::Utf8ToWcharBuf(s, end - s, buf, dimof(buf));
+        auto bufTmp = ToWstrTemp(s, end - s);
+        size_t strLen = bufTmp.size();
+        WCHAR* buf = bufTmp.Get();
         // soft hyphens should not be displayed
-        strLen -= str::RemoveChars(buf, L"\xad");
+        strLen -= str::RemoveCharsInPlace(buf, L"\xad");
         if (0 == strLen) {
             break;
         }
@@ -876,10 +871,12 @@ void HtmlFormatter::HandleTagFont(HtmlToken* t) {
     AttrInfo* attr = t->GetAttrByName("face");
     const WCHAR* faceName = CurrFont()->GetName();
     if (attr) {
-        size_t strLen = strconv::Utf8ToWcharBuf(attr->val, attr->valLen, buf, dimof(buf));
+        auto bufTmp = ToWstrTemp(attr->val, attr->valLen);
+        WCHAR* buf = bufTmp.Get();
+        size_t strLen = bufTmp.size();
         // multiple font names can be comma separated
         if (strLen > 0 && *buf != ',') {
-            str::TransChars(buf, L",", L"\0");
+            str::TransCharsInPlace(buf, L",", L"\0");
             faceName = buf;
         }
     }
@@ -1402,8 +1399,6 @@ void DrawHtmlPage(Graphics* g, mui::ITextRender* textDraw, Vec<DrawInstr>* drawI
     // Pen linePen(Color(0, 0, 0), 2.f);
     Pen linePen(Color(0x5F, 0x4B, 0x32), 2.f);
 
-    WCHAR buf[512];
-
     // GDI text rendering suffers terribly if we call GetHDC()/ReleaseHDC() around every
     // draw, so first draw text and then paint everything else
     textDraw->SetTextColor(textColor);
@@ -1416,9 +1411,10 @@ void DrawHtmlPage(Graphics* g, mui::ITextRender* textDraw, Vec<DrawInstr>* drawI
         bbox.x += offX;
         bbox.y += offY;
         if (DrawInstrType::String == i.type || DrawInstrType::RtlString == i.type) {
-            size_t strLen = strconv::Utf8ToWcharBuf(i.str.s, i.str.len, buf, dimof(buf));
+            auto buf = ToWstrTemp(i.str.s, i.str.len);
+            size_t strLen = buf.size();
             // soft hyphens should not be displayed
-            strLen -= str::RemoveChars(buf, L"\xad");
+            strLen -= str::RemoveCharsInPlace(buf, L"\xad");
             textDraw->Draw(buf, strLen, ToGdipRectF(bbox), DrawInstrType::RtlString == i.type);
         } else if (DrawInstrType::SetFont == i.type) {
             textDraw->SetFont(i.font);
@@ -1451,7 +1447,7 @@ void DrawHtmlPage(Graphics* g, mui::ITextRender* textDraw, Vec<DrawInstr>* drawI
             CrashIf(status != Ok);
         } else if (DrawInstrType::Image == i.type) {
             // TODO: cache the bitmap somewhere (?)
-            Bitmap* bmp = BitmapFromData(i.img.AsSpan());
+            Bitmap* bmp = BitmapFromData(i.GetImage());
             if (bmp) {
                 status = g->DrawImage(bmp, ToGdipRectF(bbox), 0, 0, (float)bmp->GetWidth(), (float)bmp->GetHeight(),
                                       UnitPixel);
@@ -1486,7 +1482,7 @@ void DrawHtmlPage(Graphics* g, mui::ITextRender* textDraw, Vec<DrawInstr>* drawI
     }
 }
 
-static mui::TextRenderMethod gTextRenderMethod = mui::TextRenderMethodGdi;
+static mui::TextRenderMethod gTextRenderMethod = mui::TextRenderMethod::Gdi;
 // static mui::TextRenderMethod gTextRenderMethod = mui::TextRenderMethodGdiplus;
 
 mui::TextRenderMethod GetTextRenderMethod() {

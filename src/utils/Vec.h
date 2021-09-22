@@ -7,10 +7,6 @@
 store pointer types or POD types
 (http://stackoverflow.com/questions/146452/what-are-pod-types-in-c).
 
-We always pad the elements with a single 0 value. This makes
-Vec<char> and Vec<WCHAR> a C-compatible string. Although it's
-not useful for other types, the code is simpler if we always do it
-(rather than have it an optional behavior).
 */
 template <typename T>
 class Vec {
@@ -22,16 +18,15 @@ class Vec {
     T* els{nullptr};
     T buf[16];
 
+    // We always pad the elements with a single 0 value. This makes
+    // Vec<char> and Vec<WCHAR> a C-compatible string. Although it's
+    // not useful for other types, the code is simpler if we always do it
+    // (rather than have it an optional behavior).
     static constexpr size_t kPadding = 1;
-    static constexpr size_t kBufSize = sizeof(buf);
     static constexpr size_t kElSize = sizeof(T);
 
   protected:
-    bool EnsureCap(size_t needed) {
-        if (cap >= needed) {
-            return true;
-        }
-
+    NO_INLINE bool EnsureCapSlow(size_t needed) {
         size_t newCap = cap * 2;
         if (needed > newCap) {
             newCap = needed;
@@ -67,6 +62,15 @@ class Vec {
         return true;
     }
 
+    inline bool EnsureCap(size_t capNeeded) {
+        // this is frequent, fast path that should be inlined
+        if (cap >= capNeeded) {
+            return true;
+        }
+        // slow path
+        return EnsureCapSlow(capNeeded);
+    }
+
     T* MakeSpaceAt(size_t idx, size_t count) {
         size_t newLen = std::max(len, idx) + count;
         bool ok = EnsureCap(newLen);
@@ -86,29 +90,63 @@ class Vec {
     void FreeEls() {
         if (els != buf) {
             Allocator::Free(allocator, els);
+            els = nullptr;
         }
     }
 
   public:
-    // allocator is not owned by Vec and must outlive it
-    explicit Vec(size_t capHint = 0, Allocator* allocator = nullptr) : allocator(allocator), capacityHint(capHint) {
+    void Reset() {
+        FreeEls();
+        len = 0;
+        cap = dimof(buf) - kPadding;
         els = buf;
-        Reset();
+        memset(buf, 0, sizeof(buf));
     }
 
-    ~Vec() {
-        FreeEls();
+    bool SetSize(size_t newSize) {
+        Reset();
+        return MakeSpaceAt(0, newSize);
+    }
+
+    // allocator is not owned by Vec and must outlive it
+    explicit Vec(size_t capHint = 0, Allocator* a = nullptr) {
+        allocator = a;
+        capacityHint = capHint;
+        els = buf;
+        Reset();
     }
 
     // ensure that a Vec never shares its els buffer with another after a clone/copy
     // note: we don't inherit allocator as it's not needed for our use cases
-    Vec(const Vec& orig) {
+    Vec(const Vec& other) {
         els = buf;
         Reset();
-        EnsureCap(orig.cap);
-        len = orig.len;
+
+        EnsureCap(other.len);
+        len = other.len;
         // using memcpy, as Vec only supports POD types
-        memcpy(els, orig.els, kElSize * (orig.len));
+        memcpy(els, other.els, kElSize * (other.len));
+    }
+
+    // TODO: write Vec(const Vec&& other)
+
+    Vec& operator=(const Vec& other) {
+        els = buf;
+        Reset();
+
+        if (this == &other) {
+            return *this;
+        }
+        EnsureCap(other.len);
+        // using memcpy, as Vec only supports POD types
+        len = other.len;
+        memcpy(els, other.els, kElSize * len);
+        memset(els + len, 0, kElSize * (cap - len));
+        return *this;
+    }
+
+    ~Vec() {
+        FreeEls();
     }
 
     // this frees all elements and clears the array.
@@ -119,16 +157,6 @@ class Vec {
             free(s);
         }
         Reset();
-    }
-
-    Vec& operator=(const Vec& that) {
-        if (this != &that) {
-            EnsureCap(that.cap);
-            // using memcpy, as Vec only supports POD types
-            memcpy(els, that.els, kElSize * (len = that.len));
-            memset(els + len, 0, kElSize * (cap - len));
-        }
-        return *this;
     }
 
     [[nodiscard]] T& operator[](size_t idx) const {
@@ -151,19 +179,6 @@ class Vec {
         CrashIf(idx < 0);
         CrashIf((size_t)idx >= len);
         return els[idx];
-    }
-
-    void Reset() {
-        len = 0;
-        cap = dimof(buf) - kPadding;
-        FreeEls();
-        els = buf;
-        memset(buf, 0, kBufSize);
-    }
-
-    bool SetSize(size_t newSize) {
-        Reset();
-        return MakeSpaceAt(0, newSize);
     }
 
     [[nodiscard]] T& at(size_t idx) const {
@@ -345,19 +360,19 @@ class Vec {
 
     // http://www.cprogramming.com/c++11/c++11-ranged-for-loop.html
     // https://stackoverflow.com/questions/16504062/how-to-make-the-for-each-loop-function-in-c-work-with-a-custom-class
-    typedef T* iterator;
-    typedef const T* const_iterator;
+    using iterator = T*;
+    using const_iterator = const T*;
 
     iterator begin() {
         return &(els[0]);
     }
-    const_iterator begin() const {
+    [[nodiscard]] const_iterator begin() const {
         return &(els[0]);
     }
     iterator end() {
         return &(els[len]);
     }
-    const_iterator end() const {
+    [[nodiscard]] const_iterator end() const {
         return &(els[len]);
     }
 };
@@ -371,13 +386,14 @@ inline void DeleteVecMembers(Vec<T>& v) {
     v.Reset();
 }
 
-#if OS_WIN
+// TOOD: smarter WStrVec class which uses str::Wstr for the buffer
+// and stores str::wstring_view in an array
+
 // WStrVec owns the strings in the list
 class WStrVec : public Vec<WCHAR*> {
   public:
-    WStrVec() : Vec() {
-    }
-    WStrVec(const WStrVec& orig) : Vec(orig) {
+    WStrVec() = default;
+    WStrVec(const WStrVec& other) : Vec(other) {
         // make sure not to share string pointers between StrVecs
         for (size_t i = 0; i < len; i++) {
             if (at(i)) {
@@ -389,14 +405,16 @@ class WStrVec : public Vec<WCHAR*> {
         FreeMembers();
     }
 
-    WStrVec& operator=(const WStrVec& that) {
-        if (this != &that) {
-            FreeMembers();
-            Vec::operator=(that);
-            for (size_t i = 0; i < that.len; i++) {
-                if (at(i)) {
-                    at(i) = str::Dup(at(i));
-                }
+    WStrVec& operator=(const WStrVec& other) {
+        if (this == &other) {
+            return *this;
+        }
+
+        FreeMembers();
+        Vec::operator=(other);
+        for (size_t i = 0; i < other.len; i++) {
+            if (at(i)) {
+                at(i) = str::Dup(at(i));
             }
         }
         return *this;
@@ -453,7 +471,7 @@ class WStrVec : public Vec<WCHAR*> {
 
         while ((next = str::Find(s, separator)) != nullptr) {
             if (!collapse || next > s) {
-                Append(str::DupN(s, next - s));
+                Append(str::Dup(s, next - s));
             }
             s = next + str::Len(separator);
         }
@@ -480,9 +498,7 @@ class WStrVec : public Vec<WCHAR*> {
         return wcscmp(*(const WCHAR**)a, *(const WCHAR**)b);
     }
 };
-#endif
 
-#if OS_WIN
 // WStrList is a subset of WStrVec that's optimized for appending and searching
 // WStrList owns the strings it contains and frees them at destruction
 class WStrList {
@@ -523,15 +539,15 @@ class WStrList {
         }
     }
 
-    const WCHAR* at(size_t idx) const {
+    [[nodiscard]] const WCHAR* at(size_t idx) const {
         return items.at(idx).string;
     }
 
-    const WCHAR* Last() const {
+    [[nodiscard]] const WCHAR* Last() const {
         return items.Last().string;
     }
 
-    size_t size() const {
+    [[nodiscard]] size_t size() const {
         return count;
     }
 
@@ -567,7 +583,6 @@ class WStrList {
         return -1 != Find(str);
     }
 };
-#endif
 
 // TODO: could increase kVecStrIndexSize when expanding array
 constexpr int kVecStrIndexSize = 128;
@@ -576,7 +591,7 @@ struct VecStrIndex {
     int nStrings;
     char* offsets[kVecStrIndexSize];
     i32 sizes[kVecStrIndexSize];
-    int ItemsLeft();
+    int ItemsLeft() const;
 };
 
 // Append-only, optimized vector of strings. Allocates from pool allocator, so
@@ -589,9 +604,25 @@ struct VecStr {
 
     VecStr() = default;
     ~VecStr() = default;
-    int Size();
+    int Size() const;
     void Reset();
     bool Append(std::string_view sv);
 
-    std::string_view at(int);
+    std::string_view at(int) const;
+};
+
+// implementation in StrUtil.cpp
+struct StrVec {
+    static const u32 kNullIdx = (u32)-2;
+    str::Str str;
+    Vec<u32> index;
+
+    StrVec();
+    ~StrVec() = default;
+    void Reset();
+
+    int size();
+    std::string_view at(int idx);
+
+    void Append(const char* s);
 };

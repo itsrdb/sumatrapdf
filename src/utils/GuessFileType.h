@@ -34,16 +34,16 @@ extern Kind kindFileEpub;
 extern Kind kindFileMobi;
 extern Kind kindFilePalmDoc;
 extern Kind kindFileHTML;
+extern Kind kindFileSvg;
 extern Kind kindFileTxt;
 
-extern Kind kindFileVbkm;
-extern Kind kindFileDir;
+extern Kind kindDirectory;
 
 const WCHAR* FindEmbeddedPdfFileStreamNo(const WCHAR* path);
 
 Kind GuessFileTypeFromContent(const WCHAR* path);
-Kind GuessFileTypeFromContent(std::span<u8> d);
+Kind GuessFileTypeFromContent(ByteSlice d);
 Kind GuessFileTypeFromName(const WCHAR*);
-Kind GuessFileType(const WCHAR* path, bool fromContent);
+Kind GuessFileType(const WCHAR* path, bool sniff);
 
 bool KindInArray(Kind* kinds, int nKinds, Kind kind);

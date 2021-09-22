@@ -6,15 +6,14 @@
 #include <UIAutomationCoreApi.h>
 #include <OleAcc.h>
 #include "utils/ScopedWin.h"
+#include "utils/WinUtil.h"
 
 #include "wingui/TreeModel.h"
-
-#include "Annotation.h"
-#include "EngineBase.h"
 #include "DisplayMode.h"
-#include "SettingsStructs.h"
 #include "Controller.h"
-#include "EngineCreate.h"
+#include "EngineBase.h"
+#include "SettingsStructs.h"
+#include "EngineAll.h"
 #include "DisplayModel.h"
 #include "utils/FileUtil.h"
 #include "uia/DocumentProvider.h"
@@ -113,7 +112,7 @@ HRESULT STDMETHODCALLTYPE SumatraUIAutomationDocumentProvider::QueryInterface(RE
                                 QITABENT(SumatraUIAutomationDocumentProvider, IRawElementProviderFragment),
                                 QITABENT(SumatraUIAutomationDocumentProvider, ITextProvider),
                                 QITABENT(SumatraUIAutomationDocumentProvider, IAccIdentity),
-                                {0}};
+                                {nullptr}};
     return QISearch(this, qit, riid, ppv);
 }
 
@@ -242,7 +241,7 @@ HRESULT STDMETHODCALLTYPE SumatraUIAutomationDocumentProvider::GetPropertyValue(
     if (propertyId == UIA_NamePropertyId) {
         // typically filename
         pRetVal->vt = VT_BSTR;
-        pRetVal->bstrVal = SysAllocString(path::GetBaseNameNoFree(dm->GetEngine()->FileName()));
+        pRetVal->bstrVal = SysAllocString(path::GetBaseNameTemp(dm->GetEngine()->FileName()));
         return S_OK;
     } else if (propertyId == UIA_IsTextPatternAvailablePropertyId) {
         pRetVal->vt = VT_BOOL;
@@ -366,8 +365,8 @@ HRESULT STDMETHODCALLTYPE SumatraUIAutomationDocumentProvider::RangeFromChild(IR
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE SumatraUIAutomationDocumentProvider::RangeFromPoint(
-    [[maybe_unused]] struct UiaPoint point, [[maybe_unused]] ITextRangeProvider** pRetVal) {
+HRESULT STDMETHODCALLTYPE SumatraUIAutomationDocumentProvider::RangeFromPoint(__unused struct UiaPoint point,
+                                                                              __unused ITextRangeProvider** pRetVal) {
     // TODO: Is this even used? We wont support editing either way
     // so there won't be even a caret visible. Hence empty ranges are useless?
     return E_NOTIMPL;

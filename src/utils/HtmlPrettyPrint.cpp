@@ -49,7 +49,7 @@ static bool IsWsText(const char* s, size_t len) {
     return s == end;
 }
 
-std::span<u8> PrettyPrintHtml(std::span<u8> d) {
+ByteSlice PrettyPrintHtml(ByteSlice d) {
     size_t n = d.size();
     str::Str res(n);
     HtmlPullParser parser(d);
@@ -86,5 +86,6 @@ std::span<u8> PrettyPrintHtml(std::span<u8> d) {
             }
         }
     }
-    return res.StealAsSpan();
+    auto sv = res.StealAsView();
+    return sv;
 }

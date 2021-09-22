@@ -6,17 +6,17 @@
 #include "utils/GdiPlusUtil.h"
 #include "utils/WinUtil.h"
 #include "utils/Archive.h"
-#include "utils/PalmDbReader.h"
 #include "utils/HtmlParserLookup.h"
 #include "utils/HtmlPullParser.h"
 #include "mui/Mui.h"
 
 #include "wingui/TreeModel.h"
-
-#include "Annotation.h"
+#include "DisplayMode.h"
+#include "Controller.h"
 #include "EngineBase.h"
 #include "EbookBase.h"
 #include "EbookDoc.h"
+#include "PalmDbReader.h"
 #include "MobiDoc.h"
 #include "HtmlFormatter.h"
 #include "EbookFormatter.h"
@@ -29,7 +29,7 @@ MobiFormatter::MobiFormatter(HtmlFormatterArgs* args, MobiDoc* doc) : HtmlFormat
         return;
     }
 
-    ImageData* img = doc->GetCoverImage();
+    ByteSlice* img = doc->GetCoverImage();
     if (!img) {
         return;
     }
@@ -102,7 +102,7 @@ void MobiFormatter::HandleTagImg(HtmlToken* t) {
     if (attr) {
         int n;
         if (str::Parse(attr->val, attr->valLen, "%d", &n)) {
-            ImageData* img = doc->GetImage(n);
+            ByteSlice* img = doc->GetImage(n);
             needAlt = !img || !EmitImage(img);
         }
     }
@@ -145,9 +145,9 @@ void EpubFormatter::HandleTagImg(HtmlToken* t) {
     bool needAlt = true;
     AttrInfo* attr = t->GetAttrByName("src");
     if (attr) {
-        AutoFree src(str::DupN(attr->val, attr->valLen));
+        AutoFree src(str::Dup(attr->val, attr->valLen));
         url::DecodeInPlace(src);
-        ImageData* img = epubDoc->GetImageData(src, pagePath);
+        ByteSlice* img = epubDoc->GetImageData(src, pagePath);
         needAlt = !img || !EmitImage(img);
     }
     if (needAlt && (attr = t->GetAttrByName("alt")) != nullptr) {
@@ -163,7 +163,7 @@ void EpubFormatter::HandleTagPagebreak(HtmlToken* t) {
     if (attr) {
         Gdiplus::RectF bbox(0, currY, pageDx, 0);
         currPage->instructions.Append(DrawInstr::Anchor(attr->val, attr->valLen, bbox));
-        pagePath.Set(str::DupN(attr->val, attr->valLen));
+        pagePath.Set(str::Dup(attr->val, attr->valLen));
         // reset CSS style rules for the new document
         styleRules.Reset();
     }
@@ -187,7 +187,7 @@ void EpubFormatter::HandleTagLink(HtmlToken* t) {
         return;
     }
 
-    AutoFree src(str::DupN(attr->val, attr->valLen));
+    AutoFree src(str::Dup(attr->val, attr->valLen));
     url::DecodeInPlace(src);
     AutoFree data(epubDoc->GetFileData(src, pagePath));
     if (data.data) {
@@ -207,9 +207,9 @@ void EpubFormatter::HandleTagSvgImage(HtmlToken* t) {
     if (!attr) {
         return;
     }
-    AutoFree src(str::DupN(attr->val, attr->valLen));
+    AutoFree src(str::Dup(attr->val, attr->valLen));
     url::DecodeInPlace(src);
-    ImageData* img = epubDoc->GetImageData(src, pagePath);
+    ByteSlice* img = epubDoc->GetImageData(src, pagePath);
     if (img) {
         EmitImage(img);
     }
@@ -245,7 +245,7 @@ Fb2Formatter::Fb2Formatter(HtmlFormatterArgs* args, Fb2Doc* doc)
     if (args->reparseIdx != 0) {
         return;
     }
-    ImageData* cover = doc->GetCoverImage();
+    ByteSlice* cover = doc->GetCoverImage();
     if (!cover) {
         return;
     }
@@ -266,10 +266,10 @@ void Fb2Formatter::HandleTagImg(HtmlToken* t) {
     if (t->IsEndTag()) {
         return;
     }
-    ImageData* img = nullptr;
+    ByteSlice* img = nullptr;
     AttrInfo* attr = t->GetAttrByNameNS("href", "http://www.w3.org/1999/xlink");
     if (attr) {
-        AutoFree src(str::DupN(attr->val, attr->valLen));
+        AutoFree src(str::Dup(attr->val, attr->valLen));
         url::DecodeInPlace(src);
         img = fb2Doc->GetImageData(src);
     }
@@ -343,9 +343,9 @@ void HtmlFileFormatter::HandleTagImg(HtmlToken* t) {
     bool needAlt = true;
     AttrInfo* attr = t->GetAttrByName("src");
     if (attr) {
-        AutoFree src(str::DupN(attr->val, attr->valLen));
+        AutoFree src(str::Dup(attr->val, attr->valLen));
         url::DecodeInPlace(src);
-        ImageData* img = htmlDoc->GetImageData(src);
+        ByteSlice* img = htmlDoc->GetImageData(src);
         needAlt = !img || !EmitImage(img);
     }
     if (needAlt && (attr = t->GetAttrByName("alt")) != nullptr) {
@@ -371,7 +371,7 @@ void HtmlFileFormatter::HandleTagLink(HtmlToken* t) {
         return;
     }
 
-    AutoFree src(str::DupN(attr->val, attr->valLen));
+    AutoFree src(str::Dup(attr->val, attr->valLen));
     url::DecodeInPlace(src);
     AutoFree data(htmlDoc->GetFileData(src));
     if (data.data) {

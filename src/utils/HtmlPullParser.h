@@ -8,7 +8,7 @@ struct AttrInfo {
     size_t valLen;
 
     bool NameIs(const char* s) const;
-    bool NameIsNS(const char* s, const char* ns) const;
+    bool NameIsNS(const char* nameToCheck, const char* ns) const;
     bool ValIs(const char* s) const;
 };
 
@@ -28,26 +28,26 @@ struct HtmlToken {
 
     enum ParsingError { NoError, ExpectedElement, UnclosedTag, InvalidTag };
 
-    bool IsStartTag() const {
+    [[nodiscard]] bool IsStartTag() const {
         return type == StartTag;
     }
-    bool IsEndTag() const {
+    [[nodiscard]] bool IsEndTag() const {
         return type == EndTag;
     }
-    bool IsEmptyElementEndTag() const {
+    [[nodiscard]] bool IsEmptyElementEndTag() const {
         return type == EmptyElementTag;
     }
-    bool IsTag() const {
+    [[nodiscard]] bool IsTag() const {
         return IsStartTag() || IsEndTag() || IsEmptyElementEndTag();
     }
-    bool IsText() const {
+    [[nodiscard]] bool IsText() const {
         return type == Text;
     }
-    bool IsError() const {
+    [[nodiscard]] bool IsError() const {
         return type == Error;
     }
 
-    const char* GetReparsePoint() const;
+    [[nodiscard]] const char* GetReparsePoint() const;
     void SetTag(TokenType new_type, const char* new_s, const char* end);
     void SetError(ParsingError err, const char* errContext);
     void SetText(const char* new_s, const char* end);
@@ -89,17 +89,17 @@ class HtmlPullParser {
     }
     HtmlPullParser(const char* s, const char* end) : currPos(s), end(end), start(s), len(end - s) {
     }
-    HtmlPullParser(std::span<u8> d)
+    explicit HtmlPullParser(ByteSlice d)
         : currPos((char*)d.data()), end((char*)d.data() + d.size()), start((char*)d.data()), len(d.size()) {
     }
 
     void SetCurrPosOff(ptrdiff_t off) {
         currPos = start + off;
     }
-    size_t Len() const {
+    [[nodiscard]] size_t Len() const {
         return len;
     }
-    const char* Start() const {
+    [[nodiscard]] const char* Start() const {
         return start;
     }
 

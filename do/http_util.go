@@ -12,13 +12,10 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"github.com/kjk/u"
 )
 
 func logErrorf(ctx context.Context, format string, args ...interface{}) {
-	msg := u.FmtSmart(format, args...)
-	fmt.Printf(msg)
+	logf(format, args...)
 }
 
 func addNl(s string) string {
@@ -126,14 +123,14 @@ func serve404(w http.ResponseWriter, r *http.Request, format string, args ...int
 	logErrorf(r.Context(), addNl(format), args...)
 	v := map[string]interface{}{
 		"URL":      r.URL.String(),
-		"ErrorMsg": u.FmtSmart(format, args...),
+		"ErrorMsg": fmtSmart(format, args...),
 	}
 	serveHTMLTemplate(w, r, http.StatusNotFound, "404.tmpl.html", v)
 }
 
 func serveInternalError(w http.ResponseWriter, r *http.Request, format string, args ...interface{}) {
 	logErrorf(r.Context(), addNl(format), args...)
-	errMsg := u.FmtSmart(format, args...)
+	errMsg := fmtSmart(format, args...)
 	v := map[string]interface{}{
 		"URL":      r.URL.String(),
 		"ErrorMsg": errMsg,
@@ -148,14 +145,14 @@ func serveSimpleError(w http.ResponseWriter, r *http.Request, format string, arg
 }
 
 func serveMaybeGzippedFile(w http.ResponseWriter, r *http.Request, path string) bool {
-	if !u.FileExists(path) {
+	if !fileExists(path) {
 		serve404(w, r, "file '%s' doesn't exist", path)
 		return false
 	}
 	contentType := mimeTypeByExtensionExt(path)
 	usesGzip := acceptsGzip(r)
 	if usesGzip {
-		if u.FileExists(path + ".gz") {
+		if fileExists(path + ".gz") {
 			path = path + ".gz"
 		} else {
 			usesGzip = false
@@ -185,46 +182,4 @@ func serveRelativeFile(w http.ResponseWriter, r *http.Request, relativePath stri
 	dir := filepath.Join("do")
 	path := filepath.Join(dir, relativePath)
 	return serveMaybeGzippedFile(w, r, path)
-}
-
-// Request.RemoteAddress contains port, which we want to remove i.e.:
-// "[::1]:58292" => "[::1]"
-func ipAddrFromRemoteAddr(s string) string {
-	idx := strings.LastIndex(s, ":")
-	if idx == -1 {
-		return s
-	}
-	return s[:idx]
-}
-
-// requestGetRemoteAddress returns ip address of the client making the request,
-// taking into account http proxies
-func requestGetRemoteAddress(r *http.Request) string {
-	hdr := r.Header
-	hdrRealIP := hdr.Get("x-real-ip")
-	hdrForwardedFor := hdr.Get("x-forwarded-for")
-	if hdrRealIP == "" && hdrForwardedFor == "" {
-		return ipAddrFromRemoteAddr(r.RemoteAddr)
-	}
-	if hdrForwardedFor != "" {
-		// X-Forwarded-For is potentially a list of addresses separated with ","
-		parts := strings.Split(hdrForwardedFor, ",")
-		for i, p := range parts {
-			parts[i] = strings.TrimSpace(p)
-		}
-		// TODO: should return first non-local address
-		return parts[0]
-	}
-	return hdrRealIP
-}
-
-func requestGetHostNoPort(r *http.Request) string {
-	h := r.Host
-	parts := strings.Split(h, ":")
-	return parts[0]
-}
-
-// requestGetReferrer returns a referer e.g. "https://codeeval.dev/home"
-func requestGetReferrer(r *http.Request) string {
-	return r.Header.Get("referer")
 }

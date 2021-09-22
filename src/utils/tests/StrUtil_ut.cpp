@@ -104,20 +104,22 @@ static void StrIsDigitTest() {
 }
 
 static void StrConvTest() {
+#if 0
     WCHAR wbuf[4];
     char cbuf[4];
     size_t conv = strconv::Utf8ToWcharBuf("testing", 4, wbuf, dimof(wbuf));
     utassert(conv == 3 && str::Eq(wbuf, L"tes"));
-    conv = strconv::WcharToUtf8Buf(L"abc", cbuf, dimof(cbuf));
+    conv = strconv::WstrToUtf8Buf(L"abc", cbuf, dimof(cbuf));
     utassert(conv == 3 && str::Eq(cbuf, "abc"));
     conv = strconv::Utf8ToWcharBuf("ab\xF0\x90\x82\x80", 6, wbuf, dimof(wbuf));
     utassert(conv == 3 && str::StartsWith(wbuf, L"ab") && wbuf[2] == 0xD800);
     conv = strconv::Utf8ToWcharBuf("ab\xF0\x90\x82\x80", 6, wbuf, dimof(wbuf) - 1);
     utassert(conv == 1 && str::Eq(wbuf, L"a"));
-    conv = strconv::WcharToUtf8Buf(L"ab\u20AC", cbuf, dimof(cbuf));
+    conv = strconv::WstrToUtf8Buf(L"ab\u20AC", cbuf, dimof(cbuf));
     utassert(conv == 0 && str::Eq(cbuf, ""));
-    conv = strconv::WcharToUtf8Buf(L"abcd", cbuf, dimof(cbuf));
+    conv = strconv::WstrToUtf8Buf(L"abcd", cbuf, dimof(cbuf));
     utassert(conv == 0 && str::Eq(cbuf, ""));
+#endif
 }
 
 static void StrUrlExtractTest() {
@@ -191,10 +193,10 @@ void strStrTest() {
         str.Append("blah");
         char* buf2 = str.Get();
         utassert(buf == buf2);
-        str::Eq(buf2, "blah");
+        utassert(str::Eq(buf2, "blah"));
         str.Append("lost");
         buf2 = str.Get();
-        str::Eq(buf2, "blahlost");
+        utassert(str::Eq(buf2, "blahlost"));
         utassert(buf == buf2);
         str.Reset();
         for (int i = 0; i < str::Str::kBufChars + 4; i++) {
@@ -237,10 +239,10 @@ void strWStrTest() {
         str.Append(L"blah");
         WCHAR* buf2 = str.Get();
         utassert(buf == buf2);
-        str::Eq(buf2, L"blah");
+        utassert(str::Eq(buf2, L"blah"));
         str.Append(L"lost");
         buf2 = str.Get();
-        str::Eq(buf2, L"blahlost");
+        utassert(str::Eq(buf2, L"blahlost"));
         utassert(buf == buf2);
         str.Reset();
         for (int i = 0; i < str::Str::kBufChars + 4; i++) {
@@ -299,7 +301,7 @@ void StrTest() {
     str = str::Dup(buf);
     utassert(str::Eq(str, buf));
     str::Free(str);
-    str = str::DupN(buf, 4);
+    str = str::Dup(buf, 4);
     utassert(str::Eq(str, L"a st"));
     str::Free(str);
     str = str::Format(L"%s", buf);
@@ -330,29 +332,30 @@ void StrTest() {
     str::Free(str);
 
     str::BufSet(buf, dimof(buf), L"abc\1efg\1");
-    size_t count = str::TransChars(buf, L"ace", L"ACE");
+    size_t count = str::TransCharsInPlace(buf, L"ace", L"ACE");
     utassert(str::Eq(buf, L"AbC\1Efg\1") && count == 3);
-    count = str::TransChars(buf, L"\1", L"\0");
+    count = str::TransCharsInPlace(buf, L"\1", L"\0");
+    utassert(count == 2);
     utassert(str::Eq(buf, L"AbC") && str::Eq(buf + 4, L"Efg") && count == 2);
-    count = str::TransChars(buf, L"", L"X");
+    count = str::TransCharsInPlace(buf, L"", L"X");
     utassert(str::Eq(buf, L"AbC") && count == 0);
 
     str::BufSet(buf, dimof(buf), L"blogarapato");
-    count = str::RemoveChars(buf, L"bo");
+    count = str::RemoveCharsInPlace(buf, L"bo");
     utassert(3 == count);
     utassert(str::Eq(buf, L"lgarapat"));
 
     str::BufSet(buf, dimof(buf), L"one\r\ntwo\t\v\f\tthree");
-    count = str::NormalizeWS(buf);
+    count = str::NormalizeWSInPlace(buf);
     utassert(4 == count);
     utassert(str::Eq(buf, L"one two three"));
 
     str::BufSet(buf, dimof(buf), L" one    two three ");
-    count = str::NormalizeWS(buf);
+    count = str::NormalizeWSInPlace(buf);
     utassert(5 == count);
     utassert(str::Eq(buf, L"one two three"));
 
-    count = str::NormalizeWS(buf);
+    count = str::NormalizeWSInPlace(buf);
     utassert(0 == count);
     utassert(str::Eq(buf, L"one two three"));
 
@@ -475,9 +478,9 @@ void StrTest() {
     // the test string should only contain ASCII characters,
     // as all others might not be available in all code pages
 #define TEST_STRING "aBc"
-    AutoFree strA = strconv::WstrToAnsi(TEXT(TEST_STRING));
+    AutoFree strA = strconv::WstrToAnsiV(TEXT(TEST_STRING));
     utassert(str::Eq(strA.Get(), TEST_STRING));
-    str = strconv::FromAnsi(strA.Get());
+    str = strconv::AnsiToWstr(strA.Get());
     utassert(str::Eq(str, TEXT(TEST_STRING)));
     str::Free(str);
 #undef TEST_STRING
@@ -549,67 +552,67 @@ void StrTest() {
     {
         size_t trimmed;
         WCHAR* s = str::Dup(L"");
-        trimmed = str::TrimWS(s, str::TrimOpt::Both);
+        trimmed = str::TrimWSInPlace(s, str::TrimOpt::Both);
         utassert(trimmed == 0);
         utassert(str::Eq(s, L""));
-        trimmed = str::TrimWS(s, str::TrimOpt::Right);
+        trimmed = str::TrimWSInPlace(s, str::TrimOpt::Right);
         utassert(trimmed == 0);
         utassert(str::Eq(s, L""));
-        trimmed = str::TrimWS(s, str::TrimOpt::Left);
+        trimmed = str::TrimWSInPlace(s, str::TrimOpt::Left);
         utassert(trimmed == 0);
         utassert(str::Eq(s, L""));
 
         free(s);
         s = str::Dup(L"  \n\t  ");
-        trimmed = str::TrimWS(s, str::TrimOpt::Both);
+        trimmed = str::TrimWSInPlace(s, str::TrimOpt::Both);
         utassert(trimmed == 6);
         utassert(str::Eq(s, L""));
 
         free(s);
         s = str::Dup(L"  \n\t  ");
-        trimmed = str::TrimWS(s, str::TrimOpt::Right);
+        trimmed = str::TrimWSInPlace(s, str::TrimOpt::Right);
         utassert(trimmed == 6);
         utassert(str::Eq(s, L""));
 
         free(s);
         s = str::Dup(L"  \n\t  ");
-        trimmed = str::TrimWS(s, str::TrimOpt::Left);
+        trimmed = str::TrimWSInPlace(s, str::TrimOpt::Left);
         utassert(trimmed == 6);
         utassert(str::Eq(s, L""));
 
         free(s);
         s = str::Dup(L"  lola");
-        trimmed = str::TrimWS(s, str::TrimOpt::Both);
+        trimmed = str::TrimWSInPlace(s, str::TrimOpt::Both);
         utassert(trimmed == 2);
         utassert(str::Eq(s, L"lola"));
 
         free(s);
         s = str::Dup(L"  lola");
-        trimmed = str::TrimWS(s, str::TrimOpt::Left);
+        trimmed = str::TrimWSInPlace(s, str::TrimOpt::Left);
         utassert(trimmed == 2);
         utassert(str::Eq(s, L"lola"));
 
         free(s);
         s = str::Dup(L"  lola");
-        trimmed = str::TrimWS(s, str::TrimOpt::Right);
+        trimmed = str::TrimWSInPlace(s, str::TrimOpt::Right);
         utassert(trimmed == 0);
         utassert(str::Eq(s, L"  lola"));
 
         free(s);
         s = str::Dup(L"lola\r\t");
-        trimmed = str::TrimWS(s, str::TrimOpt::Both);
+        trimmed = str::TrimWSInPlace(s, str::TrimOpt::Both);
         utassert(trimmed == 2);
         utassert(str::Eq(s, L"lola"));
 
         free(s);
         s = str::Dup(L"lola\r\t");
-        trimmed = str::TrimWS(s, str::TrimOpt::Right);
+        trimmed = str::TrimWSInPlace(s, str::TrimOpt::Right);
         utassert(trimmed == 2);
         utassert(str::Eq(s, L"lola"));
 
         free(s);
         s = str::Dup(L"lola\r\t");
-        trimmed = str::TrimWS(s, str::TrimOpt::Left);
+        trimmed = str::TrimWSInPlace(s, str::TrimOpt::Left);
         utassert(trimmed == 0);
         utassert(str::Eq(s, L"lola\r\t"));
 
@@ -617,19 +620,19 @@ void StrTest() {
     }
 
     {
-        AutoFree tmp = strconv::ToMultiByte("abc", 9876, 123456);
+        AutoFree tmp = strconv::ToMultiByteV("abc", 9876, 123456);
         utassert(!tmp.Get());
     }
     {
-        AutoFree tmp = strconv::WstrToCodePage(L"abc", 98765);
+        AutoFree tmp = strconv::WstrToCodePageV(98765, L"abc");
         utassert(!tmp.Get());
     }
     {
-        AutoFreeWstr tmp(strconv::FromCodePage("abc", 12345));
+        AutoFreeWstr tmp(strconv::StrToWstr("abc", 12345));
         utassert(str::IsEmpty(tmp.Get()));
     }
     {
-        AutoFree tmp = strconv::WstrToCodePage(L"abc", 987654);
+        AutoFree tmp = strconv::WstrToCodePageV(987654, L"abc");
         utassert(str::IsEmpty(tmp.Get()));
     }
 

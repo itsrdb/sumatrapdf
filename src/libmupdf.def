@@ -3,9 +3,40 @@
 LIBRARY libmupdf
 EXPORTS
 
-; Fitz exports
+	version_check_3_4
 
-	; new stuff
+	fz_new_odt_writer
+	fz_new_odt_writer_with_output
+	fz_new_docx_writer
+	fz_new_docx_writer_with_output
+	pdf_string_from_annot_type
+	fz_page_number_from_location
+	fz_lookup_metadata
+	pdf_drop_annot
+	fz_open_document_with_stream
+	fz_authenticate_password
+	fz_set_use_document_css
+	fz_count_chapter_pages
+	fz_run_page_annots
+	fz_string_from_buffer
+	fz_open_document
+	fz_drop_separations
+	fz_set_user_css
+	fz_clone_pixmap_area_with_different_seps
+	fz_layout_document
+	fz_run_page_widgets
+	fz_register_document_handlers
+	fz_count_chapters
+	fz_transform_page
+	fz_load_chapter_page
+	fz_run_page_contents
+	pdf_has_unsaved_changes
+	pdf_can_be_saved_incrementally
+	pdf_annot_page
+	pdf_drop_page_tree
+	pdf_annot_obj
+	pdf_annot_field_label
+	pdf_annot_field_flags
 	fz_new_pdfocr_writer_with_output
 	fz_new_pdfocr_writer
 	fz_is_point_inside_rect
@@ -62,7 +93,7 @@ EXPORTS
 	fz_set_warning_callback
 	fz_set_error_callback
 	fz_new_buffer_from_shared_data
-	pdf_update_appearance
+	pdf_update_annot
 	pdf_dict_put_drop
 	pdf_add_page
 	pdf_add_image
@@ -645,7 +676,6 @@ EXPORTS
 	pdf_set_int
 	pdf_new_pdf_device
 	pdf_write_document
-	pdf_localise_page_resources
 	pdf_lookup_page_number
 	pdf_count_pages
 	pdf_lookup_page_obj

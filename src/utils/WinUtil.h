@@ -1,14 +1,6 @@
 /* Copyright 2021 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
-// the following are only defined if _WIN32_WINNT >= 0x0600 and we use 0x0500
-#ifndef USER_DEFAULT_SCREEN_DPI
-#define USER_DEFAULT_SCREEN_DPI 96
-#endif
-#ifndef WM_MOUSEHWHEEL
-#define WM_MOUSEHWHEEL 0x020E
-#endif
-
 #define NO_COLOR (COLORREF) - 1
 
 #define WIN_COL_WHITE RGB(0xff, 0xff, 0xff)
@@ -30,7 +22,8 @@ Rect MapRectToWindow(Rect rect, HWND hwndFrom, HWND hwndTo);
 void Edit_SelectAll(HWND hwnd);
 void ListBox_AppendString_NoSort(HWND hwnd, WCHAR* txt);
 
-BOOL SafeCloseHandle(HANDLE* h);
+bool IsValidHandle(HANDLE);
+bool SafeCloseHandle(HANDLE*);
 void FillWndClassEx(WNDCLASSEX& wcex, const WCHAR* clsName, WNDPROC wndproc);
 void MoveWindow(HWND hwnd, Rect rect);
 void MoveWindow(HWND hwnd, RECT* r);
@@ -39,10 +32,10 @@ bool IsOs64();
 bool IsProcess64();
 bool IsRunningInWow64();
 bool IsProcessAndOsArchSame();
-bool IsVistaOrGreater();
-void GetOsVersion(OSVERSIONINFOEX& ver);
-bool IsWin10();
-bool IsWin7();
+
+bool GetOsVersion(OSVERSIONINFOEX& ver);
+const char* OsNameFromVerTemp(const OSVERSIONINFOEX& ver);
+const char* GetWindowsVerTemp();
 
 void LogLastError(DWORD err = 0);
 void DbgOutLastError(DWORD err = 0);
@@ -55,15 +48,18 @@ bool ReadRegDWORD(HKEY keySub, const WCHAR* keyName, const WCHAR* valName, DWORD
 bool WriteRegDWORD(HKEY keySub, const WCHAR* keyName, const WCHAR* valName, DWORD value);
 bool CreateRegKey(HKEY keySub, const WCHAR* keyName);
 bool DeleteRegKey(HKEY keySub, const WCHAR* keyName, bool resetACLFirst = false);
-WCHAR* GetSpecialFolder(int csidl, bool createIfMissing = false);
+TempWstr GetSpecialFolderTemp(int csidl, bool createIfMissing = false);
 
 void DisableDataExecution();
-void RedirectIOToConsole();
-WCHAR* GetExePath();
+bool RedirectIOToConsole();
+bool RedirectIOToExistingConsole();
+void HandleRedirectedConsoleOnShutdown();
+
+TempWstr GetExePathTemp();
 WCHAR* GetExeDir();
 WCHAR* GetSystem32Dir();
 WCHAR* GetCurrentDir();
-void ChangeCurrDirToSystem32();
+void ChangeCurrDirToDocuments();
 int FileTimeDiffInSecs(const FILETIME& ft1, const FILETIME& ft2);
 
 WCHAR* ResolveLnk(const WCHAR* path);
@@ -79,23 +75,24 @@ bool IsCtrlPressed();
 
 HFONT CreateSimpleFont(HDC hdc, const WCHAR* fontName, int fontSize);
 
-Rect ShiftRectToWorkArea(Rect rect, bool bFully = false);
-Rect GetWorkAreaRect(Rect rect);
+Rect ShiftRectToWorkArea(Rect rect, HWND hwnd = nullptr, bool bFully = false);
+Rect GetWorkAreaRect(Rect rect, HWND hwnd);
 void LimitWindowSizeToScreen(HWND hwnd, SIZE& size);
 Rect GetFullscreenRect(HWND);
 Rect GetVirtualScreenRect();
 
 bool LaunchFile(const WCHAR* path, const WCHAR* params = nullptr, const WCHAR* verb = nullptr, bool hidden = false);
 bool LaunchBrowser(const WCHAR* url);
+bool LaunchBrowser(const char* url);
 HANDLE LaunchProcess(const WCHAR* cmdLine, const WCHAR* currDir = nullptr, DWORD flags = 0);
 bool CreateProcessHelper(const WCHAR* exe, const WCHAR* args);
 bool LaunchElevated(const WCHAR* path, const WCHAR* cmdline);
 bool IsProcessRunningElevated();
 bool CanTalkToProcess(DWORD procId);
 
-void PaintRect(HDC, const Rect);
-void PaintLine(HDC, const Rect);
-void DrawCenteredText(HDC hdc, const Rect r, const WCHAR* txt, bool isRTL = false);
+void PaintRect(HDC, Rect);
+void PaintLine(HDC, Rect);
+void DrawCenteredText(HDC hdc, Rect r, const WCHAR* txt, bool isRTL = false);
 void DrawCenteredText(HDC, const RECT& r, const WCHAR* txt, bool isRTL = false);
 Size TextSizeInHwnd(HWND, const WCHAR*, HFONT = nullptr);
 SIZE TextSizeInHwnd2(HWND, const WCHAR*, HFONT);
@@ -125,9 +122,9 @@ HFONT GetDefaultGuiFont();
 HFONT GetDefaultGuiFont(bool bold, bool italic);
 HFONT GetDefaultGuiFontOfSize(int size);
 
-IStream* CreateStreamFromData(std::span<u8>);
-std::span<u8> GetDataFromStream(IStream* stream, HRESULT* resOpt);
-std::span<u8> GetStreamOrFileData(IStream* stream, const WCHAR* filePath);
+IStream* CreateStreamFromData(ByteSlice);
+ByteSlice GetDataFromStream(IStream* stream, HRESULT* resOpt);
+ByteSlice GetStreamOrFileData(IStream* stream, const WCHAR* filePath);
 bool ReadDataFromStream(IStream* stream, void* buffer, size_t len, size_t offset = 0);
 uint GuessTextCodepage(const char* data, size_t len, uint defVal = CP_ACP);
 WCHAR* NormalizeString(const WCHAR* str, int /* NORM_FORM */ form);
@@ -152,11 +149,11 @@ inline BOOL toBOOL(bool b) {
 }
 
 inline bool fromBOOL(BOOL b) {
-    return b ? true : false;
+    return b != 0;
 }
 
 inline bool tobool(BOOL b) {
-    return b ? true : false;
+    return b != 0;
 }
 
 namespace win {
@@ -164,8 +161,7 @@ namespace win {
 void ToForeground(HWND hwnd);
 
 size_t GetTextLen(HWND hwnd);
-WCHAR* GetText(HWND hwnd);
-str::Str GetTextUtf8(HWND hwnd);
+TempWstr GetTextTemp(HWND hwnd);
 
 void SetText(HWND hwnd, const WCHAR* txt);
 void SetVisibility(HWND hwnd, bool visible);
@@ -198,8 +194,8 @@ struct DoubleBuffer {
     DoubleBuffer& operator=(const DoubleBuffer&) = delete;
     ~DoubleBuffer();
 
-    HDC GetDC() const;
-    void Flush(HDC hdc);
+    [[nodiscard]] HDC GetDC() const;
+    void Flush(HDC hdc) const;
 };
 
 class DeferWinPosHelper {
@@ -209,7 +205,7 @@ class DeferWinPosHelper {
     DeferWinPosHelper();
     ~DeferWinPosHelper();
     void End();
-    void SetWindowPos(HWND hwnd, const Rect rc);
+    void SetWindowPos(HWND hwnd, Rect rc);
     void SetWindowPos(HWND hWnd, HWND hWndInsertAfter, int x, int y, int cx, int cy, uint uFlags);
     void MoveWindow(HWND hWnd, int x, int y, int cx, int cy, BOOL bRepaint = TRUE);
     void MoveWindow(HWND hWnd, Rect r);
@@ -227,20 +223,34 @@ struct BitmapPixels {
     HDC hdc;
 };
 
+struct RenderedBitmap {
+    HBITMAP hbmp{nullptr};
+    Size size = {};
+    HANDLE hMap = {};
+
+    RenderedBitmap(HBITMAP hbmp, Size size, HANDLE hMap = nullptr) : hbmp(hbmp), size(size), hMap(hMap) {
+    }
+    ~RenderedBitmap();
+    [[nodiscard]] RenderedBitmap* Clone() const;
+    [[nodiscard]] HBITMAP GetBitmap() const;
+    [[nodiscard]] Size Size() const;
+    bool StretchDIBits(HDC hdc, Rect target) const;
+};
+
 void InitAllCommonControls();
 Size GetBitmapSize(HBITMAP hbmp);
 BitmapPixels* GetBitmapPixels(HBITMAP hbmp);
 void FinalizeBitmapPixels(BitmapPixels* bitmapPixels);
 COLORREF GetPixel(BitmapPixels* bitmap, int x, int y);
 void UpdateBitmapColors(HBITMAP hbmp, COLORREF textColor, COLORREF bgColor);
-std::span<u8> SerializeBitmap(HBITMAP hbmp);
+ByteSlice SerializeBitmap(HBITMAP hbmp);
 HBITMAP CreateMemoryBitmap(Size size, HANDLE* hDataMapping = nullptr);
 bool BlitHBITMAP(HBITMAP hbmp, HDC hdc, Rect target);
 double GetProcessRunningTime();
 
 void RunNonElevated(const WCHAR* exePath);
 void VariantInitBstr(VARIANT& urlVar, const WCHAR* s);
-std::span<u8> LoadDataResource(int resId);
+ByteSlice LoadDataResource(int resId);
 bool DDEExecute(const WCHAR* server, const WCHAR* topic, const WCHAR* command);
 
 void RectInflateTB(RECT& r, int top, int bottom);
@@ -269,6 +279,7 @@ void HwndSetFont(HWND, HFONT);
 HFONT HwndGetFont(HWND);
 Size HwndMeasureText(HWND hwnd, const WCHAR* txt, HFONT font);
 void HwndPositionToTheRightOf(HWND hwnd, HWND hwndRelative);
+void HwndPositionInCenterOf(HWND hwnd, HWND hwndRelative);
 void HwndSendCommand(HWND hwnd, int cmdId);
 
 void TbSetButtonInfo(HWND hwnd, int buttonId, TBBUTTONINFO* info);

@@ -1,4 +1,42 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 /* PDFDocument interface */
+
+static void free_event_cb_data(fz_context *ctx, void *data)
+{
+	jobject jlistener = (jobject)data;
+	jboolean detach = JNI_FALSE;
+	JNIEnv *env;
+
+	env = jni_attach_thread(&detach);
+	if (env == NULL)
+		fz_warn(ctx, "cannot attach to JVM in free_event_cb_data");
+	else
+	{
+		(*env)->DeleteGlobalRef(env, jlistener);
+		jni_detach_thread(detach);
+	}
+}
 
 static void event_cb(fz_context *ctx, pdf_document *doc, pdf_doc_event *event, void *data)
 {
@@ -6,7 +44,7 @@ static void event_cb(fz_context *ctx, pdf_document *doc, pdf_doc_event *event, v
 	jboolean detach = JNI_FALSE;
 	JNIEnv *env;
 
-	env = jni_attach_thread(ctx, &detach);
+	env = jni_attach_thread(&detach);
 	if (env == NULL)
 		fz_throw(ctx, FZ_ERROR_GENERIC, "cannot attach to JVM in event_cb");
 
@@ -58,11 +96,7 @@ FUN(PDFDocument_finalize)(JNIEnv *env, jobject self)
 {
 	fz_context *ctx = get_context(env);
 	pdf_document *pdf = from_PDFDocument_safe(env, self);
-	void *data = NULL;
 	if (!ctx || !pdf) return;
-	data = pdf_get_doc_event_callback_data(ctx, pdf);
-	if (data)
-		(*env)->DeleteGlobalRef(env, data);
 	FUN(Document_finalize)(env, self); /* Call super.finalize() */
 }
 
@@ -771,6 +805,7 @@ FUN(PDFDocument_nativeSaveWithStream)(JNIEnv *env, jobject self, jobject jstream
 			out = fz_new_output(ctx, sizeof state->buffer, state, SeekableOutputStream_write, NULL, SeekableOutputStream_drop);
 			out->seek = SeekableOutputStream_seek;
 			out->tell = SeekableOutputStream_tell;
+			out->truncate = SeekableOutputStream_truncate;
 			out->as_stream = SeekableOutputStream_as_stream;
 
 			/* these are now owned by 'out' */
@@ -885,7 +920,6 @@ FUN(PDFDocument_setJsEventListener)(JNIEnv *env, jobject self, jobject jlistener
 {
 	fz_context *ctx = get_context(env);
 	pdf_document *pdf = from_PDFDocument_safe(env, self);
-	void *data = NULL;
 
 	if (!ctx || !pdf) return;
 	if (!jlistener) jni_throw_arg_void(env, "listener must not be null");
@@ -894,12 +928,7 @@ FUN(PDFDocument_setJsEventListener)(JNIEnv *env, jobject self, jobject jlistener
 	if (!jlistener) jni_throw_arg_void(env, "unable to get reference to listener");
 
 	fz_try(ctx)
-	{
-		data = pdf_get_doc_event_callback_data(ctx, pdf);
-		if (data)
-			(*env)->DeleteGlobalRef(env, data);
-		pdf_set_doc_event_callback(ctx, pdf, event_cb, jlistener);
-	}
+		pdf_set_doc_event_callback(ctx, pdf, event_cb, free_event_cb_data, jlistener);
 	fz_catch(ctx)
 		jni_rethrow_void(env, ctx);
 }
@@ -1168,4 +1197,14 @@ FUN(PDFDocument_endOperation)(JNIEnv *env, jobject self)
 		pdf_end_operation(ctx, pdf);
 	fz_catch(ctx)
 		jni_rethrow_void(env, ctx);
+}
+
+JNIEXPORT jboolean JNICALL
+FUN(PDFDocument_isRedacted)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_document *pdf = from_PDFDocument(env, self);
+
+	if (!ctx || !pdf) return JNI_FALSE;
+	return pdf->redacted;
 }

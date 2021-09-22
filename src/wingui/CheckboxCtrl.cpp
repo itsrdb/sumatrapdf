@@ -2,6 +2,7 @@
    License: Simplified BSD (see COPYING.BSD) */
 
 #include "utils/BaseUtil.h"
+#include "utils/ScopedWin.h"
 #include "utils/WinUtil.h"
 
 #include "wingui/WinGui.h"
@@ -29,8 +30,7 @@ CheckboxCtrl::CheckboxCtrl(HWND parent) : WindowBase(parent) {
     kind = kindCheckbox;
 }
 
-CheckboxCtrl::~CheckboxCtrl() {
-}
+CheckboxCtrl::~CheckboxCtrl() = default;
 
 static void Handle_WM_COMMAND(void* user, WndEvent* ev) {
     auto w = (CheckboxCtrl*)user;

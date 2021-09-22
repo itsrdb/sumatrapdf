@@ -3,11 +3,12 @@
 
 #include "utils/BaseUtil.h"
 #include "utils/FileUtil.h"
-#include "utils/Log.h"
 
 #include "DisplayMode.h"
 #include "SettingsStructs.h"
 #include "GlobalPrefs.h"
+
+#include "utils/Log.h"
 
 bool IsSingle(DisplayMode mode) {
     return DisplayMode::SinglePage == mode || DisplayMode::Continuous == mode;
@@ -96,7 +97,7 @@ float ZoomFromString(const char* s, float defVal) {
     return defVal;
 }
 
-void ZoomToString(char** dst, float zoom, DisplayState* stateForIssue2140) {
+void ZoomToString(char** dst, float zoom, FileState* stateForIssue2140) {
     float prevZoom = *dst ? ZoomFromString(*dst, INVALID_ZOOM) : INVALID_ZOOM;
     if (prevZoom == zoom) {
         return;
@@ -104,12 +105,11 @@ void ZoomToString(char** dst, float zoom, DisplayState* stateForIssue2140) {
     if (!IsValidZoom(zoom) && stateForIssue2140) {
         // TODO: does issue 2140 still occur?
         logf("Invalid ds->zoom: %g\n", zoom);
-        const WCHAR* ext = path::GetExtNoFree(stateForIssue2140->filePath);
+        const char* ext = path::GetExtTemp(stateForIssue2140->filePath);
         if (!str::IsEmpty(ext)) {
-            AutoFree extA(strconv::WstrToUtf8(ext));
-            logf("File type: %s\n", extA.Get());
+            logf("File type: %s\n", ext);
         }
-        logf("DisplayMode: %S\n", stateForIssue2140->displayMode);
+        logf("DisplayMode: %s\n", stateForIssue2140->displayMode);
         logf("PageNo: %d\n", stateForIssue2140->pageNo);
     }
     CrashIf(!IsValidZoom(zoom));

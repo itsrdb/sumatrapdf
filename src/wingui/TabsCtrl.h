@@ -4,17 +4,15 @@
 struct TabsCtrl;
 class TabsCtrlState;
 
-typedef std::function<void(TabsCtrl*, TabsCtrlState*, int)> TabSelectedCb;
-typedef std::function<void(TabsCtrl*, TabsCtrlState*, int)> TabClosedCb;
+using TabSelectedCb = std::function<void(TabsCtrl*, TabsCtrlState*, int)>;
+using TabClosedCb = std::function<void(TabsCtrl*, TabsCtrlState*, int)>;
 
 class TabItem {
   public:
-    TabItem(const std::string_view title, const std::string_view toolTip);
+    TabItem(std::string_view title, std::string_view toolTip);
 
     str::Str title;
     str::Str toolTip;
-
-    str::Str iconSvgPath;
 };
 
 class TabsCtrlState {
@@ -53,11 +51,14 @@ void SetFont(TabsCtrl*, HFONT);
 struct TabsCtrl2 : WindowBase {
     str::WStr lastTabText;
     bool createToolTipsHwnd{false};
+    str::WStr currTooltipText;
+
+    WStrVec tooltips;
 
     // for all WM_NOTIFY messages
     WmNotifyHandler onNotify{nullptr};
 
-    TabsCtrl2(HWND parent);
+    explicit TabsCtrl2(HWND parent);
     ~TabsCtrl2() override;
     bool Create() override;
 
@@ -74,6 +75,9 @@ struct TabsCtrl2 : WindowBase {
     void SetTabText(int idx, std::string_view sv);
     void SetTabText(int idx, const WCHAR* ws);
 
+    void SetTooltip(int idx, std::wstring_view sv);
+    const WCHAR* GetTooltip(int idx);
+
     WCHAR* GetTabText(int idx);
 
     int GetSelectedTabIndex();
@@ -84,4 +88,7 @@ struct TabsCtrl2 : WindowBase {
 
     void SetToolTipsHwnd(HWND);
     HWND GetToolTipsHwnd();
+
+    void MaybeUpdateTooltip();
+    void MaybeUpdateTooltipText(int idx);
 };

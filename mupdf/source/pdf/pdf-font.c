@@ -1,3 +1,25 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #include "mupdf/fitz.h"
 #include "mupdf/pdf.h"
 
@@ -402,6 +424,8 @@ pdf_load_substitute_cjk_font(fz_context *ctx, pdf_font_desc *fontdesc, const cha
 
 	fontdesc->font->flags.ft_substitute = 1;
 	fontdesc->font->flags.ft_stretch = 0;
+	fontdesc->font->flags.cjk = 1;
+	fontdesc->font->flags.cjk_lang = ros;
 }
 
 static void
@@ -1033,10 +1057,10 @@ load_cid_font(fz_context *ctx, pdf_document *doc, pdf_obj *dict, pdf_obj *encodi
 			cidinfo = pdf_dict_get(ctx, dict, PDF_NAME(CIDSystemInfo));
 			if (cidinfo)
 			{
-			reg = pdf_dict_get_string(ctx, cidinfo, PDF_NAME(Registry), NULL);
-			ord = pdf_dict_get_string(ctx, cidinfo, PDF_NAME(Ordering), NULL);
-			fz_snprintf(collection, sizeof collection, "%s-%s", reg, ord);
-		}
+				reg = pdf_dict_get_string(ctx, cidinfo, PDF_NAME(Registry), NULL);
+				ord = pdf_dict_get_string(ctx, cidinfo, PDF_NAME(Ordering), NULL);
+				fz_snprintf(collection, sizeof collection, "%s-%s", reg, ord);
+			}
 			else
 			{
 				fz_warn(ctx, "CIDFont is missing CIDSystemInfo dictionary; assuming Adobe-Identity");
@@ -1307,9 +1331,8 @@ pdf_load_font_descriptor(fz_context *ctx, pdf_document *doc, pdf_font_desc *font
 	}
 	else
 	{
-		/* sumatrapdf: https://github.com/sumatrapdfreader/sumatrapdf/commit/0c8b5a04ad9ee13584f88e3f055a83b82d65a6ca */
 		if (!iscidfont && fontname != pdf_clean_font_name(fontname))
-			pdf_load_builtin_font(ctx, fontdesc, fontname, 0);
+			pdf_load_builtin_font(ctx, fontdesc, fontname, 1);
 		else
 			pdf_load_system_font(ctx, fontdesc, fontname, collection);
 	}

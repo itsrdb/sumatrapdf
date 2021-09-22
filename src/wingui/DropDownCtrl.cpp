@@ -2,14 +2,16 @@
    License: Simplified BSD (see COPYING.BSD) */
 
 #include "utils/BaseUtil.h"
+#include "utils/ScopedWin.h"
 #include "utils/WinUtil.h"
 #include "utils/Dpi.h"
-#include "utils/LogDbg.h"
 
 #include "wingui/WinGui.h"
 #include "wingui/Layout.h"
 #include "wingui/Window.h"
 #include "wingui/DropDownCtrl.h"
+
+#include "utils/Log.h"
 
 // https://docs.microsoft.com/en-us/windows/win32/controls/combo-boxes
 
@@ -21,15 +23,13 @@ DropDownCtrl::DropDownCtrl(HWND parent) : WindowBase(parent) {
     kind = kindDropDown;
 }
 
-DropDownCtrl::~DropDownCtrl() {
-}
+DropDownCtrl::~DropDownCtrl() = default;
 
 static void SetDropDownItems(HWND hwnd, Vec<std::string_view>& items) {
     ComboBox_ResetContent(hwnd);
     for (std::string_view s : items) {
-        WCHAR* ws = strconv::Utf8ToWstr(s);
+        auto ws = ToWstrTemp(s);
         ComboBox_AddString(hwnd, ws);
-        free(ws);
     }
 }
 
@@ -87,7 +87,7 @@ void DropDownCtrl::SetCurrentSelection(int n) {
 }
 
 void DropDownCtrl::SetCueBanner(std::string_view sv) {
-    AutoFreeWstr ws = strconv::Utf8ToWstr(sv);
+    auto ws = ToWstrTemp(sv);
     ComboBox_SetCueBannerText(hwnd, ws.Get());
 }
 
@@ -116,11 +116,10 @@ void DropDownCtrl::SetItemsSeqStrings(const char* items) {
 Size DropDownCtrl::GetIdealSize() {
     Size s1 = TextSizeInHwnd(hwnd, L"Minimal", hfont);
     for (std::string_view s : items) {
-        WCHAR* ws = strconv::Utf8ToWstr(s);
+        auto ws = ToWstrTemp(s);
         Size s2 = TextSizeInHwnd(hwnd, ws, hfont);
         s1.dx = std::max(s1.dx, s2.dx);
         s1.dy = std::max(s1.dy, s2.dy);
-        free(ws);
     }
     // TODO: not sure if I want scrollbar. Only needed if a lot of items
     int dxPad = GetSystemMetrics(SM_CXVSCROLL);

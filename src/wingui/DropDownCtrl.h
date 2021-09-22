@@ -9,14 +9,14 @@ struct DropDownSelectionChangedEvent : WndEvent {
     std::string_view item;
 };
 
-typedef std::function<void(DropDownSelectionChangedEvent*)> DropDownSelectionChangedHandler;
+using DropDownSelectionChangedHandler = std::function<void(DropDownSelectionChangedEvent*)>;
 
 struct DropDownCtrl : WindowBase {
     Vec<std::string_view> items;
     DropDownSelectionChangedHandler onSelectionChanged = nullptr;
 
-    DropDownCtrl(HWND parent);
-    ~DropDownCtrl();
+    explicit DropDownCtrl(HWND parent);
+    ~DropDownCtrl() override;
     bool Create() override;
 
     Size GetIdealSize() override;

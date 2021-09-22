@@ -9,7 +9,7 @@ struct TrackbarPosChangingEvent : WndEvent {
     NMTRBTHUMBPOSCHANGING* info = nullptr;
 };
 
-typedef std::function<void(TrackbarPosChangingEvent*)> TrackbarPoschangingHandler;
+using TrackbarPoschangingHandler = std::function<void(TrackbarPosChangingEvent*)>;
 
 struct TrackbarCtrl : WindowBase {
     // set before Create()
@@ -22,8 +22,8 @@ struct TrackbarCtrl : WindowBase {
     // for WM_NOTIFY with TRBN_THUMBPOSCHANGING
     TrackbarPoschangingHandler onPosChanging = nullptr;
 
-    TrackbarCtrl(HWND parent);
-    ~TrackbarCtrl();
+    explicit TrackbarCtrl(HWND parent);
+    ~TrackbarCtrl() override;
 
     bool Create() override;
 

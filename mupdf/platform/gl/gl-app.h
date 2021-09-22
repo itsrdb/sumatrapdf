@@ -1,3 +1,25 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #ifndef MUPDF_GL_APP_H
 #define MUPDF_GL_APP_H
 
@@ -102,6 +124,8 @@ struct ui
 	GLuint overlay_list;
 
 	void (*dialog)(void);
+
+	pdf_annot *selected_annot;
 };
 
 extern struct ui ui;
@@ -152,6 +176,7 @@ struct input
 	char text[16*1024];
 	char *end, *p, *q;
 	int scroll;
+	pdf_annot *widget;
 };
 
 struct list
@@ -213,12 +238,14 @@ int ui_popup_item_aux(const char *title, int flags);
 void ui_popup_end(void);
 
 void ui_init_open_file(const char *dir, int (*filter)(const char *fn));
-int ui_open_file(char filename[], const char *label);
+int ui_open_file(char *filename, const char *label);
 void ui_init_save_file(const char *path, int (*filter)(const char *fn));
-int ui_save_file(char filename[], void (*extra_panel)(void), const char *label);
+int ui_save_file(char *filename, void (*extra_panel)(void), const char *label);
 
 void ui_show_warning_dialog(const char *fmt, ...);
 void ui_show_error_dialog(const char *fmt, ...);
+
+void ui_select_annot(pdf_annot *annot);
 
 /* Theming */
 
@@ -250,7 +277,6 @@ extern fz_context *ctx;
 extern pdf_document *pdf;
 extern pdf_page *page;
 extern fz_stext_page *page_text;
-extern pdf_annot *selected_annot;
 extern fz_matrix draw_page_ctm, view_page_ctm, view_page_inv_ctm;
 extern fz_rect page_bounds, draw_page_bounds, view_page_bounds;
 extern fz_irect view_page_area;

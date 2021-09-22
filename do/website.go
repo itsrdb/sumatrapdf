@@ -8,44 +8,29 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/kjk/u"
 )
 
-func websiteDeployProd() {
+func websiteRunLocally(dir string) {
 	// using https://github.com/netlify/cli
-	cmd := exec.Command("netlify", "deploy", "--prod", "--open", "--dir", "website", "--site", "2963982f-7d39-439c-a7eb-0eb118efbd02")
-	u.RunCmdLoggedMust(cmd)
-}
-
-func websiteDeployDev() {
-	// using https://github.com/netlify/cli
-	cmd := exec.Command("netlify", "deploy", "--open", "--dir", "website", "--site", "2963982f-7d39-439c-a7eb-0eb118efbd02")
-	u.RunCmdLoggedMust(cmd)
-}
-
-func websiteRunLocally() {
-	// using https://github.com/netlify/cli
-	cmd := exec.Command("netlify", "dev", "--dir", "website")
-	u.RunCmdLoggedMust(cmd)
+	cmd := exec.Command("netlify", "dev", "--dir", dir)
+	runCmdLoggedMust(cmd)
 }
 
 func fileDownload(uri string, dstPath string) error {
-	u.CreateDirForFileMust(dstPath)
+	must(createDirForFile(dstPath))
 	d := httpDlMust(uri)
 	return ioutil.WriteFile(dstPath, d, 0755)
 }
 
 // needed during cloudflare build: download executables to be served from /dl2
 func websiteBuildCloudflare() {
-	out := runExeMust("git", "branch")
-	currBranch := getCurrentBranch(out)
+	currBranch := getCurrentBranchMust()
 	fmt.Printf("websiteBuildCloudflare: branch '%s'\n", currBranch)
 	if currBranch != "website-cf" {
 		fmt.Printf("Skipping downloading executables because not 'website-cf' branch\n")
 		return
 	}
-	ver := "3.2"
+	ver := "3.3.3"
 	files := []string{
 		"SumatraPDF-%VER%-64-install.exe",
 		"SumatraPDF-%VER%-64.zip",
@@ -58,7 +43,7 @@ func websiteBuildCloudflare() {
 	for _, file := range files {
 		fileName := strings.ReplaceAll(file, "%VER%", ver)
 		dstPath := filepath.Join("website", "dl2", fileName)
-		if u.PathExists(dstPath) {
+		if pathExists(dstPath) {
 			fmt.Printf("Skipping downloading because %s already exists\n", dstPath)
 			continue
 		}
@@ -72,21 +57,21 @@ func websiteBuildCloudflare() {
 }
 
 func websiteDeployCloudlare() {
-	u.EnsureGitClean(".")
+	panicIf(!isGitClean())
 	{
 		cmd := exec.Command("git", "checkout", "website-cf")
-		u.RunCmdLoggedMust(cmd)
+		runCmdLoggedMust(cmd)
 	}
 	{
 		cmd := exec.Command("git", "rebase", "master")
-		u.RunCmdLoggedMust(cmd)
+		runCmdLoggedMust(cmd)
 	}
 	{
 		cmd := exec.Command("git", "push", "--force")
-		u.RunCmdLoggedMust(cmd)
+		runCmdLoggedMust(cmd)
 	}
 	{
 		cmd := exec.Command("git", "checkout", "master")
-		u.RunCmdLoggedMust(cmd)
+		runCmdLoggedMust(cmd)
 	}
 }

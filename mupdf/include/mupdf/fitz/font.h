@@ -1,3 +1,25 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #ifndef MUPDF_FITZ_FONT_H
 #define MUPDF_FITZ_FONT_H
 
@@ -11,21 +33,21 @@ struct fz_device;
 
 /* Various font encoding tables and lookup functions */
 
-extern const char *fz_glyph_name_from_adobe_standard[256];
-extern const char *fz_glyph_name_from_iso8859_7[256];
-extern const char *fz_glyph_name_from_koi8u[256];
-extern const char *fz_glyph_name_from_mac_expert[256];
-extern const char *fz_glyph_name_from_mac_roman[256];
-extern const char *fz_glyph_name_from_win_ansi[256];
-extern const char *fz_glyph_name_from_windows_1252[256];
+FZ_DATA extern const char *fz_glyph_name_from_adobe_standard[256];
+FZ_DATA extern const char *fz_glyph_name_from_iso8859_7[256];
+FZ_DATA extern const char *fz_glyph_name_from_koi8u[256];
+FZ_DATA extern const char *fz_glyph_name_from_mac_expert[256];
+FZ_DATA extern const char *fz_glyph_name_from_mac_roman[256];
+FZ_DATA extern const char *fz_glyph_name_from_win_ansi[256];
+FZ_DATA extern const char *fz_glyph_name_from_windows_1252[256];
 
-extern const unsigned short fz_unicode_from_iso8859_1[256];
-extern const unsigned short fz_unicode_from_iso8859_7[256];
-extern const unsigned short fz_unicode_from_koi8u[256];
-extern const unsigned short fz_unicode_from_pdf_doc_encoding[256];
-extern const unsigned short fz_unicode_from_windows_1250[256];
-extern const unsigned short fz_unicode_from_windows_1251[256];
-extern const unsigned short fz_unicode_from_windows_1252[256];
+FZ_DATA extern const unsigned short fz_unicode_from_iso8859_1[256];
+FZ_DATA extern const unsigned short fz_unicode_from_iso8859_7[256];
+FZ_DATA extern const unsigned short fz_unicode_from_koi8u[256];
+FZ_DATA extern const unsigned short fz_unicode_from_pdf_doc_encoding[256];
+FZ_DATA extern const unsigned short fz_unicode_from_windows_1250[256];
+FZ_DATA extern const unsigned short fz_unicode_from_windows_1251[256];
+FZ_DATA extern const unsigned short fz_unicode_from_windows_1252[256];
 
 int fz_iso8859_1_from_unicode(int u);
 int fz_iso8859_7_from_unicode(int u);
@@ -93,6 +115,9 @@ typedef struct
 	unsigned int fake_italic : 1; /* synthesize italic */
 	unsigned int has_opentype : 1; /* has opentype shaping tables */
 	unsigned int invalid_bbox : 1;
+
+	unsigned int cjk : 1;
+	unsigned int cjk_lang : 2; /* CNS, GB, JAPAN, or KOREA */
 } fz_font_flags_t;
 
 /**

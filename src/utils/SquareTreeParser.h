@@ -3,17 +3,16 @@
 
 class SquareTreeNode {
   public:
-    SquareTreeNode() {
-    }
+    SquareTreeNode() = default;
     ~SquareTreeNode();
 
     struct DataItem {
-        const char* key = nullptr;
+        const char* key{nullptr};
         union {
             const char* str;
             SquareTreeNode* child;
-        } value;
-        bool isChild = false;
+        } value{nullptr};
+        bool isChild{false};
 
         DataItem() = default;
         DataItem(const char* k, const char* string) {

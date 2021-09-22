@@ -7,12 +7,11 @@
 
 #include "utils/BaseUtil.h"
 #include "utils/ScopedWin.h"
-#include "utils/CmdLineParser.h"
+#include "utils/CmdLineArgsIter.h"
 #include "utils/CryptoUtil.h"
 #include "utils/DirIter.h"
 #include "utils/FileUtil.h"
 #include "utils/GuessFileType.h"
-#include "utils/PalmDbReader.h"
 #include "utils/GdiPlusUtil.h"
 #include "utils/HtmlParserLookup.h"
 #include "utils/HtmlPrettyPrint.h"
@@ -22,10 +21,11 @@
 #include "utils/ZipUtil.h"
 
 #include "wingui/TreeModel.h"
-
-#include "Annotation.h"
+#include "DisplayMode.h"
+#include "Controller.h"
 #include "EngineBase.h"
 #include "EbookBase.h"
+#include "PalmDbReader.h"
 #include "MobiDoc.h"
 #include "HtmlFormatter.h"
 #include "EbookFormatter.h"
@@ -55,91 +55,38 @@ static int Usage() {
     return 1;
 }
 
-/* This benchmarks md5 checksum using fitz code (CalcMD5Digest()) and
-Windows' CryptoAPI (CalcMD5DigestWin(). The results are usually in CryptoApi
-favor (the first run is on cold cache, the second on warm cache):
-10MB
-CalcMD5Digest   : 76.913000 ms
-CalcMD5DigestWin: 92.389000 ms
-diff: -15.476000
-5MB
-CalcMD5Digest   : 17.556000 ms
-CalcMD5DigestWin: 13.125000 ms
-diff: 4.431000
-1MB
-CalcMD5Digest   : 3.329000 ms
-CalcMD5DigestWin: 2.834000 ms
-diff: 0.495000
-10MB
-CalcMD5Digest   : 33.682000 ms
-CalcMD5DigestWin: 25.918000 ms
-diff: 7.764000
-5MB
-CalcMD5Digest   : 16.174000 ms
-CalcMD5DigestWin: 12.853000 ms
-diff: 3.321000
-1MB
-CalcMD5Digest   : 3.534000 ms
-CalcMD5DigestWin: 2.605000 ms
-diff: 0.929000
-*/
-
-static void BenchMD5Size(void* data, size_t dataSize, const char* desc) {
-    u8 d1[16], d2[16];
-    auto t1 = TimeGet();
-    CalcMD5Digest((u8*)data, dataSize, d1);
-    double dur1 = TimeSinceInMs(t1);
-
-    auto t2 = TimeGet();
-    CalcMD5DigestWin(data, dataSize, d2);
-    bool same = memeq(d1, d2, 16);
-    CrashAlwaysIf(!same);
-    double dur2 = TimeSinceInMs(t2);
-    double diff = dur1 - dur2;
-    printf("%s\nCalcMD5Digest   : %f ms\nCalcMD5DigestWin: %f ms\ndiff: %f\n", desc, dur1, dur2, diff);
-}
-
-static void BenchMD5() {
-    size_t dataSize = 10 * 1024 * 1024;
-    void* data = malloc(dataSize);
-    BenchMD5Size(data, dataSize, "10MB");
-    BenchMD5Size(data, dataSize / 2, "5MB");
-    BenchMD5Size(data, dataSize / 10, "1MB");
-    // repeat to see if timings change drastically
-    BenchMD5Size(data, dataSize, "10MB");
-    BenchMD5Size(data, dataSize / 2, "5MB");
-    BenchMD5Size(data, dataSize / 10, "1MB");
-    free(data);
-}
-
 static void MobiSaveHtml(const WCHAR* filePathBase, MobiDoc* mb) {
     CrashAlwaysIf(!gSaveHtml);
 
     AutoFreeWstr outFile(str::Join(filePathBase, L"_pp.html"));
 
-    std::span<u8> htmlData = mb->GetHtmlData();
+    ByteSlice htmlData = mb->GetHtmlData();
 
-    std::span<u8> ppHtml = PrettyPrintHtml(htmlData);
+    ByteSlice ppHtml = PrettyPrintHtml(htmlData);
     file::WriteFile(outFile.Get(), ppHtml);
 
     outFile.Set(str::Join(filePathBase, L".html"));
     file::WriteFile(outFile.Get(), htmlData);
 }
 
-static void MobiSaveImage(const WCHAR* filePathBase, size_t imgNo, ImageData* img) {
+static void MobiSaveImage(const WCHAR* filePathBase, size_t imgNo, ByteSlice img) {
     // it's valid to not have image data at a given index
-    if (!img || !img->data) {
+    if (img.empty()) {
         return;
     }
-    const WCHAR* ext = GfxFileExtFromData(img->AsSpan());
+    const WCHAR* ext = GfxFileExtFromData(img);
     CrashAlwaysIf(!ext);
     AutoFreeWstr fileName(str::Format(L"%s_img_%d%s", filePathBase, (int)imgNo, ext));
-    file::WriteFile(fileName.Get(), img->AsSpan());
+    file::WriteFile(fileName.Get(), img);
 }
 
 static void MobiSaveImages(const WCHAR* filePathBase, MobiDoc* mb) {
     for (size_t i = 0; i < mb->imagesCount; i++) {
-        MobiSaveImage(filePathBase, i, mb->GetImage(i + 1));
+        ByteSlice* img = mb->GetImage(i + 1);
+        if (!img) {
+            continue;
+        }
+        MobiSaveImage(filePathBase, i, *img);
     }
 }
 
@@ -182,7 +129,7 @@ static void MobiTestFile(const WCHAR* filePath) {
         // remove the file extension
         const WCHAR* dir = MOBI_SAVE_DIR;
         dir::CreateAll(dir);
-        AutoFreeWstr fileName(str::Dup(path::GetBaseNameNoFree(filePath)));
+        AutoFreeWstr fileName(str::Dup(path::GetBaseNameTemp(filePath)));
         AutoFreeWstr filePathBase(path::Join(dir, fileName));
         WCHAR* ext = (WCHAR*)str::FindCharLast(filePathBase.Get(), '.');
         *ext = 0;
@@ -245,8 +192,8 @@ int TesterMain() {
 
     WCHAR* cmdLine = GetCommandLine();
 
-    WStrVec argv;
-    ParseCmdLine(cmdLine, argv);
+    CmdLineArgsIter argv(cmdLine);
+    int nArgs = argv.nArgs;
 
     // InitAllCommonControls();
     // ScopedGdiPlus gdi;
@@ -255,30 +202,28 @@ int TesterMain() {
     WCHAR* dirOrFile = nullptr;
 
     bool mobiTest = false;
-    size_t i = 2; // skip program name and "/tester"
-    while (i < argv.size()) {
-        if (str::Eq(argv[i], L"-mobi")) {
+    int i = 2; // skip program name and "/tester"
+    while (i < nArgs) {
+        WCHAR* arg = argv.at(i);
+        if (str::Eq(arg, L"-mobi")) {
             ++i;
-            if (i == argv.size()) {
+            if (i == nArgs) {
                 return Usage();
             }
             mobiTest = true;
-            dirOrFile = argv[i];
+            dirOrFile = argv.at(i);
             ++i;
-        } else if (str::Eq(argv[i], L"-layout")) {
+        } else if (str::Eq(arg, L"-layout")) {
             gLayout = true;
             ++i;
-        } else if (str::Eq(argv[i], L"-save-html")) {
+        } else if (str::Eq(arg, L"-save-html")) {
             gSaveHtml = true;
             ++i;
-        } else if (str::Eq(argv[i], L"-save-images")) {
+        } else if (str::Eq(arg, L"-save-images")) {
             gSaveImages = true;
             ++i;
-        } else if (str::Eq(argv[i], L"-zip-create")) {
+        } else if (str::Eq(arg, L"-zip-create")) {
             ZipCreateTest();
-            ++i;
-        } else if (str::Eq(argv[i], L"-bench-md5")) {
-            BenchMD5();
             ++i;
         } else {
             // unknown argument

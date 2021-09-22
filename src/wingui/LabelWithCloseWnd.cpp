@@ -4,6 +4,7 @@
 #include "utils/BaseUtil.h"
 #include "utils/Dpi.h"
 #include "utils/GdiPlusUtil.h"
+#include "utils/ScopedWin.h"
 #include "utils/WinUtil.h"
 
 #include "wingui/WinGui.h"
@@ -85,9 +86,8 @@ static void PaintHDC(LabelWithCloseWnd* w, HDC hdc, const PAINTSTRUCT& ps) {
     SetTextColor(hdc, w->txtCol);
     SetBkColor(hdc, w->bgCol);
 
-    WCHAR* s = win::GetText(w->hwnd);
+    WCHAR* s = win::GetTextTemp(w->hwnd);
     ExtTextOut(hdc, x, y, opts, nullptr, s, (uint)str::Len(s), nullptr);
-    free(s);
 
     // Text might be too long and invade close button area. We just re-paint
     // the background, which is not the pretties but works.
@@ -209,7 +209,7 @@ static void RegisterLabelWithCloseWnd() {
     CrashIf(!atom);
 }
 
-void LabelWithCloseWnd::SetLabel(const WCHAR* label) {
+void LabelWithCloseWnd::SetLabel(const WCHAR* label) const {
     win::SetText(this->hwnd, label);
     ScheduleRepaint(this->hwnd);
 }
@@ -242,10 +242,9 @@ bool LabelWithCloseWnd::Create(HWND parent, int cmd) {
     return this->hwnd != nullptr;
 }
 
-Size LabelWithCloseWnd::GetIdealSize() {
-    WCHAR* s = win::GetText(this->hwnd);
+Size LabelWithCloseWnd::GetIdealSize() const {
+    WCHAR* s = win::GetTextTemp(this->hwnd);
     Size size = TextSizeInHwnd(this->hwnd, s);
-    free(s);
     int btnDx = DpiScale(this->hwnd, CLOSE_BTN_DX);
     int btnDy = DpiScale(this->hwnd, CLOSE_BTN_DY);
     size.dx += btnDx;
@@ -280,8 +279,7 @@ LabelWithCloseCtrl::LabelWithCloseCtrl(HWND p) {
     textColor = GetSysColor(COLOR_BTNTEXT);
 }
 
-LabelWithCloseCtrl::~LabelWithCloseCtrl() {
-}
+LabelWithCloseCtrl::~LabelWithCloseCtrl() = default;
 
 void LabelWithCloseCtrl::SetPaddingXY(int x, int y) {
     padX = x;
@@ -290,7 +288,7 @@ void LabelWithCloseCtrl::SetPaddingXY(int x, int y) {
 }
 
 Size LabelWithCloseCtrl::GetIdealSize() {
-    AutoFreeWstr s = strconv::Utf8ToWstr(text.AsView());
+    auto s = ToWstrTemp(text.AsView());
     Size size = TextSizeInHwnd(hwnd, s);
     int btnDx = DpiScale(hwnd, CLOSE_BTN_DX);
     int btnDy = DpiScale(hwnd, CLOSE_BTN_DY);

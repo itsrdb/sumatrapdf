@@ -8,14 +8,15 @@
 #include "utils/FileUtil.h"
 #include "utils/GuessFileType.h"
 #include "utils/WinUtil.h"
-#include "utils/Log.h"
-
-#include "wingui/TreeModel.h"
 
 #include "Annotation.h"
+#include "wingui/TreeModel.h"
+#include "DisplayMode.h"
+#include "Controller.h"
 #include "EngineBase.h"
-#include "EnginePdf.h"
-#include "EnginePs.h"
+#include "EngineAll.h"
+
+#include "utils/Log.h"
 
 Kind kindEnginePostScript = "enginePostScript";
 
@@ -109,6 +110,7 @@ class ScopedFile {
     }
 };
 
+#if 0
 static Rect ExtractDSCPageSize(const WCHAR* path) {
     char header[1024] = {0};
     file::ReadN(path, header, sizeof(header) - 1);
@@ -131,34 +133,36 @@ static Rect ExtractDSCPageSize(const WCHAR* path) {
 
     return {};
 }
+#endif
 
 static EngineBase* ps2pdf(const WCHAR* path) {
     // TODO: read from gswin32c's stdout instead of using a TEMP file
     AutoFreeWstr shortPath(path::ShortPath(path));
-    AutoFreeWstr tmpFile(path::GetTempPath(L"PsE"));
+    AutoFreeWstr tmpFile(path::GetTempFilePath(L"PsE"));
     ScopedFile tmpFileScope(tmpFile);
     AutoFreeWstr gswin32c(GetGhostscriptPath());
     if (!shortPath || !tmpFile || !gswin32c) {
         return nullptr;
     }
 
-    // try to help Ghostscript determine the intended page size
-    AutoFreeWstr psSetup;
-    Rect page = ExtractDSCPageSize(path);
-    if (!page.IsEmpty()) {
-        psSetup = str::Format(L" << /PageSize [%i %i] >> setpagedevice", page.dx, page.dy);
-    }
-
-    const WCHAR* psSetupStr = psSetup ? psSetup.Get() : L"";
+    // TODO: before gs 9.54 we would call:
+    // Rect page = ExtractDSCPageSize(path);
+    // and use that to add "-c ".setpdfwrite << /PageSize [$dx $dy] >> setpagedevice"
+    // to cmd-line. In 9.54 .setpdfwrite was removed and using it causes
+    // conversion to fail
+    // So we removed use of -c .setpdfwrite completely. Not sure if there's an alternative
+    // way to do it
+    // https://github.com/GravityMedia/Ghostscript/issues/6
+    // https://github.com/sumatrapdfreader/sumatrapdf/issues/1923
     AutoFreeWstr cmdLine = str::Format(
-        L"\"%s\" -q -dSAFER -dNOPAUSE -dBATCH -dEPSCrop -sOutputFile=\"%s\" -sDEVICE=pdfwrite -c "
-        L"\".setpdfwrite%s\" -f \"%s\"",
-        gswin32c.Get(), tmpFile.Get(), psSetupStr, shortPath.Get());
+        L"\"%s\" -q -dSAFER -dNOPAUSE -dBATCH -dEPSCrop -sOutputFile=\"%s\" -sDEVICE=pdfwrite "
+        L"-f \"%s\"",
+        gswin32c.Get(), tmpFile.Get(), shortPath.Get());
 
     {
-        const char* fileName = path::GetBaseNameNoFree(__FILE__);
-        AutoFree gswin = strconv::WstrToUtf8(gswin32c.Get());
-        AutoFree tmpFileName = strconv::WstrToUtf8(path::GetBaseNameNoFree(tmpFile));
+        const char* fileName = path::GetBaseNameTemp(__FILE__);
+        auto gswin = ToUtf8Temp(gswin32c.Get());
+        auto tmpFileName = ToUtf8Temp(path::GetBaseNameTemp(tmpFile));
         logf("- %s:%d: using '%s' for creating '%%TEMP%%\\%s'\n", fileName, __LINE__, gswin.Get(), tmpFileName.Get());
     }
 
@@ -194,11 +198,11 @@ static EngineBase* ps2pdf(const WCHAR* path) {
         return nullptr;
     }
 
-    return CreateEnginePdfFromStream(stream);
+    return CreateEngineMupdfFromStream(stream, ToUtf8Temp(tmpFile).Get());
 }
 
 static EngineBase* psgz2pdf(const WCHAR* fileName) {
-    AutoFreeWstr tmpFile(path::GetTempPath(L"PsE"));
+    AutoFreeWstr tmpFile(path::GetTempFilePath(L"PsE"));
     ScopedFile tmpFileScope(tmpFile);
     if (!tmpFile) {
         return nullptr;
@@ -235,10 +239,10 @@ class EnginePs : public EngineBase {
   public:
     EnginePs() {
         kind = kindEnginePostScript;
-        defaultFileExt = L".ps";
+        defaultExt = L".ps";
     }
 
-    virtual ~EnginePs() {
+    ~EnginePs() override {
         delete pdfEngine;
     }
 
@@ -271,21 +275,21 @@ class EnginePs : public EngineBase {
         return pdfEngine->Transform(rect, pageNo, zoom, rotation, inverse);
     }
 
-    std::span<u8> GetFileData() override {
+    ByteSlice GetFileData() override {
         const WCHAR* fileName = FileName();
         return file::ReadFile(fileName);
     }
 
-    bool SaveFileAs(const char* copyFileName, [[maybe_unused]] bool includeUserAnnots = false) override {
+    bool SaveFileAs(const char* copyFileName) override {
         if (!FileName()) {
             return false;
         }
-        AutoFreeWstr dstPath = strconv::Utf8ToWstr(copyFileName);
-        return CopyFileW(FileName(), dstPath, FALSE);
+        auto dstPath = ToWstrTemp(copyFileName);
+        return file::Copy(dstPath, FileName(), false);
     }
 
-    bool SaveFileAsPDF(const char* pdfFileName, bool includeUserAnnots = false) override {
-        return pdfEngine->SaveFileAs(pdfFileName, includeUserAnnots);
+    bool SaveFileAsPDF(const char* pdfFileName) override {
+        return pdfEngine->SaveFileAs(pdfFileName);
     }
 
     PageText ExtractPageText(int pageNo) override {
@@ -310,15 +314,20 @@ class EnginePs : public EngineBase {
         return pdfEngine->BenchLoadPage(pageNo);
     }
 
-    Vec<IPageElement*>* GetElements(int pageNo) override {
+    Vec<IPageElement*> GetElements(int pageNo) override {
         return pdfEngine->GetElements(pageNo);
     }
 
+    // don't delete the result
     IPageElement* GetElementAtPos(int pageNo, PointF pt) override {
         return pdfEngine->GetElementAtPos(pageNo, pt);
     }
 
-    PageDestination* GetNamedDest(const WCHAR* name) override {
+    bool HandleLink(IPageDestination* dest, ILinkHandler* lh) override {
+        return pdfEngine->HandleLink(dest, lh);
+    }
+
+    IPageDestination* GetNamedDest(const WCHAR* name) override {
         return pdfEngine->GetNamedDest(name);
     }
 
@@ -345,7 +354,7 @@ class EnginePs : public EngineBase {
         }
 
         if (str::EndsWithI(FileName(), L".eps")) {
-            defaultFileExt = L".eps";
+            defaultExt = L".eps";
         }
 
         if (!pdfEngine) {
@@ -372,18 +381,18 @@ EngineBase* EnginePs::CreateFromFile(const WCHAR* fileName) {
     return engine;
 }
 
-bool IsPsEngineAvailable() {
+bool IsEnginePsAvailable() {
     AutoFreeWstr gswin32c(GetGhostscriptPath());
     return gswin32c.Get() != nullptr;
 }
 
-bool IsPsEngineSupportedFileType(Kind kind) {
-    if (!IsPsEngineAvailable()) {
+bool IsEnginePsSupportedFileType(Kind kind) {
+    if (!IsEnginePsAvailable()) {
         return false;
     }
     return kind == kindFilePS;
 }
 
-EngineBase* CreatePsEngineFromFile(const WCHAR* fileName) {
+EngineBase* CreateEnginePsFromFile(const WCHAR* fileName) {
     return EnginePs::CreateFromFile(fileName);
 }

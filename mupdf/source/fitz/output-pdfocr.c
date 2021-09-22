@@ -1,13 +1,29 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #include "mupdf/fitz.h"
 
 #include <string.h>
 #include <limits.h>
-
-#if !defined(HAVE_LEPTONICA) || !defined(HAVE_TESSERACT)
-#ifndef OCR_DISABLED
-#define OCR_DISABLED
-#endif
-#endif
 
 #ifdef OCR_DISABLED
 
@@ -182,6 +198,7 @@ fz_write_pixmap_as_pdfocr(fz_context *ctx, fz_output *out, const fz_pixmap *pixm
 	{
 		fz_write_header(ctx, writer, pixmap->w, pixmap->h, pixmap->n, pixmap->alpha, pixmap->xres, pixmap->yres, 0, pixmap->colorspace, pixmap->seps);
 		fz_write_band(ctx, writer, pixmap->stride, pixmap->h, pixmap->samples);
+		fz_close_band_writer(ctx, writer);
 	}
 	fz_always(ctx)
 		fz_drop_band_writer(ctx, writer);
@@ -209,7 +226,7 @@ typedef struct pdfocr_band_writer_s
 	void *tessapi;
 	fz_pixmap *ocrbitmap;
 
-	int (*progress)(fz_context *, void *, int);
+	fz_pdfocr_progress_fn *progress;
 	void *progress_arg;
 } pdfocr_band_writer;
 
@@ -733,7 +750,7 @@ pdfocr_progress(fz_context *ctx, void *arg, int prog)
 	if (writer->progress == NULL)
 		return 0;
 
-	return writer->progress(ctx, writer->progress_arg, prog);
+	return writer->progress(ctx, writer->progress_arg, writer->pages - 1, prog);
 }
 
 static void
@@ -808,13 +825,13 @@ pdfocr_write_trailer(fz_context *ctx, fz_band_writer *writer_)
 }
 
 static void
-pdfocr_drop_band_writer(fz_context *ctx, fz_band_writer *writer_)
+pdfocr_close_band_writer(fz_context *ctx, fz_band_writer *writer_)
 {
 	pdfocr_band_writer *writer = (pdfocr_band_writer *)writer_;
 	fz_output *out = writer->super.out;
 	int i;
 
-	/* We actually do the trailer writing in the drop */
+	/* We actually do the trailer writing in the close */
 	if (writer->xref_max > 2)
 	{
 		int64_t t_pos;
@@ -842,13 +859,17 @@ pdfocr_drop_band_writer(fz_context *ctx, fz_band_writer *writer_)
 			fz_write_printf(ctx, out, "%010ld 00000 n \n", writer->xref[i]);
 		fz_write_printf(ctx, out, "trailer\n<</Size %d/Root 1 0 R>>\nstartxref\n%ld\n%%%%EOF\n", writer->obj_num, t_pos);
 	}
+}
 
+static void
+pdfocr_drop_band_writer(fz_context *ctx, fz_band_writer *writer_)
+{
+	pdfocr_band_writer *writer = (pdfocr_band_writer *)writer_;
 	fz_free(ctx, writer->stripbuf);
 	fz_free(ctx, writer->compbuf);
 	fz_free(ctx, writer->page_obj);
 	fz_free(ctx, writer->xref);
 	fz_drop_pixmap(ctx, writer->ocrbitmap);
-
 	ocr_fin(ctx, writer->tessapi);
 }
 #endif
@@ -863,6 +884,7 @@ fz_band_writer *fz_new_pdfocr_band_writer(fz_context *ctx, fz_output *out, const
 	writer->super.header = pdfocr_write_header;
 	writer->super.band = pdfocr_write_band;
 	writer->super.trailer = pdfocr_write_trailer;
+	writer->super.close = pdfocr_close_band_writer;
 	writer->super.drop = pdfocr_drop_band_writer;
 
 	if (options)
@@ -897,7 +919,7 @@ fz_band_writer *fz_new_pdfocr_band_writer(fz_context *ctx, fz_output *out, const
 }
 
 void
-fz_pdfocr_band_writer_set_progress(fz_context *ctx, fz_band_writer *writer_, int (*progress)(fz_context *, void *, int), void *progress_arg)
+fz_pdfocr_band_writer_set_progress(fz_context *ctx, fz_band_writer *writer_, fz_pdfocr_progress_fn *progress, void *progress_arg)
 {
 #ifdef OCR_DISABLED
 	fz_throw(ctx, FZ_ERROR_GENERIC, "No OCR support in this build");
@@ -980,9 +1002,7 @@ pdfocr_close_writer(fz_context *ctx, fz_document_writer *wri_)
 {
 	fz_pdfocr_writer *wri = (fz_pdfocr_writer*)wri_;
 
-	fz_drop_band_writer(ctx, wri->bander);
-	wri->bander = NULL;
-
+	fz_close_band_writer(ctx, wri->bander);
 	fz_close_output(ctx, wri->out);
 }
 
@@ -1003,10 +1023,13 @@ fz_new_pdfocr_writer_with_output(fz_context *ctx, fz_output *out, const char *op
 #ifdef OCR_DISABLED
 	fz_throw(ctx, FZ_ERROR_GENERIC, "No OCR support in this build");
 #else
-	fz_pdfocr_writer *wri = fz_new_derived_document_writer(ctx, fz_pdfocr_writer, pdfocr_begin_page, pdfocr_end_page, pdfocr_close_writer, pdfocr_drop_writer);
+	fz_pdfocr_writer *wri = NULL;
+
+	fz_var(wri);
 
 	fz_try(ctx)
 	{
+		wri = fz_new_derived_document_writer(ctx, fz_pdfocr_writer, pdfocr_begin_page, pdfocr_end_page, pdfocr_close_writer, pdfocr_drop_writer);
 		fz_parse_draw_options(ctx, &wri->draw, options);
 		fz_parse_pdfocr_options(ctx, &wri->pdfocr, options);
 		wri->out = out;
@@ -1014,6 +1037,7 @@ fz_new_pdfocr_writer_with_output(fz_context *ctx, fz_output *out, const char *op
 	}
 	fz_catch(ctx)
 	{
+		fz_drop_output(ctx, out);
 		fz_free(ctx, wri);
 		fz_rethrow(ctx);
 	}
@@ -1029,20 +1053,12 @@ fz_new_pdfocr_writer(fz_context *ctx, const char *path, const char *options)
 	fz_throw(ctx, FZ_ERROR_GENERIC, "No OCR support in this build");
 #else
 	fz_output *out = fz_new_output_with_path(ctx, path ? path : "out.pdfocr", 0);
-	fz_document_writer *wri = NULL;
-	fz_try(ctx)
-		wri = fz_new_pdfocr_writer_with_output(ctx, out, options);
-	fz_catch(ctx)
-	{
-		fz_drop_output(ctx, out);
-		fz_rethrow(ctx);
-	}
-	return wri;
+	return fz_new_pdfocr_writer_with_output(ctx, out, options);
 #endif
 }
 
 void
-fz_pdfocr_writer_set_progress(fz_context *ctx, fz_document_writer *writer, int (*progress)(fz_context *, void *, int), void *progress_arg)
+fz_pdfocr_writer_set_progress(fz_context *ctx, fz_document_writer *writer, fz_pdfocr_progress_fn *progress, void *progress_arg)
 {
 #ifdef OCR_DISABLED
 	fz_throw(ctx, FZ_ERROR_GENERIC, "No OCR support in this build");

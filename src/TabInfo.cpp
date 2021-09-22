@@ -8,13 +8,11 @@
 #include "utils/WinUtil.h"
 
 #include "wingui/TreeModel.h"
-
-#include "Annotation.h"
-#include "EngineBase.h"
-#include "EngineCreate.h"
 #include "DisplayMode.h"
-#include "SettingsStructs.h"
 #include "Controller.h"
+#include "EngineBase.h"
+#include "EngineAll.h"
+#include "SettingsStructs.h"
 #include "GlobalPrefs.h"
 #include "ChmModel.h"
 #include "DisplayModel.h"
@@ -26,7 +24,6 @@
 #include "AppUtil.h"
 #include "Selection.h"
 #include "Translations.h"
-#include "ParseBKM.h"
 #include "EditAnnotations.h"
 
 TabInfo::TabInfo(WindowInfo* win, const WCHAR* filePath) {
@@ -39,10 +36,8 @@ TabInfo::~TabInfo() {
     if (AsChm()) {
         AsChm()->RemoveParentHwnd();
     }
-    DeleteVecMembers(altBookmarks);
     delete selectionOnPage;
     delete ctrl;
-    delete tocSorted;
     CloseAndDeleteEditAnnotationsWindow(editAnnotsWindow);
 }
 
@@ -56,10 +51,6 @@ DisplayModel* TabInfo::AsFixed() const {
 
 ChmModel* TabInfo::AsChm() const {
     return ctrl ? ctrl->AsChm() : nullptr;
-}
-
-EbookController* TabInfo::AsEbook() const {
-    return ctrl ? ctrl->AsEbook() : nullptr;
 }
 
 Kind TabInfo::GetEngineType() const {
@@ -80,10 +71,10 @@ const WCHAR* TabInfo::GetTabTitle() const {
     if (gGlobalPrefs->fullPathInTitle) {
         return filePath;
     }
-    return path::GetBaseNameNoFree(filePath);
+    return path::GetBaseNameTemp(filePath);
 }
 
-void TabInfo::MoveDocBy(int dx, int dy) {
+void TabInfo::MoveDocBy(int dx, int dy) const {
     if (!ctrl) {
         return;
     }
@@ -104,7 +95,7 @@ void TabInfo::MoveDocBy(int dx, int dy) {
     }
 }
 
-void TabInfo::ToggleZoom() {
+void TabInfo::ToggleZoom() const {
     CrashIf(!ctrl);
     if (!IsDocLoaded()) {
         return;
@@ -129,8 +120,8 @@ LinkSaver::LinkSaver(TabInfo* tab, HWND parentHwnd, const WCHAR* fileName) {
 }
 #endif
 
-bool SaveDataToFile(HWND hwndParent, WCHAR* fileName, std::span<u8> data) {
-    if (!HasPermission(Perm_DiskAccess)) {
+bool SaveDataToFile(HWND hwndParent, WCHAR* fileName, ByteSlice data) {
+    if (!HasPermission(Perm::DiskAccess)) {
         return false;
     }
 
@@ -144,7 +135,7 @@ bool SaveDataToFile(HWND hwndParent, WCHAR* fileName, std::span<u8> data) {
     // double-zero terminated string isn't cut by the string handling
     // methods too early on)
     AutoFreeWstr fileFilter = str::Format(L"%s\1*.*\1", _TR("All files"));
-    str::TransChars(fileFilter, L"\1", L"\0");
+    str::TransCharsInPlace(fileFilter, L"\1", L"\0");
 
     OPENFILENAME ofn = {0};
     ofn.lStructSize = sizeof(ofn);

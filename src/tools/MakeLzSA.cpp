@@ -11,7 +11,7 @@
 #include <Bra.h>
 #include <zlib.h> // for crc32
 #include "utils/ByteWriter.h"
-#include "utils/CmdLineParser.h"
+#include "utils/CmdLineArgsIter.h"
 #include "utils/FileUtil.h"
 #include "utils/WinUtil.h"
 #include "utils/LzmaSimpleArchive.h"
@@ -19,10 +19,10 @@
 namespace lzsa {
 
 struct ISzCrtAlloc : ISzAlloc {
-    static void* _Alloc([[maybe_unused]] void* p, size_t size) {
+    static void* _Alloc(__unused void* p, size_t size) {
         return malloc(size);
     }
-    static void _Free([[maybe_unused]] void* p, void* ptr) {
+    static void _Free(__unused void* p, void* ptr) {
         free(ptr);
     }
 
@@ -165,7 +165,7 @@ bool CreateArchive(const WCHAR* archivePath, WStrVec& files, size_t skipFiles = 
             utf8Name = strconv::WstrToUtf8(filePath);
         }
 
-        str::TransChars(utf8Name, "/", "\\");
+        str::TransCharsInPlace(utf8Name, "/", "\\");
         if ('/' == *utf8Name || str::Find(utf8Name, "../")) {
             fprintf(stderr, "In-archive name must not be an absolute path: %s\n", utf8Name.Get());
             return false;
@@ -219,7 +219,7 @@ int mainVerify(const WCHAR* archivePath) {
     return 0;
 }
 
-int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
+int main(__unused int argc, __unused char** argv) {
 #ifdef DEBUG
     // report memory leaks on stderr
     _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
@@ -235,7 +235,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
         return mainVerify(args.at(1));
 
     FailIf(args.size() < 3, "Syntax: %S <archive.lzsa> <filename>[:<in-archive name>] [...]",
-           path::GetBaseNameNoFree(args.at(0)));
+           path::GetBaseNameTemp(args.at(0)));
     errorStep++;
 
     bool ok = lzsa::CreateArchive(args.at(1), args, 2);

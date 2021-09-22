@@ -11,10 +11,10 @@ extern "C" {
 #include "utils/ScopedWin.h"
 
 #include "wingui/TreeModel.h"
-
-#include "Annotation.h"
+#include "DisplayMode.h"
+#include "Controller.h"
 #include "EngineBase.h"
-#include "EngineFzUtil.h"
+#include "EngineMupdfImpl.h"
 
 // https://github.com/tabler/tabler-icons/blob/master/icons/folder.svg
 static const char* gIconFileOpen =
@@ -141,6 +141,7 @@ static const char* gIconRotateRight =
   <circle cx="11" cy="19.94" r="0.15"/>
 </svg>)";
 
+// must match order in enum class TbIcon
 // clang-format off
 static const char* gAllIcons[] = {
     gIconFileOpen,
@@ -304,7 +305,7 @@ HBITMAP BuildIconsBitmap(int dx, int dy) {
     // ClearPixmap(pixmap);
 #if 1
 #if 0
-    RenderedBitmap* rbmp = new_rendered_fz_pixmap(muctx->ctx, pixmap);
+    RenderedBitmap* rbmp = NewRenderedFzPixmap(muctx->ctx, pixmap);
     HBITMAP bmp = rbmp->hbmp;
 #else
     HBITMAP bmp = CreateBitmapFromPixmap(pixmap);

@@ -3,20 +3,24 @@
 
 #include "utils/BaseUtil.h"
 #include "utils/ScopedWin.h"
-#include "utils/CmdLineParser.h"
+#include "utils/CmdLineArgsIter.h"
 #include "utils/FileUtil.h"
 #include "utils/GdiPlusUtil.h"
-#include "mui/MiniMui.h"
+#include "mui/Mui.h"
 #include "utils/TgaReader.h"
 #include "utils/WinUtil.h"
 
 #include "wingui/TreeModel.h"
-
-#include "Annotation.h"
+#include "DisplayMode.h"
+#include "Controller.h"
 #include "EngineBase.h"
 #include "EngineDjVu.h"
-#include "EngineCreate.h"
+#include "EngineAll.h"
 #include "PdfCreator.h"
+
+void _submitDebugReportIfFunc(__unused bool cond, __unused const char* condStr) {
+    // no-op implementation to satisfy SubmitBugReport()
+}
 
 #define Out(msg, ...) printf(msg, __VA_ARGS__)
 
@@ -132,9 +136,11 @@ void DumpProperties(EngineBase* engine, bool fullDump) {
     if (engine->IsImageCollection()) {
         Out("\t\tImageFileDPI=\"%g\"\n", engine->GetFileDPI());
     }
-    if (engine->preferredLayout) {
+#if 0
+    if (engine->preferredLayout.t) {
         Out("\t\tPreferredLayout=\"%d\"\n", engine->preferredLayout);
     }
+#endif
     Out1("\t/>\n");
 
     if (!fullDump) {
@@ -150,7 +156,7 @@ void DumpProperties(EngineBase* engine, bool fullDump) {
 }
 
 // caller must free() the result
-char* DestRectToStr(EngineBase* engine, PageDestination* dest) {
+static char* DestRectToStr(EngineBase* engine, IPageDestination* dest) {
     WCHAR* destName = dest->GetName();
     if (destName) {
         AutoFree name = Escape(destName);
@@ -191,7 +197,7 @@ void DumpTocItem(EngineBase* engine, TocItem* item, int level, int& idCounter) {
             Out(" Id=\"%d\"", item->id);
         }
         if (item->GetPageDestination()) {
-            PageDestination* dest = item->GetPageDestination();
+            IPageDestination* dest = item->GetPageDestination();
             AutoFree target = Escape(dest->GetValue());
             if (target.Get()) {
                 Out(" Target=\"%s\"", target.Get());
@@ -279,17 +285,17 @@ void DumpPageContent(EngineBase* engine, int pageNo, bool fullDump) {
         FreePageText(&pageText);
     }
 
-    Vec<IPageElement*>* els = engine->GetElements(pageNo);
-    if (els && els->size() > 0) {
+    Vec<IPageElement*> els = engine->GetElements(pageNo);
+    if (els.size() > 0) {
         Out1("\t\t<PageElements>\n");
-        for (size_t i = 0; i < els->size(); i++) {
-            RectF rect = els->at(i)->GetRect();
-            Out("\t\t\t<Element Type=\"%s\"\n\t\t\t\tRect=\"%.0f %.0f %.0f %.0f\"\n", ElementTypeToStr(els->at(i)),
-                rect.x, rect.y, rect.dx, rect.dy);
-            PageDestination* dest = els->at(i)->AsLink();
+        for (auto& el : els) {
+            RectF rect = el->GetRect();
+            Out("\t\t\t<Element Type=\"%s\"\n\t\t\t\tRect=\"%.0f %.0f %.0f %.0f\"\n", ElementTypeToStr(el), rect.x,
+                rect.y, rect.dx, rect.dy);
+            IPageDestination* dest = el->AsLink();
             if (dest) {
-                if (dest->Kind() != nullptr) {
-                    Out("\t\t\t\tLinkType=\"%s\"\n", dest->Kind());
+                if (dest->GetKind() != nullptr) {
+                    Out("\t\t\t\tLinkType=\"%s\"\n", dest->GetKind());
                 }
                 AutoFree value(Escape(dest->GetValue()));
                 if (value.Get()) {
@@ -303,16 +309,14 @@ void DumpPageContent(EngineBase* engine, int pageNo, bool fullDump) {
                     Out("\t\t\t\tLinked%s\n", rectStr.Get());
                 }
             }
-            AutoFree name(Escape(els->at(i)->GetValue()));
+            AutoFree name(Escape(el->GetValue()));
             if (name.Get()) {
                 Out("\t\t\t\tLabel=\"%s\"\n", name.Get());
             }
             Out1("\t\t\t/>\n");
         }
         Out1("\t\t</PageElements>\n");
-        DeleteVecMembers(*els);
     }
-    delete els;
 
     Out1("\t</Page>\n");
 }
@@ -326,7 +330,7 @@ void DumpThumbnail(EngineBase* engine) {
 
     float zoom = std::min(128 / (float)rect.dx, 128 / (float)rect.dy) - 0.001f;
     Rect thumb = RectF(0, 0, rect.dx * zoom, rect.dy * zoom).Round();
-    rect = engine->Transform(ToRectFl(thumb), 1, zoom, 0, true);
+    rect = engine->Transform(ToRectF(thumb), 1, zoom, 0, true);
     RenderPageArgs args(1, zoom, 0, &rect);
     RenderedBitmap* bmp = engine->RenderPage(args);
     if (!bmp) {
@@ -334,7 +338,7 @@ void DumpThumbnail(EngineBase* engine) {
         return;
     }
 
-    std::span<u8> imgData = tga::SerializeBitmap(bmp->GetBitmap());
+    ByteSlice imgData = tga::SerializeBitmap(bmp->GetBitmap());
     size_t len = imgData.size();
     u8* data = imgData.data();
     AutoFree hexData(data ? str::MemToHex(data, len) : nullptr);
@@ -400,13 +404,13 @@ bool RenderDocument(EngineBase* engine, const WCHAR* renderPath, float zoom = 1.
             }
             FreePageText(&pageText);
         }
-        text.Replace(L"\n", L"\r\n");
+        Replace(text, L"\n", L"\r\n");
         if (silent) {
             return true;
         }
         AutoFreeWstr txtFilePath(str::Format(renderPath, 0));
-        AutoFree textUTF8 = strconv::WstrToUtf8(text.Get());
-        AutoFree textUTF8BOM(str::Join(UTF8_BOM, textUTF8.Get()));
+        auto textA = ToUtf8Temp(text.Get());
+        AutoFree textUTF8BOM(str::Join(UTF8_BOM, textA.Get()));
         return file::WriteFile(txtFilePath, textUTF8BOM.AsSpan());
     }
 
@@ -415,11 +419,11 @@ bool RenderDocument(EngineBase* engine, const WCHAR* renderPath, float zoom = 1.
             return false;
         }
         AutoFreeWstr pdfFilePath(str::Format(renderPath, 0));
-        AutoFree pathUtf8(strconv::WstrToUtf8(pdfFilePath.Get()));
-        if (engine->SaveFileAsPDF(pathUtf8.Get(), true)) {
+        auto pathA(ToUtf8Temp(pdfFilePath.Get()));
+        if (engine->SaveFileAsPDF(pathA.Get())) {
             return true;
         }
-        return PdfCreator::RenderToFile(pathUtf8.Get(), engine);
+        return PdfCreator::RenderToFile(pathA.Get(), engine);
     }
 
     bool success = true;
@@ -440,13 +444,13 @@ bool RenderDocument(EngineBase* engine, const WCHAR* renderPath, float zoom = 1.
             CLSID pngEncId = GetEncoderClsid(L"image/png");
             gbmp.Save(pageBmpPath, &pngEncId);
         } else if (str::EndsWithI(pageBmpPath, L".bmp")) {
-            std::span<u8> imgData = SerializeBitmap(bmp->GetBitmap());
+            ByteSlice imgData = SerializeBitmap(bmp->GetBitmap());
             if (!imgData.empty()) {
                 file::WriteFile(pageBmpPath, imgData);
                 str::Free(imgData.data());
             }
         } else { // render as TGA for all other file extensions
-            std::span<u8> imgData = tga::SerializeBitmap(bmp->GetBitmap());
+            ByteSlice imgData = tga::SerializeBitmap(bmp->GetBitmap());
             if (!imgData.empty()) {
                 file::WriteFile(pageBmpPath, imgData);
                 str::Free(imgData.data());
@@ -464,22 +468,23 @@ class PasswordHolder : public PasswordUI {
   public:
     explicit PasswordHolder(const WCHAR* password) : password(password) {
     }
-    WCHAR* GetPassword([[maybe_unused]] const WCHAR* fileName, [[maybe_unused]] u8* fileDigest,
-                       [[maybe_unused]] u8 decryptionKeyOut[32], [[maybe_unused]] bool* saveKey) override {
+    WCHAR* GetPassword(__unused const WCHAR* fileName, __unused u8* fileDigest, __unused u8 decryptionKeyOut[32],
+                       __unused bool* saveKey) override {
         return str::Dup(password);
     }
 };
 
-int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
+int main(__unused int argc, __unused char** argv) {
     setlocale(LC_ALL, "C");
     DisableDataExecution();
 
-    WStrVec argList;
-    ParseCmdLine(GetCommandLine(), argList);
-    if (argList.size() < 2) {
+    CmdLineArgsIter argList(GetCommandLine());
+    int nArgs = argList.nArgs;
+
+    if (nArgs < 2) {
     Usage:
         ErrOut("%s [-pwd <password>][-quick][-render <path-%%d.tga>] <filename>",
-               path::GetBaseNameNoFree(argList.at(0)));
+               path::GetBaseNameTemp(argList.args[0]));
         return 2;
     }
 
@@ -489,17 +494,16 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
     WCHAR* renderPath = nullptr;
     float renderZoom = 1.f;
     bool loadOnly = false, silent = false;
-    int breakAlloc = 0;
 
-    for (size_t i = 1; i < argList.size(); i++) {
-        if (str::Eq(argList.at(i), L"-pwd") && i + 1 < argList.size() && !password) {
+    for (int i = 1; i < nArgs; i++) {
+        if (str::Eq(argList.at(i), L"-pwd") && i + 1 < nArgs && !password) {
             password = argList.at(++i);
         } else if (str::Eq(argList.at(i), L"-quick")) {
             fullDump = false;
-        } else if (str::Eq(argList.at(i), L"-render") && i + 1 < argList.size() && !renderPath) {
+        } else if (str::Eq(argList.at(i), L"-render") && i + 1 < nArgs && !renderPath) {
             // optional zoom argument (e.g. -render 50% file.pdf)
             float zoom;
-            if (i + 2 < argList.size() && str::Parse(argList.at(i + 1), L"%f%%%$", &zoom) && zoom > 0.f) {
+            if (i + 2 < nArgs && str::Parse(argList.at(i + 1), L"%f%%%$", &zoom) && zoom > 0.f) {
                 renderZoom = zoom / 100.f;
                 i++;
             }
@@ -512,8 +516,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
         } else if (str::Eq(argList.at(i), L"-full")) {
             // -full is for backward compatibility
             fullDump = true;
-        } else if (str::Eq(argList.at(i), L"-breakalloc") && i + 1 < argList.size()) {
-            breakAlloc = _wtoi(argList.at(++i));
         } else if (!filePath) {
             filePath.SetCopy(argList.at(i));
         } else {
@@ -524,14 +526,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
         goto Usage;
     }
 
-    if (breakAlloc) {
-#ifdef DEBUG
-        _CrtSetBreakAlloc(breakAlloc);
-        if (!IsDebuggerPresent())
-            MessageBox(nullptr, L"Keep your debugger ready for the allocation breakpoint...", L"EngineDump",
-                       MB_ICONINFORMATION);
-#endif
-    }
     if (silent) {
         FILE* nul;
         freopen_s(&nul, "NUL", "w", stdout);
@@ -539,7 +533,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
     }
 
     ScopedGdiPlus gdiPlus;
-    ScopedMiniMui miniMui;
+    ScopedMui miniMui;
 
     WIN32_FIND_DATA fdata;
     HANDLE hfind = FindFirstFile(filePath, &fdata);
@@ -553,18 +547,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
 
     PasswordHolder pwdUI(password);
     EngineBase* engine = CreateEngine(filePath, &pwdUI);
-#if 0
-    bool isEngineDjVu = IsOfKind(engine, kindEngineDjVu);
-    bool couldLeak = isEngineDjVu || IsDjVuEngineSupportedFile(filePath) || IsDjVuEngineSupportedFile(filePath, true);
-    if (!couldLeak) {
-        // report memory leaks on stderr for engines that shouldn't leak
-        _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
-        _CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDERR);
-        _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    }
-#endif
     if (!engine) {
-        ErrOut("Error: Couldn't create an engine for %s!", path::GetBaseNameNoFree(filePath));
+        ErrOut("Error: Couldn't create an engine for %s!", path::GetBaseNameTemp(filePath));
         return 1;
     }
     if (!loadOnly) {

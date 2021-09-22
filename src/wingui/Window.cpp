@@ -4,15 +4,15 @@
    License: Simplified BSD (see COPYING.BSD) */
 
 #include "utils/BaseUtil.h"
-#include "utils/WinUtil.h"
-#include "utils/ScopedWin.h"
-#include "utils/Log.h"
-#include "utils/LogDbg.h"
 #include "utils/VecSegmented.h"
+#include "utils/ScopedWin.h"
+#include "utils/WinUtil.h"
 
 #include "wingui/WinGui.h"
 #include "wingui/Layout.h"
 #include "wingui/Window.h"
+
+#include "utils/Log.h"
 
 // TODO: call RemoveWindowSubclass in WM_NCDESTROY as per
 // https://devblogs.microsoft.com/oldnewthing/20031111-00/?p=41883
@@ -369,7 +369,7 @@ static LRESULT wndBaseProcDispatch(WindowBase* w, HWND hwnd, UINT msg, WPARAM wp
 
 static LRESULT CALLBACK wndProcCustom(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     // auto msgName = GetWinMessageName(msg);
-    // dbglogf("hwnd: 0x%6p, msg: 0x%03x (%s), wp: 0x%x\n", hwnd, msg, msgName, wp);
+    // logf("hwnd: 0x%6p, msg: 0x%03x (%s), wp: 0x%x\n", hwnd, msg, msgName, wp);
 
     if (WM_NCCREATE == msg) {
         CREATESTRUCT* cs = (CREATESTRUCT*)lp;
@@ -425,6 +425,9 @@ static LRESULT CALLBACK wndProcCustom(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
     }
 
     if (w->isDialog) {
+        // TODO: should handle more messages as per
+        // https://stackoverflow.com/questions/35688400/set-full-focus-on-a-button-setfocus-is-not-enough
+        // and https://docs.microsoft.com/en-us/windows/win32/dlgbox/dlgbox-programming-considerations
         if (WM_ACTIVATE == msg) {
             if (wp == 0) {
                 // becoming inactive
@@ -454,7 +457,7 @@ static LRESULT CALLBACK wndProcCustom(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
     }
     res = DefWindowProcW(hwnd, msg, wp, lp);
     // auto msgName = GetWinMessageName(msg);
-    // dbglogf("hwnd: 0x%6p, msg: 0x%03x (%s), wp: 0x%x, res: 0x%x\n", hwnd, msg, msgName, wp, res);
+    // logf("hwnd: 0x%6p, msg: 0x%03x (%s), wp: 0x%x, res: 0x%x\n", hwnd, msg, msgName, wp, res);
     return res;
 }
 
@@ -618,31 +621,31 @@ bool WindowBase::Create() {
     return true;
 }
 
-void WindowBase::SuspendRedraw() {
+void WindowBase::SuspendRedraw() const {
     SendMessageW(hwnd, WM_SETREDRAW, FALSE, 0);
 }
 
-void WindowBase::ResumeRedraw() {
+void WindowBase::ResumeRedraw() const {
     SendMessageW(hwnd, WM_SETREDRAW, TRUE, 0);
 }
 
-void WindowBase::SetFocus() {
+void WindowBase::SetFocus() const {
     ::SetFocus(hwnd);
 }
 
-bool WindowBase::IsFocused() {
+bool WindowBase::IsFocused() const {
     BOOL isFocused = ::IsFocused(hwnd);
     return tobool(isFocused);
 }
 
-void WindowBase::SetIsEnabled(bool isEnabled) {
+void WindowBase::SetIsEnabled(bool isEnabled) const {
     // TODO: make it work even if not yet created?
     CrashIf(!hwnd);
     BOOL enabled = isEnabled ? TRUE : FALSE;
     ::EnableWindow(hwnd, enabled);
 }
 
-bool WindowBase::IsEnabled() {
+bool WindowBase::IsEnabled() const {
     BOOL enabled = ::IsWindowEnabled(hwnd);
     return tobool(enabled);
 }
@@ -687,14 +690,6 @@ bool WindowBase::IsVisible() const {
     return visibility == Visibility::Visible;
 }
 
-void WindowBase::SetPos(RECT* r) {
-    ::MoveWindow(hwnd, r);
-}
-
-void WindowBase::SetBounds(const RECT& r) {
-    SetPos((RECT*)&r);
-}
-
 void WindowBase::SetFont(HFONT f) {
     hfont = f;
     HwndSetFont(hwnd, f);
@@ -721,7 +716,7 @@ HICON WindowBase::GetIcon() const {
 }
 
 void WindowBase::SetText(const WCHAR* s) {
-    AutoFree str = strconv::WstrToUtf8(s);
+    auto str = ToUtf8Temp(s);
     SetText(str.AsView());
 }
 
@@ -733,7 +728,9 @@ void WindowBase::SetText(std::string_view sv) {
 }
 
 std::string_view WindowBase::GetText() {
-    text = win::GetTextUtf8(hwnd);
+    auto sw = win::GetTextTemp(hwnd);
+    auto sa = ToUtf8Temp(sw.AsView());
+    text.Set(sa.AsView());
     return text.AsView();
 }
 
@@ -773,7 +770,7 @@ void WindowBase::SetColors(COLORREF bg, COLORREF txt) {
     SetTextColor(txt);
 }
 
-void WindowBase::SetRtl(bool isRtl) {
+void WindowBase::SetRtl(bool isRtl) const {
     SetWindowExStyle(hwnd, WS_EX_LAYOUTRTL | WS_EX_NOINHERITLAYOUT, isRtl);
 }
 
@@ -798,7 +795,7 @@ static void RegisterWindowClass(Window* w) {
     WNDCLASSEXW wcex = {};
     wcex.cbSize = sizeof(wcex);
     wcex.hIcon = w->hIcon;
-    wcex.hCursor = LoadCursorW(NULL, IDC_ARROW);
+    wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     wcex.hIconSm = w->hIconSm;
     wcex.lpfnWndProc = wndProcCustom;
     wcex.lpszClassName = w->winClass;
@@ -814,6 +811,7 @@ Window::Window() {
     kind = kindWindow;
     dwExStyle = 0;
     dwStyle = WS_OVERLAPPEDWINDOW;
+    // TODO: at this point parent cannot be set yet
     if (parent == nullptr) {
         dwStyle |= WS_CLIPCHILDREN;
     } else {
@@ -844,7 +842,7 @@ bool Window::Create() {
     if (initialSize.dy > 0) {
         dy = initialSize.dy;
     }
-    AutoFreeWstr title = strconv::Utf8ToWstr(this->text.AsView());
+    auto title = ToWstrTemp(this->text.AsView());
     HINSTANCE hinst = GetInstance();
     hwnd = CreateWindowExW(dwExStyle, winClass, title, dwStyle, x, y, dx, dy, parent, nullptr, hinst, (void*)this);
     CrashIf(!hwnd);
@@ -862,8 +860,7 @@ bool Window::Create() {
     return true;
 }
 
-Window::~Window() {
-}
+Window::~Window() = default;
 
 void Window::SetTitle(std::string_view title) {
     SetText(title);
@@ -919,6 +916,10 @@ int WindowBase::MinIntrinsicWidth(int) {
 #endif
 }
 
+void WindowBase::SetPos(RECT* r) const {
+    ::MoveWindow(hwnd, r);
+}
+
 void WindowBase::SetBounds(Rect bounds) {
     dbglayoutf("WindowBaseLayout:SetBounds() %s %d,%d - %d, %d\n", GetKind(), bounds.x, bounds.y, bounds.dx, bounds.dy);
 
@@ -935,6 +936,12 @@ void WindowBase::SetBounds(Rect bounds) {
     ::InvalidateRect(hwnd, nullptr, TRUE);
 }
 
+#if 0
+void WindowBase::SetBounds(const RECT& r) const {
+    SetPos((RECT*)&r);
+}
+#endif
+
 int RunMessageLoop(HACCEL accelTable, HWND hwndDialog) {
     MSG msg;
     while (GetMessage(&msg, nullptr, 0, 0)) {
@@ -948,6 +955,42 @@ int RunMessageLoop(HACCEL accelTable, HWND hwndDialog) {
         DispatchMessage(&msg);
     }
     return (int)msg.wParam;
+}
+
+// TODO: support accelerator table?
+// TODO: a better way to stop the loop e.g. via shared
+// atomic int to signal termination and sending WM_IDLE
+// to trigger processing of the loop
+void RunModalWindow(HWND hwndDialog, HWND hwndParent) {
+    if (hwndParent != nullptr) {
+        EnableWindow(hwndParent, FALSE);
+    }
+
+    MSG msg;
+    bool isFinished{false};
+    while (!isFinished) {
+        BOOL ok = WaitMessage();
+        if (!ok) {
+            DWORD err = GetLastError();
+            LogLastError(err);
+            isFinished = true;
+            continue;
+        }
+        while (!isFinished && PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+            if (msg.message == WM_QUIT) {
+                isFinished = true;
+                break;
+            }
+            if (!IsDialogMessage(hwndDialog, &msg)) {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
+        }
+    }
+
+    if (hwndParent != nullptr) {
+        EnableWindow(hwndParent, TRUE);
+    }
 }
 
 // sets initial position of w within hwnd. Assumes w->initialSize is set.

@@ -15,12 +15,12 @@ class TextSearch : public TextSelection {
     TextSel* FindNext(ProgressUpdateUI* tracker = nullptr);
 
     // note: the result might not be a valid page number!
-    int GetCurrentPageNo() const {
+    [[nodiscard]] int GetCurrentPageNo() const {
         return findPage;
     }
 
     // note: the result might not be a valid page number!
-    int GetSearchHitStartPageNo() const {
+    [[nodiscard]] int GetSearchHitStartPageNo() const {
         return searchHitStartAt;
     }
 
@@ -49,9 +49,9 @@ class TextSearch : public TextSelection {
     PageAndOffset MatchEnd(const WCHAR* start) const;
 
     void Clear() {
-        str::ReplacePtr(&findText, nullptr);
-        str::ReplacePtr(&anchor, nullptr);
-        str::ReplacePtr(&lastText, nullptr);
+        str::ReplaceWithCopy(&findText, nullptr);
+        str::ReplaceWithCopy(&anchor, nullptr);
+        str::ReplaceWithCopy(&lastText, nullptr);
         Reset();
     }
     void Reset();

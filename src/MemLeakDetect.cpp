@@ -5,8 +5,14 @@ License: Simplified BSD (see COPYING.BSD) */
 #include "utils/WinDynCalls.h"
 #include "utils/DbgHelpDyn.h"
 #include "utils/WinUtil.h"
-#include "utils/LogDbg.h"
 #include "utils/MinHook.h"
+
+#include "utils/Log.h"
+
+/*
+TODO:
+* not sure if the leaks from pdf_load_page_tree() in debug build are real or my hooking is bad
+*/
 
 // https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/nf-ntifs-rtlallocateheap
 PVOID(WINAPI* gRtlAllocateHeapOrig)(PVOID heapHandle, ULONG flags, SIZE_T size) = nullptr;
@@ -21,11 +27,18 @@ BOOL(WINAPI* gHeapFreeOrig)(HANDLE hHeap, DWORD dwFlags, _Frees_ptr_opt_ LPVOID 
 #define TYPE_ALLOC 0
 #define TYPE_FREE 1
 
-#define MAX_FRAMES 64
+constexpr int kMaxFrames = 48; // less than 62
+
+struct CallstackInfo {
+    HANDLE hThread;
+    DWORD hash;
+    DWORD nFrames;
+    void* callstack[kMaxFrames];
+};
 
 struct CallstackInfoShort {
-    DWORD64 nFrames;
-    DWORD64 frame[MAX_FRAMES];
+    DWORD64 nFrames; // must be first to match physical layout of cache
+    DWORD64 frame[kMaxFrames];
 };
 
 struct AllocFreeEntry {
@@ -37,12 +50,12 @@ struct AllocFreeEntry {
     u32 typ;
 };
 
-#define ENTRIES_PER_BLOCK 1024 * 16
+#define kEntriesPerBlock 1024 * 16
 
 struct AllocFreeEntryBlock {
     AllocFreeEntryBlock* next;
     int nUsed;
-    AllocFreeEntry entries[ENTRIES_PER_BLOCK];
+    AllocFreeEntry entries[kEntriesPerBlock];
 };
 
 static CRITICAL_SECTION gMutex;
@@ -52,15 +65,6 @@ static AllocFreeEntryBlock* gAllocFreeBlockCurr = nullptr;
 static int gAllocs = 0;
 static int gFrees = 0;
 static PVOID gHeap = nullptr;
-
-static void* GetDllProcAddr(const char* dll, const char* name) {
-    HMODULE mod = GetModuleHandleA(dll);
-    if (mod == NULL)
-        return nullptr;
-
-    void* pTarget = (LPVOID)GetProcAddress(mod, name);
-    return pTarget;
-}
 
 static void* AllocPrivate(size_t n) {
     // note: HeapAlloc and RtlHeapAlloc seem to be the same
@@ -85,25 +89,19 @@ static T* AllocStructPrivate() {
 // static int gTotalCallstacks = 0;
 
 static bool CanStackWalk() {
-    bool ok = DynStackWalk64 && DynSymFunctionTableAccess64 && DynSymGetModuleBase64 && DynSymFromAddr;
+    bool ok = DynStackWalk64 && DynSymFunctionTableAccess64 && DynSymGetModuleBase64 && DynSymFromAddr &&
+              DynRtlCaptureStackBackTrace;
     return ok;
 }
 
-struct CallstackInfo {
-    CONTEXT ctx;
-    HANDLE hThread;
-    int nFrames;
-    DWORD64 callstack[MAX_FRAMES];
-};
-
-#define DWORDS_PER_CSI_BLOCK (1024 * 1020) / sizeof(DWORD64) // 1 MB
+#define kDwordsPerCsiBlock (1024 * 1020) / sizeof(DWORD64) // 1 MB
 struct CallstackInfoBlock {
     CallstackInfoBlock* next;
     int nDwordsFree;
     // format of data is:
     // first DWORD64 is nFrames
     // followed by frames
-    DWORD64 data[DWORDS_PER_CSI_BLOCK];
+    DWORD64 data[kDwordsPerCsiBlock];
 };
 
 static_assert(sizeof(CallstackInfoBlock) < 1024 * 1024);
@@ -123,7 +121,7 @@ static CallstackInfoShort* AllocCallstackInfoShort(int nFrames) {
             return nullptr;
         }
         b->next = nullptr;
-        b->nDwordsFree = DWORDS_PER_CSI_BLOCK;
+        b->nDwordsFree = kDwordsPerCsiBlock;
         if (!gCallstackInfoBlockFirst) {
             gCallstackInfoBlockFirst = b;
         }
@@ -132,89 +130,35 @@ static CallstackInfoShort* AllocCallstackInfoShort(int nFrames) {
         }
         gCallstackInfoBlockCurr = b;
     }
-    int off = DWORDS_PER_CSI_BLOCK - b->nDwordsFree;
+    int off = kDwordsPerCsiBlock - b->nDwordsFree;
     CallstackInfoShort* res = (CallstackInfoShort*)&b->data[off];
     b->nDwordsFree -= (nFrames + 1);
     return res;
 }
 
-static bool GetStackFrameInfo(CallstackInfo* cs, STACKFRAME64* stackFrame) {
-#if defined(_WIN64)
-    int machineType = IMAGE_FILE_MACHINE_AMD64;
-#else
-    int machineType = IMAGE_FILE_MACHINE_I386;
-#endif
-    HANDLE proc = GetCurrentProcess();
-    BOOL ok = DynStackWalk64(machineType, proc, cs->hThread, stackFrame, &cs->ctx, nullptr, DynSymFunctionTableAccess64,
-                             DynSymGetModuleBase64, nullptr);
-    if (!ok) {
-        return false;
-    }
-
-    DWORD64 addr = stackFrame->AddrPC.Offset;
-    if (0 == addr) {
-        return true;
-    }
-    if (addr == stackFrame->AddrReturn.Offset) {
-        return false;
-    }
-
-    return true;
-}
-
-static void GetCallstackFrames(CallstackInfo* cs) {
-    STACKFRAME64 stackFrame{};
-    memset(&stackFrame, 0, sizeof(stackFrame));
-#ifdef _WIN64
-    stackFrame.AddrPC.Offset = cs->ctx.Rip;
-    stackFrame.AddrFrame.Offset = cs->ctx.Rbp;
-    stackFrame.AddrStack.Offset = cs->ctx.Rsp;
-#else
-    stackFrame.AddrPC.Offset = cs->ctx.Eip;
-    stackFrame.AddrFrame.Offset = cs->ctx.Ebp;
-    stackFrame.AddrStack.Offset = cs->ctx.Esp;
-#endif
-    stackFrame.AddrPC.Mode = AddrModeFlat;
-    stackFrame.AddrFrame.Mode = AddrModeFlat;
-    stackFrame.AddrStack.Mode = AddrModeFlat;
-
-    cs->nFrames = 0;
-    while (cs->nFrames < MAX_FRAMES) {
-        if (!GetStackFrameInfo(cs, &stackFrame)) {
-            break;
-        }
-        DWORD64 addr = stackFrame.AddrPC.Offset;
-        cs->callstack[cs->nFrames++] = addr;
-    }
-}
-
 static bool gCanStackWalk;
 
-// which cannot deal with Omit Frame Pointers optimization (/Oy explicitly, turned
-// implicitly by e.g. /O2)
-// http://www.bytetalk.net/2011/06/why-rtlcapturecontext-crashes-on.html
 #pragma optimize("", off)
 // we also need to disable warning 4748 "/GS can not protect parameters and local variables
 // from local buffer overrun because optimizations are disabled in function)"
 #pragma warning(push)
 #pragma warning(disable : 4748)
-__declspec(noinline) bool GetCurrentThreadCallstack(CallstackInfo* cs) {
+__declspec(noinline) bool GetCurrentThreadCallstack(CallstackInfo* cs, int framesToSkip) {
     if (!gCanStackWalk) {
         return false;
     }
 
     cs->nFrames = 0;
     cs->hThread = GetCurrentThread();
-    DynRtlCaptureContext(&cs->ctx);
-    GetCallstackFrames(cs);
-    return true;
+    cs->nFrames = (int)DynRtlCaptureStackBackTrace(framesToSkip, kMaxFrames, cs->callstack, &cs->hash);
+    return cs->nFrames > 0;
 }
 #pragma optimize("", off)
 
 static AllocFreeEntry* GetAllocFreeEntry() {
     // fast path
     AllocFreeEntryBlock* b = gAllocFreeBlockCurr;
-    if (b && b->nUsed < ENTRIES_PER_BLOCK) {
+    if (b && b->nUsed < kEntriesPerBlock) {
         AllocFreeEntry* res = &b->entries[b->nUsed];
         b->nUsed++;
         return res;
@@ -236,22 +180,19 @@ static AllocFreeEntry* GetAllocFreeEntry() {
 }
 
 // to filter out our own code
-#define FRAMES_TO_SKIP 3
+#define kFramesToSkip 3
 
 CallstackInfoShort* RecordCallstack() {
     CallstackInfo csi;
-    bool ok = GetCurrentThreadCallstack(&csi);
+    bool ok = GetCurrentThreadCallstack(&csi, kFramesToSkip);
     if (!ok) {
         return nullptr;
     }
     int n = csi.nFrames;
-    if (n <= FRAMES_TO_SKIP) {
-        return nullptr;
-    }
-    CallstackInfoShort* res = AllocCallstackInfoShort(n - FRAMES_TO_SKIP);
-    res->nFrames = (DWORD64)n - FRAMES_TO_SKIP;
-    for (int i = 0; i < n - FRAMES_TO_SKIP; i++) {
-        res->frame[i] = csi.callstack[i + FRAMES_TO_SKIP];
+    CallstackInfoShort* res = AllocCallstackInfoShort(n);
+    res->nFrames = (DWORD64)n;
+    for (int i = 0; i < n; i++) {
+        res->frame[i] = (DWORD64)csi.callstack[i];
     }
     return res;
 }
@@ -332,28 +273,28 @@ BOOL WINAPI HeapFreeHook(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem) {
 static bool InitializeSymbols() {
     AutoFreeWstr symbolPath = GetExeDir();
     if (!dbghelp::Initialize(symbolPath.Get(), false)) {
-        dbglog("InitializeSymbols: dbghelp::Initialize() failed\n");
+        log("InitializeSymbols: dbghelp::Initialize() failed\n");
         return false;
     }
 
     if (dbghelp::HasSymbols()) {
-        dbglog("InitializeSymbols(): skipping because dbghelp::HasSymbols()\n");
+        log("InitializeSymbols(): skipping because dbghelp::HasSymbols()\n");
         return true;
     }
 
     if (!dbghelp::Initialize(symbolPath.Get(), true)) {
-        dbglog("InitializeSymbols: second dbghelp::Initialize() failed\n");
+        log("InitializeSymbols: second dbghelp::Initialize() failed\n");
         return false;
     }
 
     if (!dbghelp::HasSymbols()) {
-        dbglog("InitializeSymbols: HasSymbols() false after downloading symbols\n");
+        log("InitializeSymbols: HasSymbols() false after downloading symbols\n");
         return false;
     }
     return true;
 }
 
-#if defined(DEBUG)
+#if 0 // defined(DEBUG) 
 decltype(_malloc_dbg)* g_malloc_dbg_orig = nullptr;
 decltype(_calloc_dbg)* g_calloc_dbg_orig = nullptr;
 decltype(_free_dbg)* g_free_dbg_orig = nullptr;
@@ -454,7 +395,7 @@ void* __cdecl _malloc_base_hook(size_t _Size) {
 
     void* res = g_malloc_base_orig(_Size);
     if ((res != nullptr) && (gRecurCount == 1)) {
-        RecordAllocOrFree(TYPE_ALLOC, 0, res, _Size);
+        RecordAllocOrFree(TYPE_ALLOC, nullptr, res, _Size);
     }
     gRecurCount--;
     Unlock();
@@ -469,7 +410,7 @@ void* __cdecl _calloc_base_hook(size_t _Count, size_t _Size) {
     void* res = g_calloc_base_orig(_Count, _Size);
     if ((res != nullptr) && (gRecurCount == 1)) {
         size_t size = _Count * _Size;
-        RecordAllocOrFree(TYPE_ALLOC, 0, res, size);
+        RecordAllocOrFree(TYPE_ALLOC, nullptr, res, size);
     }
     gRecurCount--;
     Unlock();
@@ -483,7 +424,7 @@ void __cdecl _free_base_hook(void* _Block) {
     g_free_base_orig(_Block);
     if (gRecurCount == 1) {
         gFrees++;
-        RecordAllocOrFree(TYPE_FREE, 0, _Block, 0);
+        RecordAllocOrFree(TYPE_FREE, nullptr, _Block, 0);
     }
     gRecurCount--;
     Unlock();
@@ -495,9 +436,9 @@ void* __cdecl _realloc_base_hook(void* _Block, size_t _Size) {
 
     void* res = g_realloc_base_orig(_Block, _Size);
     if (gRecurCount == 1) {
-        RecordAllocOrFree(TYPE_FREE, 0, _Block, 0);
+        RecordAllocOrFree(TYPE_FREE, nullptr, _Block, 0);
         if (res != nullptr) {
-            RecordAllocOrFree(TYPE_ALLOC, 0, res, _Size);
+            RecordAllocOrFree(TYPE_ALLOC, nullptr, res, _Size);
         }
     }
     gRecurCount--;
@@ -511,10 +452,10 @@ void* __cdecl _recalloc_base_hook(void* _Block, size_t _Count, size_t _Size) {
 
     void* res = g_recalloc_base_orig(_Block, _Count, _Size);
     if (gRecurCount == 1) {
-        RecordAllocOrFree(TYPE_FREE, 0, _Block, 0);
+        RecordAllocOrFree(TYPE_FREE, nullptr, _Block, 0);
         if (res != nullptr) {
             size_t size = _Count * _Size;
-            RecordAllocOrFree(TYPE_ALLOC, 0, res, size);
+            RecordAllocOrFree(TYPE_ALLOC, nullptr, res, size);
         }
     }
     gRecurCount--;
@@ -525,16 +466,29 @@ void* __cdecl _recalloc_base_hook(void* _Block, size_t _Count, size_t _Size) {
 // TODO: optimize callstacks by de-duplicating them
 //       (calc hash and bisect + linear search to find the callstack)
 
-#define MAX_HOOKS 32
-HOOK_ENTRY gHooks[MAX_HOOKS] = {0};
+#define kMaxHooks 32
+HOOK_ENTRY gHooks[kMaxHooks] = {nullptr};
 int gHooksCount = 0;
 
+#if 0
+static void* GetDllProcAddr(const char* dll, const char* name) {
+    HMODULE mod = GetModuleHandleA(dll);
+    if (mod == NULL)
+        return nullptr;
+
+    void* pTarget = (LPVOID)GetProcAddress(mod, name);
+    return pTarget;
+}
+#endif
+
+#if 0
 static void AddDllFunc(const char* dllName, const char* funcName, LPVOID func, LPVOID* ppOrig) {
     HOOK_ENTRY* pHook = &(gHooks[gHooksCount++]);
     pHook->pTarget = GetDllProcAddr(dllName, funcName);
     pHook->pDetour = func;
     pHook->ppOrig = ppOrig;
 }
+#endif
 
 static void AddFunc(LPVOID pTarget, LPVOID func, LPVOID* ppOrig) {
     HOOK_ENTRY* pHook = &(gHooks[gHooksCount++]);
@@ -583,7 +537,7 @@ bool MemLeakInit() {
     }
 #endif
 
-#if defined(DEBUG)
+#if 0 // defined(DEBUG)
     AddFunc(_malloc_dbg, _malloc_dbg_hook, (void**)&g_malloc_dbg_orig);
     AddFunc(_calloc_dbg, _calloc_dbg_hook, (void**)&g_calloc_dbg_orig);
     AddFunc(_free_dbg, _free_dbg_hook, (void**)&g_free_dbg_orig);
@@ -608,10 +562,7 @@ static AllocFreeEntry* FindMatchingFree(AllocFreeEntryBlock* b, AllocFreeEntry* 
     while (b) {
         for (int i = nStart; i < b->nUsed; i++) {
             AllocFreeEntry* e = &b->entries[i];
-            if (e->typ == TYPE_ALLOC) {
-                continue;
-            }
-            if (e->heap != eAlloc->heap) {
+            if (e->typ != TYPE_FREE) {
                 continue;
             }
             if (e->addr != eAlloc->addr) {
@@ -624,23 +575,26 @@ static AllocFreeEntry* FindMatchingFree(AllocFreeEntryBlock* b, AllocFreeEntry* 
     return nullptr;
 }
 
+static int nDumped = 0;
+
 static void DumpAllocEntry(AllocFreeEntry* e) {
-    static int nDumped = 0;
     if (nDumped > 32) {
         return;
     }
     nDumped++;
-    dbglogf("\nunfreed entry: 0x%p, size: %d\n", e->addr, (int)e->size);
+    logf("\nunfreed entry: 0x%p, size: %d, n: %d\n", e->addr, (int)e->size, nDumped);
     str::Str s;
     CallstackInfoShort* cis = e->callstackInfo;
     if (!cis) {
         return;
     }
-    for (int i = 0; i < (int)cis->nFrames; i++) {
+    int n = (int)cis->nFrames;
+    CrashIf(n > kMaxFrames);
+    for (int i = 0; i < n && cis->frame[i]; i++) {
         DWORD64 addr = cis->frame[i];
         s.Reset();
         dbghelp::GetAddressInfo(s, addr, true);
-        dbglogf("  %s", s.Get());
+        logf("  %s", s.Get());
     }
 }
 
@@ -649,7 +603,6 @@ void DumpMemLeaks() {
         return;
     }
     MH_Uninitialize(gHooks, gHooksCount);
-    gEnableDbgLog = true;
 
     int nAllocs = gAllocs;
     int nFrees = gFrees;
@@ -659,7 +612,7 @@ void DumpMemLeaks() {
     while (b) {
         for (int i = 0; i < b->nUsed; i++) {
             AllocFreeEntry* e = &b->entries[i];
-            if (e->typ == TYPE_FREE) {
+            if (e->typ != TYPE_ALLOC) {
                 continue;
             }
             AllocFreeEntry* eFree = FindMatchingFree(b, e, i + 1);
@@ -670,7 +623,7 @@ void DumpMemLeaks() {
         }
         b = b->next;
     }
-    dbglogf("allocs: %d, frees: %d\n", nAllocs, nFrees);
-    dbglogf("%d unfreed\n", nUnfreed);
+    logf("allocs: %d, frees: %d\n", nAllocs, nFrees);
+    logf("%d unfreed\n", nUnfreed);
     HeapDestroy(gHeap);
 }

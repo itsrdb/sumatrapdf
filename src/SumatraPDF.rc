@@ -58,34 +58,29 @@ BEGIN
     END
 END
 
+/////////////////////////////////////////////////////////////////////////////
+
+// when building fully static, portable executable, INSTALL_PAYLOAD_ZIP is not defined
+// for combined executable / installer, it's an lzsa archive that contains
+// libmupdf.dll, PdfPreview.dll and PdfFilter.dll
+#ifdef INSTALL_PAYLOAD_ZIP
+1                       RCDATA               QM(INSTALL_PAYLOAD_ZIP)
+#endif
+
+2                       RCDATA ".\\docs\\translations.txt"
 
 /////////////////////////////////////////////////////////////////////////////
-//
-// Icon
-//
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-#if defined(RAMICRO)
-IDI_SUMATRAPDF          ICON        "..\\gfx\\ramicro\\ramicro.ico"
-#else
 IDI_SUMATRAPDF          ICON "..\\gfx\\SumatraPDF-smaller.ico"
-#endif
 IDI_PDFDOC              ICON        "..\\gfx\\PdfDoc.ico"
-IDI_RAMICRO             ICON        "..\\gfx\\ramicro\\ramicro.ico"
-
 
 /////////////////////////////////////////////////////////////////////////////
-//
-// Bitmap
-//
 
 IDB_RELOADING_CUE       BITMAP                  "reloading.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
-//
-// Dialog
-//
 
 IDD_DIALOG_GOTO_PAGE DIALOGEX 0, 0, 158, 45
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
@@ -145,18 +140,6 @@ BEGIN
     LISTBOX         IDC_CHANGE_LANG_LANG_LIST,6,6,188,227,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     DEFPUSHBUTTON   "OK",IDOK,88,239,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,144,239,50,14
-END
-
-IDD_DIALOG_NEW_VERSION DIALOGEX 0, 0, 260, 69
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "New version available"
-FONT 8, "MS Shell Dlg", 400, 0, 0x1
-BEGIN
-    LTEXT           "",IDC_YOU_HAVE,6,6,248,9
-    LTEXT           "",IDC_NEW_AVAILABLE,6,20,248,9
-    CONTROL         "",IDC_SKIP_THIS_VERSION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,6,34,248,9
-    DEFPUSHBUTTON   "Download",IDOK,108,49,70,14
-    PUSHBUTTON      "&No, thanks",IDCANCEL,184,49,70,14
 END
 
 IDD_DIALOG_SETTINGS DIALOGEX 0, 0, 240, 241
@@ -225,15 +208,6 @@ BEGIN
     LTEXT           "Add page %s to favorites with (optional) name:",IDC_ADD_PAGE_STATIC,7,8,222,8
     EDITTEXT        IDC_FAV_NAME_EDIT,7,20,222,14,ES_AUTOHSCROLL
 END
-
-// when building fully static, portable executable, INSTALL_PAYLOAD_ZIP is not defined
-// for combined executable / installer, it's an lzsa archive that contains
-// libmupdf.dll, PdfPreview.dll and PdfFilter.dll
-#ifdef INSTALL_PAYLOAD_ZIP
-1                       RCDATA               QM(INSTALL_PAYLOAD_ZIP)
-#endif
-
-IDD_RAMICRO_SPLASH      RCDATA               "..\\gfx\\ramicro\\ramicro-startscreen_310x230.png"
 
 /////////////////////////////////////////////////////////////////////////////
 

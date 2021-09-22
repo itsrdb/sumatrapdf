@@ -29,16 +29,15 @@ To write new regression test:
 #include "utils/WinUtil.h"
 
 #include "wingui/TreeModel.h"
-
-#include "Annotation.h"
+#include "DisplayMode.h"
+#include "Controller.h"
 #include "EngineBase.h"
 #include "EbookBase.h"
 #include "EbookDoc.h"
 #include "HtmlFormatter.h"
 #include "EbookFormatter.h"
-#include "Doc.h"
 // For Regress03 (Text Search)
-#include "EngineCreate.h"
+#include "EngineAll.h"
 #include "ProgressUpdateUI.h"
 #include "TextSelection.h"
 #include "TextSearch.h"
@@ -91,7 +90,7 @@ static bool gCrashed = false;
 static MINIDUMP_EXCEPTION_INFORMATION gMei{0};
 static LPTOP_LEVEL_EXCEPTION_FILTER gPrevExceptionFilter{nullptr};
 
-static DWORD WINAPI CrashDumpThread([[maybe_unused]] LPVOID data) {
+static DWORD WINAPI CrashDumpThread(__unused LPVOID data) {
     WaitForSingleObject(gDumpEvent, INFINITE);
     if (!gCrashed)
         return 0;

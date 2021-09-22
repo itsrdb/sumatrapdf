@@ -7,19 +7,15 @@
 // the code compiles
 extern bool gIsDebugBuild;
 extern bool gIsAsanBuild;
-extern bool gIsDailyBuild;
 extern bool gIsPreReleaseBuild;
-extern bool gWithTocEditor;
-extern bool gIsRaMicroBuild;
 extern bool gOwnerDrawMenu;
-extern bool gShowDebugMenu;
 extern bool gDisableDocumentRestrictions;
 extern const char* builtOn;
 extern const char* currentVersion; // e.g. "3.2.1138"
 extern const char* gitSha1;
 extern const char* preReleaseVersion;
 
-const WCHAR* GetAppName();
-const WCHAR* GetExeName();
+const WCHAR* GetAppNameTemp();
+const WCHAR* GetExeNameTemp();
 
 int GetAppIconID();

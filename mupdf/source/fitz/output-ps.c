@@ -1,3 +1,25 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #include "mupdf/fitz.h"
 
 #include "z-imp.h"
@@ -166,6 +188,7 @@ void fz_write_pixmap_as_ps(fz_context *ctx, fz_output *out, const fz_pixmap *pix
 	{
 		fz_write_header(ctx, writer, pixmap->w, pixmap->h, pixmap->n, pixmap->alpha, pixmap->xres, pixmap->yres, 0, pixmap->colorspace, pixmap->seps);
 		fz_write_band(ctx, writer, pixmap->stride, pixmap->h, pixmap->samples);
+		fz_close_band_writer(ctx, writer);
 	}
 	fz_always(ctx)
 	{
@@ -298,6 +321,7 @@ ps_end_page(fz_context *ctx, fz_document_writer *wri_, fz_device *dev)
 		bw = fz_new_ps_band_writer(ctx, wri->out);
 		fz_write_header(ctx, bw, pix->w, pix->h, pix->n, pix->alpha, pix->xres, pix->yres, 0, pix->colorspace, pix->seps);
 		fz_write_band(ctx, bw, pix->stride, pix->h, pix->samples);
+		fz_close_band_writer(ctx, bw);
 	}
 	fz_always(ctx)
 	{
@@ -329,16 +353,20 @@ ps_drop_writer(fz_context *ctx, fz_document_writer *wri_)
 fz_document_writer *
 fz_new_ps_writer_with_output(fz_context *ctx, fz_output *out, const char *options)
 {
-	fz_ps_writer *wri = fz_new_derived_document_writer(ctx, fz_ps_writer, ps_begin_page, ps_end_page, ps_close_writer, ps_drop_writer);
+	fz_ps_writer *wri = NULL;
+
+	fz_var(wri);
 
 	fz_try(ctx)
 	{
+		wri = fz_new_derived_document_writer(ctx, fz_ps_writer, ps_begin_page, ps_end_page, ps_close_writer, ps_drop_writer);
 		fz_parse_draw_options(ctx, &wri->draw, options);
 		wri->out = out;
 		fz_write_ps_file_header(ctx, wri->out);
 	}
 	fz_catch(ctx)
 	{
+		fz_drop_output(ctx, out);
 		fz_free(ctx, wri);
 		fz_rethrow(ctx);
 	}
@@ -350,13 +378,5 @@ fz_document_writer *
 fz_new_ps_writer(fz_context *ctx, const char *path, const char *options)
 {
 	fz_output *out = fz_new_output_with_path(ctx, path ? path : "out.ps", 0);
-	fz_document_writer *wri = NULL;
-	fz_try(ctx)
-		wri = fz_new_ps_writer_with_output(ctx, out, options);
-	fz_catch(ctx)
-	{
-		fz_drop_output(ctx, out);
-		fz_rethrow(ctx);
-	}
-	return wri;
+	return fz_new_ps_writer_with_output(ctx, out, options);
 }

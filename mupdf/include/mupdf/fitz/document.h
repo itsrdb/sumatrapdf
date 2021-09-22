@@ -1,3 +1,25 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #ifndef MUPDF_FITZ_DOCUMENT_H
 #define MUPDF_FITZ_DOCUMENT_H
 
@@ -314,6 +336,12 @@ typedef fz_document *(fz_document_open_accel_with_stream_fn)(fz_context *ctx, fz
 	is that this is of the required type.
 */
 typedef int (fz_document_recognize_fn)(fz_context *ctx, const char *magic);
+
+/**
+	Type for a function to be called when processing an already opened page.
+	See fz_process_opened_pages.
+*/
+typedef void *(fz_process_opened_page_fn)(fz_context *ctx, fz_page *page, void *state);
 
 /**
 	Register a handler for a document type.
@@ -658,6 +686,14 @@ void fz_run_page_widgets(fz_context *ctx, fz_page *page, fz_device *dev, fz_matr
 fz_page *fz_keep_page(fz_context *ctx, fz_page *page);
 
 /**
+	Increment the reference count for the page. Returns the same
+	pointer. Must only be used when the alloc lock is already taken.
+
+	Never throws exceptions.
+*/
+fz_page *fz_keep_page_locked(fz_context *ctx, fz_page *page);
+
+/**
 	Decrements the reference count for the page. When the reference
 	count hits 0, the page and its references are freed.
 
@@ -753,6 +789,20 @@ int fz_page_uses_overprint(fz_context *ctx, fz_page *page);
 */
 fz_link *fz_create_link(fz_context *ctx, fz_page *page, fz_rect bbox, const char *uri);
 
+/**
+	Iterates over all opened pages of the document, calling the
+	provided callback for each page for processing. If the callback
+	returns non-NULL then the iteration stops and that value is returned
+	to the called of fz_process_opened_pages().
+
+	The state pointer provided to fz_process_opened_pages() is
+	passed on to the callback but is owned by the caller.
+
+	Returns the first non-NULL value returned by the callback,
+	or NULL if the callback returned NULL for all opened pages.
+*/
+void *fz_process_opened_pages(fz_context *ctx, fz_document *doc, fz_process_opened_page_fn *process_openend_page, void *state);
+
 /* Implementation details: subject to change. */
 
 /**
@@ -820,6 +870,5 @@ struct fz_document_handler
 	fz_document_open_accel_fn *open_accel;
 	fz_document_open_accel_with_stream_fn *open_accel_with_stream;
 };
-
 
 #endif

@@ -36,8 +36,7 @@ class HasherComparator {
   public:
     virtual size_t Hash(uintptr_t key) = 0;
     virtual bool Equal(uintptr_t k1, uintptr_t k2) = 0;
-    virtual ~HasherComparator() {
-    }
+    virtual ~HasherComparator() = default;
 };
 
 class StrKeyHasherComparator : public HasherComparator {
@@ -207,7 +206,6 @@ static bool RemoveEntry(HashTable* h, HasherComparator* hc, uintptr_t key, uintp
 MapStrToInt::MapStrToInt(size_t initialSize) {
     // we use PoolAllocator to allocate HashTableEntry entries
     // and copies of string keys
-    allocator.allocAlign = 4;
     h = NewHashTable(initialSize, &allocator);
 }
 
@@ -240,7 +238,7 @@ bool MapStrToInt::Insert(const char* key, int val, int* existingValOut, const ch
         }
         return false;
     }
-    e->key = (intptr_t)Allocator::StrDup(&allocator, key);
+    e->key = (intptr_t)str::Dup(&allocator, key);
     e->val = (intptr_t)val;
     if (existingKeyOut) {
         *existingKeyOut = (const char*)e->key;
@@ -250,7 +248,7 @@ bool MapStrToInt::Insert(const char* key, int val, int* existingValOut, const ch
     return true;
 }
 
-bool MapStrToInt::Remove(const char* key, int* removedValOut) {
+bool MapStrToInt::Remove(const char* key, int* removedValOut) const {
     uintptr_t removedVal;
     bool removed = RemoveEntry(h, &gStrKeyHasherComparator, (uintptr_t)key, &removedVal);
     if (removed && removedValOut) {
@@ -259,7 +257,7 @@ bool MapStrToInt::Remove(const char* key, int* removedValOut) {
     return removed;
 }
 
-bool MapStrToInt::Get(const char* key, int* valOut) {
+bool MapStrToInt::Get(const char* key, int* valOut) const {
     StrKeyHasherComparator hc;
     bool newEntry;
     HashTableEntry* e = GetOrCreateEntry(h, &hc, (uintptr_t)key, nullptr, newEntry);
@@ -293,14 +291,14 @@ bool MapWStrToInt::Insert(const WCHAR* key, int val, int* prevVal) {
         }
         return false;
     }
-    e->key = (intptr_t)Allocator::StrDup(&allocator, key);
+    e->key = (intptr_t)str::Dup(&allocator, key);
     e->val = (intptr_t)val;
 
     HashTableResizeIfNeeded(h, &gWStrKeyHasherComparator);
     return true;
 }
 
-bool MapWStrToInt::Remove(const WCHAR* key, int* removedValOut) {
+bool MapWStrToInt::Remove(const WCHAR* key, int* removedValOut) const {
     uintptr_t removedVal;
     bool removed = RemoveEntry(h, &gStrKeyHasherComparator, (uintptr_t)key, &removedVal);
     if (removed && removedValOut) {
@@ -309,7 +307,7 @@ bool MapWStrToInt::Remove(const WCHAR* key, int* removedValOut) {
     return removed;
 }
 
-bool MapWStrToInt::Get(const WCHAR* key, int* valOut) {
+bool MapWStrToInt::Get(const WCHAR* key, int* valOut) const {
     WStrKeyHasherComparator hc;
     bool newEntry;
     HashTableEntry* e = GetOrCreateEntry(h, &hc, (uintptr_t)key, nullptr, newEntry);

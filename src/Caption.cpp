@@ -16,7 +16,6 @@
 #include "ProgressUpdateUI.h"
 #include "Notifications.h"
 #include "SumatraPDF.h"
-#include "Annotation.h"
 #include "WindowInfo.h"
 #include "Caption.h"
 #include "Tabs.h"
@@ -25,36 +24,12 @@
 #include "Commands.h"
 #include "Menu.h"
 
-// using namespace Gdiplus;
-
 using Gdiplus::ARGB;
-using Gdiplus::Bitmap;
 using Gdiplus::Brush;
 using Gdiplus::Color;
-using Gdiplus::Font;
-using Gdiplus::FontStyle;
-using Gdiplus::FontStyleRegular;
-using Gdiplus::FontStyleUnderline;
 using Gdiplus::Graphics;
-using Gdiplus::LinearGradientBrush;
-using Gdiplus::LinearGradientMode;
-using Gdiplus::Ok;
 using Gdiplus::Pen;
 using Gdiplus::SolidBrush;
-using Gdiplus::Status;
-
-using Gdiplus::CombineModeReplace;
-using Gdiplus::CompositingQualityHighQuality;
-using Gdiplus::GraphicsPath;
-using Gdiplus::Image;
-using Gdiplus::Matrix;
-using Gdiplus::PenAlignmentInset;
-using Gdiplus::Region;
-using Gdiplus::SmoothingModeAntiAlias;
-using Gdiplus::StringFormat;
-using Gdiplus::StringFormatFlagsDirectionRightToLeft;
-using Gdiplus::TextRenderingHintClearTypeGridFit;
-using Gdiplus::UnitPixel;
 
 #define CUSTOM_CAPTION_CLASS_NAME L"CustomCaption"
 #define UNDOCUMENTED_MENU_CLASS_NAME L"#32768"
@@ -395,7 +370,8 @@ void CreateCaption(WindowInfo* win) {
     HMODULE h = GetModuleHandleW(nullptr);
     DWORD dwStyle = WS_CHILDWINDOW | WS_CLIPCHILDREN;
     HWND hwndParent = win->hwndFrame;
-    win->hwndCaption = CreateWindow(CUSTOM_CAPTION_CLASS_NAME, L"", dwStyle, 0, 0, 0, 0, hwndParent, 0, h, nullptr);
+    win->hwndCaption =
+        CreateWindow(CUSTOM_CAPTION_CLASS_NAME, L"", dwStyle, 0, 0, 0, 0, hwndParent, nullptr, h, nullptr);
 
     win->caption = new CaptionInfo(win->hwndCaption);
 
@@ -436,7 +412,8 @@ void RelayoutCaption(WindowInfo* win) {
         bool isClassicStyle = win->caption->theme == nullptr;
         // Under WIN XP GetSystemMetrics(SM_CXSIZE) returns wrong (previous) value, after theme change
         // or font size change. For this to work, I assume that SM_CXSIZE == SM_CYSIZE.
-        int btnDx = GetSystemMetrics(IsVistaOrGreater() ? SM_CXSIZE : SM_CYSIZE) - xEdge * (isClassicStyle ? 1 : 2);
+        int btnDx =
+            GetSystemMetrics(IsWindowsVistaOrGreater() ? SM_CXSIZE : SM_CYSIZE) - xEdge * (isClassicStyle ? 1 : 2);
         int btnDy = GetSystemMetrics(SM_CYSIZE) - yEdge * 2;
         bool maximized = IsZoomed(win->hwndFrame);
         int yPosBtn = rc.y + (maximized ? 0 : yEdge);
@@ -581,7 +558,7 @@ static void DrawCaptionButton(DRAWITEMSTRUCT* item, WindowInfo* win) {
         // draw the three lines
         COLORREF c = win->caption->textColor;
         u8 r, g, b;
-        UnpackRgb(c, r, g, b);
+        UnpackColor(c, r, g, b);
         float width = floor((float)rc.dy / 8.0f);
         Pen p(Color(r, g, b), width);
         rc.Inflate(-int(rc.dx * 0.2f + 0.5f), -int(rc.dy * 0.3f + 0.5f));
@@ -595,7 +572,7 @@ static void DrawCaptionButton(DRAWITEMSTRUCT* item, WindowInfo* win) {
         HICON hIcon = (HICON)GetClassLongPtr(win->hwndFrame, GCLP_HICONSM);
         int x = (rButton.dx - xIcon) / 2;
         int y = (rButton.dy - yIcon) / 2;
-        DrawIconEx(memDC, x, y, hIcon, xIcon, yIcon, 0, NULL, DI_NORMAL);
+        DrawIconEx(memDC, x, y, hIcon, xIcon, yIcon, 0, nullptr, DI_NORMAL);
     }
 
     buffer.Flush(item->hDC);
@@ -633,7 +610,7 @@ static void PaintCaptionBackground(HDC hdc, WindowInfo* win, bool useDoubleBuffe
         PaintParentBackground(win->hwndCaption, memDC);
         Graphics gfx(memDC);
         u8 r, g, b;
-        UnpackRgb(c, r, g, b);
+        UnpackColor(c, r, g, b);
         SolidBrush br(Color(win->caption->bgAlpha, r, g, b));
         gfx.FillRectangle(&br, rect.x, rect.y, rect.dx, rect.dy);
         if (useDoubleBuffer) {
@@ -952,7 +929,7 @@ static void MenuBarAsPopupMenu(WindowInfo* win, int x, int y) {
         AutoFreeWstr subMenuName(AllocArray<WCHAR>(mii.cch));
         mii.dwTypeData = subMenuName;
         GetMenuItemInfo(win->menu, i, TRUE, &mii);
-        AppendMenu(popup, MF_POPUP | MF_STRING, (UINT_PTR)mii.hSubMenu, subMenuName);
+        AppendMenuW(popup, MF_POPUP | MF_STRING, (UINT_PTR)mii.hSubMenu, subMenuName);
     }
 
     if (IsUIRightToLeft()) {

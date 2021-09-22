@@ -1,3 +1,25 @@
+// Copyright (C) 2004-2021 Artifex Software, Inc.
+//
+// This file is part of MuPDF.
+//
+// MuPDF is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// MuPDF is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with MuPDF. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>
+//
+// Alternative licensing terms are available from the licensor.
+// For commercial licensing, see <https://www.artifex.com/> or contact
+// Artifex Software, Inc., 1305 Grant Avenue - Suite 200, Novato,
+// CA 94945, U.S.A., +1(415)492-9861, for further information.
+
 #include "mupdf/fitz.h"
 
 #include <string.h>
@@ -147,8 +169,10 @@ fz_new_document_writer(fz_context *ctx, const char *path, const char *explicit_f
 		format = strrchr(path, '.');
 	while (format)
 	{
+#ifdef FZ_ENABLE_OCR_OUTPUT
 		if (is_extension(format, "ocr"))
 			return fz_new_pdfocr_writer(ctx, path, options);
+#endif
 #if FZ_ENABLE_PDF
 		if (is_extension(format, "pdf"))
 			return fz_new_pdf_writer(ctx, path, options);
@@ -194,24 +218,14 @@ fz_new_document_writer(fz_context *ctx, const char *path, const char *explicit_f
 			return fz_new_text_writer(ctx, "stext.xml", path, options);
 		if (is_extension(format, "stext.json"))
 			return fz_new_text_writer(ctx, "stext.json", path, options);
-#ifdef HAVE_EXTRACT
+
+#ifdef FZ_ENABLE_ODT_OUTPUT
 		if (is_extension(format, "odt"))
-		{
-			return fz_new_odt_writer(ctx, format, path, options);
-		}
+			return fz_new_odt_writer(ctx, path, options);
+#endif
+#ifdef FZ_ENABLE_DOCX_OUTPUT
 		if (is_extension(format, "docx"))
-		{
-			return fz_new_docx_writer(ctx, format, path, options);
-		}
-#else
-		if (is_extension(format, "odt"))
-		{
-			fz_throw(ctx, FZ_ERROR_GENERIC, "odt output not available in this build.");
-		}
-		if (is_extension(format, "docx"))
-		{
-			fz_throw(ctx, FZ_ERROR_GENERIC, "docx output not available in this build.");
-		}
+			return fz_new_docx_writer(ctx, path, options);
 #endif
 		if (format != explicit_format)
 			format = prev_period(path, format);
@@ -252,6 +266,15 @@ fz_new_document_writer_with_output(fz_context *ctx, fz_output *out, const char *
 		return fz_new_text_writer_with_output(ctx, "stext.xml", out, options);
 	if (is_extension(format, "stext.json"))
 		return fz_new_text_writer_with_output(ctx, "stext.json", out, options);
+
+#ifdef FZ_ENABLE_ODT_OUTPUT
+	if (is_extension(format, "odt"))
+		return fz_new_odt_writer_with_output(ctx, out, options);
+#endif
+#ifdef FZ_ENABLE_DOCX_OUTPUT
+	if (is_extension(format, "docx"))
+		return fz_new_docx_writer_with_output(ctx, out, options);
+#endif
 
 	fz_throw(ctx, FZ_ERROR_GENERIC, "unknown output document format: %s", format);
 }
